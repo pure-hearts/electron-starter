@@ -10,7 +10,13 @@ export default defineConfig({
   plugins: [
     vue(),
     electron({
-      main: { entry: 'src/main/index.ts' },
+      main: {
+        entry: 'src/main/index.ts',
+        onstart({ startup }) {
+          // Explicitly avoid the plugin default '--no-sandbox' switch.
+          return startup(['.'])
+        }
+      },
       preload: { input: 'src/preload/index.ts' }
     })
   ],

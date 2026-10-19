@@ -11,7 +11,7 @@ import { notify } from './modules/notification'
 import { startDownload, controlDownload } from './modules/download'
 import { printers, printCurrentPage } from './modules/print'
 import { checkUpdate, installUpdate } from './modules/updater'
-import { checkHotUpdate } from './modules/hot-update'
+import { checkHotUpdate, markRendererHealthy } from './modules/hot-update'
 import { log, writeRendererLog } from './modules/logger'
 import { DEEP_LINK_SCHEME } from './modules/protocol'
 type Handler = (event: IpcMainInvokeEvent, args: unknown[]) => unknown | Promise<unknown>
@@ -35,6 +35,7 @@ const handlers: Record<InvokeChannel, Handler> = {
   'updater:check': () => checkUpdate(),
   'updater:install': () => installUpdate(),
   'hot:check': () => checkHotUpdate(),
+  'hot:confirm': () => markRendererHealthy(),
   'log:write': (_e, [level, text]) => writeRendererLog(level as 'info' | 'warn' | 'error', text as string),
   'log:export': async () => {
     const result = await dialog.showSaveDialog({ title: '导出诊断日志', defaultPath: 'electron-starter.log' })

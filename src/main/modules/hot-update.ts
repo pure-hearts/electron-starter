@@ -16,7 +16,7 @@ import { log } from './logger'
 const here = path.dirname(fileURLToPath(import.meta.url))
 type ManifestBody = { revision: number; compatibleApp: string; url: string; sha256: string }
 type Manifest = ManifestBody & { signature: string }
-type Pointer = { revision: number; directory: string; previous: string | null; pending: boolean }
+type Pointer = { revision: number; directory: string; previous: string | null; phase: 'staged' | 'trying' | 'active' }
 const MAX_ZIP = 32 * 1024 * 1024
 const MAX_EXPANDED = 128 * 1024 * 1024
 function workspace() { return path.join(app.getPath('userData'), 'renderer-updates') }
@@ -42,18 +42,21 @@ function candidate(name: string) {
 /** Pending update from previous launch is reverted before any application UI loads. */
 export function recoverPendingUpdate() {
   const pointer = readPointer()
-  if (pointer?.pending) {
-    log.warn('Rolling back pending renderer update', pointer.revision)
-    if (pointer.previous) writePointer({ revision: 0, directory: pointer.previous, previous: null, pending: false })
+  if (pointer?.phase === 'staged') {
+    writePointer({ ...pointer, phase: 'trying' })
+  } else if (pointer?.phase === 'trying') {
+    log.warn('Rolling back unconfirmed renderer update', pointer.revision)
+    if (pointer.previous) writePointer({ revision: Number(pointer.previous.replace(/^rev-/, '')) || 0, directory: pointer.previous, previous: null, phase: 'active' })
     else fs.rmSync(pointerPath(), { force: true })
   }
 }
 export function markRendererHealthy() {
   const p = readPointer()
-  if (p?.pending) writePointer({ ...p, pending: false })
+  if (p?.phase === 'trying') writePointer({ ...p, phase: 'active' })
 }
 export function activeRendererRoot(): string {
   const pointer = readPointer()
+  if (pointer?.phase === 'staged') return (pointer.previous && candidate(pointer.previous)) || installedRoot()
   if (pointer) return candidate(pointer.directory) ?? installedRoot()
   return installedRoot()
 }
@@ -137,7 +140,7 @@ export async function checkHotUpdate(): Promise<HotUpdateResult> {
       if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true })
       fs.renameSync(temp, target)
     } catch(err) { fs.rmSync(temp, { recursive: true, force: true }); throw err }
-    writePointer({ revision: m.revision, directory: name, previous: current?.directory ?? null, pending: true })
+    writePointer({ revision: m.revision, directory: name, previous: current?.directory ?? null, phase: 'staged' })
     broadcast('update:state', {kind:'hot',status:'ready'})
     return { status: 'ready', message: 'Resource update is staged; restart app to activate' }
   } catch (error) {

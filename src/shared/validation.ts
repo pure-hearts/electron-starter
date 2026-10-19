@@ -5,7 +5,7 @@ export const allowedChannels = new Set<InvokeChannel>([
   'app:version','app:quit','window:action','window:open','store:get','store:set','store:delete',
   'startup:get','startup:set','notification:show','download:start','download:cancel',
   'download:pause','download:resume','print:printers','print:execute','updater:check',
-  'updater:install','hot:check','log:write','log:export','protocol:scheme'
+  'updater:install','hot:check','hot:confirm','log:write','log:export','protocol:scheme'
 ])
 export function safeUrl(input: string): URL {
   if (typeof input !== 'string' || input.length > 4096) throw new Error('Invalid URL')
@@ -15,7 +15,7 @@ export function safeUrl(input: string): URL {
 }
 export function validate(channel: InvokeChannel, args: unknown[]): void {
   const str = (i: number, max = 512) => typeof args[i] === 'string' && (args[i] as string).length > 0 && (args[i] as string).length <= max
-  const noArgs = ['app:version','app:quit','startup:get','print:printers','print:execute','updater:check','updater:install','hot:check','log:export','protocol:scheme']
+  const noArgs = ['app:version','app:quit','startup:get','print:printers','print:execute','updater:check','updater:install','hot:check','hot:confirm','log:export','protocol:scheme']
   if (noArgs.includes(channel) && args.length === 0) return
   if (channel === 'window:action' && args.length === 1 && ['minimize','maximize','restore','hide','show','close'].includes(args[0] as string)) return
   if (channel === 'window:open' && args.length === 1 && str(0) && /^\/[\w/-]*$/.test(args[0] as string)) return

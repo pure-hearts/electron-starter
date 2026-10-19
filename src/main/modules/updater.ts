@@ -20,8 +20,10 @@ export function initUpdater() {
 export async function checkUpdate() {
   if (!app.isPackaged) throw new Error('Full updates require an installed application')
   if (!configured) throw new Error('Full update URL is not configured in resources/app-config.json')
-  await autoUpdater.checkForUpdates()
-  await autoUpdater.downloadUpdate()
+  const result = await autoUpdater.checkForUpdates()
+  if (result && result.updateInfo.version !== app.getVersion()) {
+    await autoUpdater.downloadUpdate()
+  }
 }
 export function installUpdate() {
   if (!configured) throw new Error('Update source is not configured')

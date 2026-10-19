@@ -15,3 +15,4 @@ window.addEventListener('unhandledrejection', e => {
   void window.desktop?.invoke('log:write', 'error', String(e.reason)).catch(() => undefined)
 })
 app.use(createPinia()).use(router).use(i18n).use(ElementPlus).mount('#app')
+void window.desktop.invoke('hot:confirm').catch(() => undefined)

@@ -8,7 +8,7 @@ import { initDownloads } from './modules/download'
 import { createMenu } from './modules/menu'
 import { createTray, destroyTray } from './modules/tray'
 import { initUpdater } from './modules/updater'
-import { recoverPendingUpdate, markRendererHealthy } from './modules/hot-update'
+import { recoverPendingUpdate } from './modules/hot-update'
 import { getSetting } from './modules/store'
 const single = app.requestSingleInstanceLock()
 if (!single) {
@@ -41,7 +41,7 @@ if (!single) {
     createMenu()
     createTray()
     const main = createMainWindow()
-    main.webContents.once('did-finish-load', () => markRendererHealthy())
+    main.webContents.on('did-fail-load', (_event, code, desc) => log.error('Main window failed', code, desc))
     processDeepLinkArgs(process.argv)
   }).catch(err => { log.error('Startup failure', err); app.quit() })
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow(); else focusMainWindow() })

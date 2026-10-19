@@ -19,6 +19,7 @@ export interface DesktopInvoke {
   'updater:check': { args: []; result: void }
   'updater:install': { args: []; result: void }
   'hot:check': { args: []; result: HotUpdateResult }
+  'hot:confirm': { args: []; result: void }
   'log:write': { args: [level: 'info' | 'warn' | 'error', message: string]; result: void }
   'log:export': { args: []; result: string | null }
   'protocol:scheme': { args: []; result: string }
