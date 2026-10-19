@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-electron/
+release/
+.vite/
+.vite-plus/
+*.log
+.env
+.env.*
+!.env.example
+*.pem
+!*.pem.example
+.DS_Store
+coverage/

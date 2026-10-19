@@ -1,0 +1,5 @@
+{
+  "appUpdateUrl": "",
+  "hotUpdateUrl": "",
+  "deepLinkScheme": "electron-starter"
+}

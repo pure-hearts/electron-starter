@@ -1,0 +1,33 @@
+# Development
+
+## Requirements
+
+Node.js >= 24, pnpm 11, Vite+ via local `pnpm exec vp`.
+
+```sh
+corepack enable
+pnpm install
+pnpm exec vp dev
+pnpm exec vp check
+pnpm exec vp test --run
+pnpm exec vp build
+```
+
+The repository currently does not include a generated pnpm lockfile; generate it by installing dependencies on an online machine, review dependency versions, then commit the lockfile.
+
+Main and Preload are built by `vite-plugin-electron/simple`; Renderer is built by Vite+. Sources live in `src/main`, `src/preload`, `src/renderer`, `src/shared`.
+
+Runtime settings in `resources/app-config.json` are bundled into the installer. The app will run with update services disabled unless HTTPS URLs are configured.
+
+```sh
+pnpm run dist:dir
+pnpm run dist:win
+pnpm run dist:mac
+pnpm run dist:linux
+```
+
+Use native OS machines or CI runners for platform packaging.
+
+## Why no Monorepo?
+
+Only one desktop application is required. Shared IPC types are plain TypeScript files; no separate packages or build orchestration are needed.
