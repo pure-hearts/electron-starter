@@ -5,8 +5,11 @@ let tray: Tray | null = null
 export function createTray() {
   if (tray) return tray
   const icon = process.platform === 'win32' ? 'icon.ico' : 'icon.png'
-  const image = nativeImage.createFromPath(path.join(process.resourcesPath, 'resources', 'icons', icon))
-  tray = new Tray(image.isEmpty() ? nativeImage.createEmpty() : image)
+  const imagePath = path.join(process.resourcesPath, 'resources', 'icons', icon)
+  const fallbackPath = path.join(process.resourcesPath, 'resources', 'icons', 'icon.png')
+  const image = nativeImage.createFromPath(imagePath)
+  const trayImage = image.isEmpty() ? nativeImage.createFromPath(fallbackPath) : image
+  tray = new Tray(trayImage)
   tray.setToolTip(app.getName())
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '打开主窗口', click: focusMainWindow },
