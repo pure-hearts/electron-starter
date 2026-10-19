@@ -12,9 +12,9 @@ export default defineConfig({
     electron({
       main: {
         entry: 'src/main/index.ts',
-        onstart({ startup }) {
+        async onstart({ startup }) {
           // Explicitly avoid the plugin default '--no-sandbox' switch.
-          return startup(['.'])
+          await startup(['.'])
         }
       },
       preload: { input: 'src/preload/index.ts' }

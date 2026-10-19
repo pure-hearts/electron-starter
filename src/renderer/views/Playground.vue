@@ -14,6 +14,12 @@ async function run(label: string, fn: () => Promise<unknown>) {
   try { const result = await fn(); output.value = label + ': ' + JSON.stringify(result ?? 'OK') }
   catch(err) { output.value = label + ' 出错: ' + String(err) }
 }
+async function loadPrinters() {
+  await run('打印机', async () => {
+    printList.value = (await window.desktop.invoke('print:printers')).map(p => p.displayName)
+    return printList.value
+  })
+}
 async function beginDownload() {
   await run('下载任务', async () => { downloadId.value = await window.desktop.invoke('download:start', downloadURL.value); return downloadId.value })
 }
@@ -63,7 +69,7 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
       </el-space>
       <p>{{ status }}</p>
       <el-space wrap>
-        <el-button @click="run('打印机', async () => {printList.value = (await window.desktop.invoke('print:printers')).map(p=>p.displayName); return printList.value})">获取打印机</el-button>
+        <el-button @click="loadPrinters">获取打印机</el-button>
         <el-button @click="run('打印', () => window.desktop.invoke('print:execute'))">打印当前页面</el-button>
       </el-space>
       <p>{{ printList.join('、') }}</p>

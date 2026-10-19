@@ -12,9 +12,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
       - name: Install
         run: pnpm install --no-frozen-lockfile
+      - name: Source checks
+        run: pnpm exec vp check
       - name: Test
         run: pnpm exec vp test --run
       - name: Build
