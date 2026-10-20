@@ -14,13 +14,17 @@ export default defineConfig({
     vue(),
     electron({
       main: {
-        entry: 'src/main/index.ts',
+        entry: fileURLToPath(new URL('./src/main/index.ts', import.meta.url)),
+        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false } },
         async onstart({ startup }) {
           // Explicitly avoid the plugin default '--no-sandbox' switch.
           await startup(['.'])
         }
       },
-      preload: { input: 'src/preload/index.ts' }
+      preload: {
+        input: fileURLToPath(new URL('./src/preload/index.ts', import.meta.url)),
+        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false } }
+      }
     })
   ],
   resolve: {
