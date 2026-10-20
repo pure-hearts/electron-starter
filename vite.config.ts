@@ -15,7 +15,7 @@ export default defineConfig({
     electron({
       main: {
         entry: fileURLToPath(new URL('./src/main/index.ts', import.meta.url)),
-        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false } },
+        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false, rolldownOptions: { output: { entryFileNames: 'main.js' } } } },
         async onstart({ startup }) {
           // Explicitly avoid the plugin default '--no-sandbox' switch.
           await startup(['.'])
@@ -23,7 +23,7 @@ export default defineConfig({
       },
       preload: {
         input: fileURLToPath(new URL('./src/preload/index.ts', import.meta.url)),
-        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false } }
+        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false, rolldownOptions: { output: { entryFileNames: 'preload.mjs' } } } }
       }
     })
   ],
