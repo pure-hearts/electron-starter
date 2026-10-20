@@ -8,7 +8,9 @@ function linuxAutostartPath(): string {
   return path.join(config, 'autostart', 'electron-starter.desktop')
 }
 function linuxDesktopEntry(): string {
-  const executable = app.getPath('exe')
+  const rawExecutable = app.getPath('exe')
+  if (!rawExecutable || /[\r\n\0]/.test(rawExecutable)) throw new Error('Invalid executable path')
+  const executable = rawExecutable
     .replaceAll('\\', '\\\\')
     .replaceAll('"', '\\"')
     .replaceAll('$', '\\$')
@@ -26,7 +28,11 @@ function linuxDesktopEntry(): string {
 }
 export function getAutoStart(): boolean {
   if (process.platform === 'linux') {
-    try { return fs.readFileSync(linuxAutostartPath(), 'utf8').includes('Name=Electron Starter') }
+    try { return (() => {
+      const entry = fs.readFileSync(linuxAutostartPath(), 'utf8')
+      return entry.split(/\r?\n/).includes('Name=Electron Starter') &&
+        entry.split(/\r?\n/).some(line => line.startsWith('Exec="') && line.endsWith('" --autostart'))
+    })() }
     catch { return false }
   }
   return app.getLoginItemSettings().openAtLogin
