@@ -35,3 +35,7 @@ Only one desktop application is required. Shared IPC types are plain TypeScript 
 ## Sandbox-safe Preload
 
 Renderer windows use `sandbox: true`. Electron does not support ESM imports in sandboxed preload contexts, so `src/preload/index.ts` builds to bundled CommonJS `dist-electron/preload.cjs`. The main process remains ESM at `dist-electron/main.js`.
+
+## Autostart behavior
+
+Windows/macOS use Electron login item settings. Linux uses the XDG autostart desktop entry `~/.config/autostart/electron-starter.desktop` (or `XDG_CONFIG_HOME/autostart`). Linux autostart registration requires the packaged application; the development build deliberately refuses system-wide login setup.

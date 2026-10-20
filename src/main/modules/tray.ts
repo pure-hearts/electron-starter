@@ -10,7 +10,7 @@ export function createTray() {
   const fallbackPath = path.join(process.resourcesPath, 'resources', 'icons', 'icon.png')
   const image = nativeImage.createFromPath(imagePath)
   const trayImage = image.isEmpty() ? nativeImage.createFromPath(fallbackPath) : image
-  tray = new Tray(trayImage)
+  tray = new Tray(process.platform === 'darwin' ? trayImage.resize({ width: 18, height: 18 }) : trayImage)
   tray.setToolTip(app.getName())
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '打开主窗口', click: focusMainWindow },
