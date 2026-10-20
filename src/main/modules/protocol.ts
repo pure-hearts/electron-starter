@@ -8,7 +8,12 @@ import { activeRendererRoot } from './hot-update'
 import { DeepLinkInbox } from './deep-link-inbox'
 export const DEEP_LINK_SCHEME = 'electron-starter'
 const inbox = new DeepLinkInbox(DEEP_LINK_SCHEME)
-export function consumePendingDeepLinks(): string[] { return inbox.drain() }
+let rendererSubscribed = false
+export function markDeepLinkRendererUnready(): void { rendererSubscribed = false }
+export function consumePendingDeepLinks(): string[] {
+  rendererSubscribed = true
+  return inbox.drain()
+}
 protocol.registerSchemesAsPrivileged([{
   scheme: 'app', privileges: { secure: true, standard: true, supportFetchAPI: true, stream: true }
 }])
@@ -36,8 +41,10 @@ export function handleDeepLink(input: string) {
     const window = getMainWindow()
     if (window && !window.isDestroyed()) {
       focusMainWindow()
-      // Buffered URLs are delivered through protocol:pending after renderer startup.
-      // Do not broadcast here: dispatching both can deliver the same link twice.
+      if (rendererSubscribed) {
+        // A subscribed renderer already receives live pushes. Drain exactly once.
+        for (const pending of inbox.drain()) broadcast('protocol:open', pending)
+      }
     }
   }
 }

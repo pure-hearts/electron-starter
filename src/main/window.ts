@@ -2,7 +2,7 @@ import { BrowserWindow, screen } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getSetting, setSetting } from './modules/store'
-import { rendererURL } from './modules/protocol'
+import { rendererURL, markDeepLinkRendererUnready } from './modules/protocol'
 import { log } from './modules/logger'
 import { isQuitting } from './modules/lifecycle'
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -58,6 +58,9 @@ export function createMainWindow() {
     win.show()
     splash?.close(); splash = null
   }
+  win.webContents.on('did-start-navigation', (_event, _url, _isInPlace, isMainFrame) => {
+    if (isMainFrame) markDeepLinkRendererUnready()
+  })
   win.once('ready-to-show', show)
   win.webContents.once('did-fail-load', (_e, code, description) => { log.error('Window failed to load', code, description); show() })
   void win.loadURL(target).catch(err => { log.error('Renderer load failed', err); show() })
