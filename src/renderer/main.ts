@@ -15,4 +15,12 @@ window.addEventListener('unhandledrejection', e => {
   void window.desktop?.invoke('log:write', 'error', String(e.reason)).catch(() => undefined)
 })
 app.use(createPinia()).use(router).use(i18n).use(ElementPlus).mount('#app')
-void window.desktop.invoke('hot:confirm').catch(() => undefined)
+// A healthy render includes a mounted app and a resolved route. Confirming after
+// a brief settling period preserves rollback when the new renderer crashes early.
+void router.isReady().then(() => {
+  window.setTimeout(() => {
+    if (document.querySelector('#app')?.childElementCount) {
+      void window.desktop.invoke('hot:confirm').catch(() => undefined)
+    }
+  }, 2500)
+}).catch(() => undefined)

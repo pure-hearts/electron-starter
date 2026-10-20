@@ -13,9 +13,9 @@
     "test": "vp test --run",
     "dist:dir": "vp build && electron-builder --dir",
     "smoke": "node scripts/smoke.mjs",
-    "dist:win": "vp build && electron-builder --win nsis",
-    "dist:mac": "vp build && electron-builder --mac dmg zip",
-    "dist:linux": "vp build && electron-builder --linux AppImage deb",
+    "dist:win": "vp build && electron-builder --win nsis --publish never",
+    "dist:mac": "vp build && electron-builder --mac dmg zip --publish never",
+    "dist:linux": "vp build && electron-builder --linux AppImage deb --publish never",
     "hot:pack": "node --experimental-strip-types scripts/pack-hot.ts",
     "typecheck:vue": "vue-tsc --noEmit"
   },

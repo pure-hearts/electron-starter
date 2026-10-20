@@ -1,11 +1,40 @@
-name: Release
+name: Signed Release
 on:
   push:
     tags: ["v*"]
 permissions:
   contents: write
+
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate tag matches package version
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          test "v$VERSION" = "$GITHUB_REF_NAME" || { echo "::error::Tag must exactly match package.json version"; exit 1; }
+      - name: Require code-signing and notarization secrets
+        shell: bash
+        env:
+          WIN_SIGN_CERT: ${{ secrets.WIN_CSC_LINK }}
+          WIN_SIGN_PASS: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          MAC_SIGN_CERT: ${{ secrets.MAC_CSC_LINK }}
+          MAC_SIGN_PASS: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for VAR in WIN_SIGN_CERT WIN_SIGN_PASS MAC_SIGN_CERT MAC_SIGN_PASS APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!VAR}" ]; then
+              echo "::error::Required release secret $VAR is missing; unsigned production releases are prohibited"
+              exit 1
+            fi
+          done
+
   package:
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
@@ -17,22 +46,37 @@ jobs:
           - os: ubuntu-latest
             task: dist:linux
     runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      CSC_LINK: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK || (matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK || '') }}
+      CSC_KEY_PASSWORD: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_KEY_PASSWORD || (matrix.os == 'macos-latest' && secrets.MAC_CSC_KEY_PASSWORD || '') }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: pnpm install --frozen-lockfile
-      - name: Build installers
+          cache: pnpm
+      - name: Install pinned dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Source checks
+        run: pnpm exec vp check
+      - name: Vue type check
+        run: pnpm exec vue-tsc --noEmit
+      - name: Unit tests
+        run: pnpm exec vp test --run
+      - name: Build signed installers
         run: pnpm run ${{ matrix.task }}
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      - name: Upload build artifacts
+      - name: Upload signed build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.os }}
           path: release/
+          if-no-files-found: error
+
   publish:
     needs: package
     runs-on: ubuntu-latest
