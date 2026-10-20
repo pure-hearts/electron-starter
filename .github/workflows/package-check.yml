@@ -57,6 +57,8 @@ jobs:
         run: node scripts/verify-installers.mjs ${{ matrix.target }}
       - name: Generate artifact checksums
         run: node scripts/release-checksums.mjs
+      - name: Verify generated SHA-256 checksums
+        run: node scripts/verify-release-checksums.mjs
       - name: Archive package results
         uses: actions/upload-artifact@v4
         with:
