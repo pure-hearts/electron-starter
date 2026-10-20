@@ -22,7 +22,7 @@ jobs:
         run: pnpm exec vp build
       - name: Configure sandbox helper on Linux CI
         run: |
-          ELECTRON_BIN="$(node -p "require('electron')")"
+          ELECTRON_BIN="$(node -p "require('electron')" | tail -n 1)"
           SANDBOX="$(dirname "$ELECTRON_BIN")/chrome-sandbox"
           sudo chown root:root "$SANDBOX"
           sudo chmod 4755 "$SANDBOX"
