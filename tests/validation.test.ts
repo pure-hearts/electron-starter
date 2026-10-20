@@ -42,3 +42,10 @@ describe('additional IPC security boundaries', () => {
     expect(() => validate('log:write', ['trace', 'message'])).toThrow()
   })
 })
+
+describe('application lifecycle IPC contract', () => {
+  it('accepts no-argument restart only', () => {
+    expect(() => validate('app:restart', [])).not.toThrow()
+    expect(() => validate('app:restart', ['--inspect'])).toThrow()
+  })
+})
