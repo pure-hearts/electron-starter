@@ -29,7 +29,7 @@ export type SettingKey = 'theme' | 'locale' | 'closeToTray' | 'windowBounds'
 export type InvokeChannel = keyof DesktopInvoke
 export type InvokeArgs<C extends InvokeChannel> = DesktopInvoke[C]['args']
 export type InvokeResult<C extends InvokeChannel> = DesktopInvoke[C]['result']
-export interface DownloadState { id: string; url: string; state: 'started' | 'progress' | 'paused' | 'completed' | 'cancelled' | 'failed'; percent?: number; path?: string; error?: string }
+export interface DownloadState { id: string; url: string; state: 'queued' | 'started' | 'progress' | 'paused' | 'completed' | 'cancelled' | 'failed'; percent?: number; path?: string; error?: string }
 export interface UpdateState { kind: 'full' | 'hot'; status: string; percent?: number; error?: string }
 export interface HotUpdateResult { status: 'disabled' | 'up-to-date' | 'ready' | 'error'; message?: string }
 export interface DesktopEvents {
