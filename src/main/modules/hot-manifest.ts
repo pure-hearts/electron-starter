@@ -24,6 +24,13 @@ export function verifyHotManifest(raw: unknown, appVersion: string, key: string)
   if (!Number.isSafeInteger(m.revision) || typeof m.revision !== 'number' || m.revision <= 0 || m.compatibleApp !== appVersion) throw new Error('Incompatible update')
   if (typeof m.url !== 'string' || !m.url.startsWith('https://') || typeof m.sha256 !== 'string' || !/^[0-9a-f]{64}$/i.test(m.sha256)) throw new Error('Invalid update manifest')
   validateHotArchiveUrl(m.url)
+  // Require an unambiguous HTTPS archive URL, with no embedded credentials or fragments.
+  try {
+    const target = new URL(m.url)
+    if (target.protocol !== 'https:' || target.username || target.password || target.hash || target.hostname.length === 0) {
+      throw new Error('Invalid update URL')
+    }
+  } catch { throw new Error('Invalid update manifest URL') }
   if (typeof m.signature !== 'string' || m.signature.length < 60 || m.signature.length > 200) throw new Error('Missing update signature')
   const bytes = Buffer.from(JSON.stringify(manifestBody(m as ManifestBody)))
   if (!verify(null, bytes, key, Buffer.from(m.signature, 'base64'))) throw new Error('Invalid update signature')

@@ -20,6 +20,15 @@ describe('signed renderer hot update manifest', () => {
     expect(() => verifyHotManifest(signed(), '0.2.0', publicKey)).toThrow('Incompatible')
     expect(() => verifyHotManifest(signed({ ...body, url: 'http://example.com/a.zip' }), '0.1.0', publicKey)).toThrow('manifest')
   })
+  it('rejects signed HTTPS URLs with credentials or fragments', () => {
+    for (const url of [
+      'https://username:password@example.com/renderer.zip',
+      'https://example.com/renderer.zip#ignored',
+      'https:///missing-host'
+    ]) {
+      expect(() => verifyHotManifest(signed({ ...body, url }), '0.1.0', publicKey)).toThrow()
+    }
+  })
   it('rejects missing signature and malformed objects', () => {
     expect(() => verifyHotManifest({ ...body }, '0.1.0', publicKey)).toThrow()
     expect(() => verifyHotManifest(null, '0.1.0', publicKey)).toThrow()
