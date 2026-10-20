@@ -47,6 +47,8 @@ jobs:
         run: pnpm exec vp build
       - name: Build unsigned installable artifacts
         run: pnpm exec electron-builder --${{ matrix.target }} --publish never
+      - name: Verify OS installable artifacts
+        run: node scripts/verify-installers.mjs ${{ matrix.target }}
       - name: Archive package results
         uses: actions/upload-artifact@v4
         with:
