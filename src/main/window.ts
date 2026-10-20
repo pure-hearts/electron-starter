@@ -26,6 +26,16 @@ export function createMainWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) { mainWindow.show(); mainWindow.focus(); return mainWindow }
   const win = new BrowserWindow(options())
   mainWindow = win
+  let boundsTimer: ReturnType<typeof setTimeout> | undefined
+  const persistBounds = () => {
+    if (boundsTimer) clearTimeout(boundsTimer)
+    if (win.isDestroyed() || win.isMaximized() || win.isMinimized()) return
+    boundsTimer = setTimeout(() => {
+      if (!win.isDestroyed()) setSetting('windowBounds', JSON.stringify(win.getBounds()))
+    }, 400)
+  }
+  win.on('move', persistBounds)
+  win.on('resize', persistBounds)
   const bounds = getSetting('windowBounds')
   if (typeof bounds === 'string') {
     try {
@@ -55,7 +65,10 @@ export function createMainWindow() {
     if (!isQuitting() && getSetting('closeToTray') === true) { event.preventDefault(); win.hide(); return }
     setSetting('windowBounds', JSON.stringify(win.getBounds()))
   })
-  win.on('closed', () => { mainWindow = null })
+  win.on('closed', () => {
+    if (boundsTimer) clearTimeout(boundsTimer)
+    mainWindow = null
+  })
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   win.webContents.on('will-navigate', (event, url) => {
     if (!isInternalURL(url)) event.preventDefault()

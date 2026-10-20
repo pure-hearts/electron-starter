@@ -43,3 +43,11 @@ Windows/macOS use Electron login item settings. Linux uses the XDG autostart des
 ## Current verified CI
 
 The Linux Check workflow performs `vp check`, `vue-tsc --noEmit`, `vp test --run`, `vp build`, dev Electron runtime smoke, packaged Linux smoke, and signed HTTPS ZIP resource installation / activation / failure-rollback integration. The separate Cross-platform Package Check generates unsigned installer artifacts on native Windows, macOS and Linux GitHub runners. See links from the root README.
+
+## P1 settings, downloads, and Deep Links
+
+- The Electron settings file is automatically migrated to schema version 1; malformed values and invalid window sizes are reset to safe defaults.
+- The Renderer caches locale in localStorage for the initial frame only; successful `electron-store` writes are required for changing the persisted language.
+- Downloads are FIFO with one active task at a time; failed tasks can be retried via `download:retry`. Queued tasks can be cancelled independently. HTTPS endpoints are checked again after redirects, but DNS rebinding and all OS-specific network routing risks require additional security review before handling untrusted downloads.
+- A Deep Link received before Vue registers listeners is buffered; `protocol:pending` drains it on app initialization.
+- Renderer diagnostic messages redact common credential patterns; this is best-effort sanitization, not an authorization mechanism.

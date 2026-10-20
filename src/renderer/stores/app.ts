@@ -5,11 +5,12 @@ export const useAppStore = defineStore('app', () => {
   const theme = ref('light')
   const lastDeepLink = ref('')
   function receiveDeepLink(url: string): void { lastDeepLink.value = url }
-  function setLocale(value: string) {
+  async function setLocale(value: string): Promise<void> {
     if (value !== 'zh-CN' && value !== 'en-US') return
+    // electron-store is authoritative; localStorage is only a startup display cache.
+    await window.desktop.invoke('store:set', 'locale', value)
     locale.value = value
     localStorage.setItem('locale', value)
-    void window.desktop.invoke('store:set', 'locale', value)
   }
   async function hydrate() {
     const saved = await window.desktop.invoke('store:get', 'locale')

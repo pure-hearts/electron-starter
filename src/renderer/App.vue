@@ -17,9 +17,13 @@ onMounted(async () => {
   catch (error) { console.warn('Could not load language preference', error) }
 })
 onUnmounted(() => unsubscribeDeepLink?.())
-function change(value: string) {
-  locale.value = value
-  appStore.setLocale(value)
+async function change(value: string) {
+  try {
+    await appStore.setLocale(value)
+    locale.value = appStore.locale
+  } catch (error) {
+    console.warn('Language preference could not be saved', error)
+  }
 }
 </script>
 <template>
