@@ -19,6 +19,7 @@ publish:
   provider: generic
   url: https://example.invalid/electron-starter/
 win:
+  icon: resources/icons/icon.png
   target:
     - target: nsis
       arch: [x64]
@@ -26,8 +27,10 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
 mac:
+  icon: resources/icons/icon.png
   target: [dmg, zip]
 linux:
+  icon: resources/icons/icon.png
   target: [AppImage, deb]
   category: Utility
   syncDesktopName: true
