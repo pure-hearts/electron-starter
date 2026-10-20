@@ -9,7 +9,8 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 let mainWindow: BrowserWindow | null = null
 let splash: BrowserWindow | null = null
 const children = new Set<BrowserWindow>()
-const preload = path.join(here, 'preload.mjs')
+// Sandboxed preload must use bundled CommonJS, not ESM.
+const preload = path.join(here, 'preload.cjs')
 function options(): Electron.BrowserWindowConstructorOptions {
   return {
     width: 1140, height: 760, minWidth: 820, minHeight: 540, show: false,

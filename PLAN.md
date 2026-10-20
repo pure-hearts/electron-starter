@@ -37,3 +37,8 @@ IPC、窗口、electron-store、路由、Element Plus、i18n、系统托盘、�
 - 对 pnpm 11 使用明确 `allowBuilds` 策略，避免忽略第三方构建脚本。
 - 测试代码改用 `vite-plus/test`，启用 Vite+ TypeScript 类型检查。
 - 任何 CI 失败必须保持 P0 未完成，并继续修复。
+
+## 2026-10-20 构建进展
+
+- CI 已首次通过安装、Vite+ 类型检查、单元测试和全部三进程构建。
+- 修正生产沙箱中 ESM Preload 不兼容的问题，改为预打包 CJS；需后续集成测试确认。

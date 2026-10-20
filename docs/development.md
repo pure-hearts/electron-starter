@@ -31,3 +31,7 @@ Use native OS machines or CI runners for platform packaging.
 ## Why no Monorepo?
 
 Only one desktop application is required. Shared IPC types are plain TypeScript files; no separate packages or build orchestration are needed.
+
+## Sandbox-safe Preload
+
+Renderer windows use `sandbox: true`. Electron does not support ESM imports in sandboxed preload contexts, so `src/preload/index.ts` builds to bundled CommonJS `dist-electron/preload.cjs`. The main process remains ESM at `dist-electron/main.js`.

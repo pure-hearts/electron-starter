@@ -23,7 +23,7 @@ export default defineConfig({
       },
       preload: {
         input: fileURLToPath(new URL('./src/preload/index.ts', import.meta.url)),
-        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false, rolldownOptions: { output: { entryFileNames: 'preload.mjs' } } } }
+        vite: { build: { outDir: '../../dist-electron', emptyOutDir: false, rolldownOptions: { output: { format: 'cjs', entryFileNames: 'preload.cjs' } } } }
       }
     })
   ],
