@@ -17,11 +17,10 @@ export class DownloadQueue {
     return this.active?.url === initialURL ? this.active.id : null
   }
   get activeId(): string | null { return this.active?.id ?? null }
-  cancelQueued(id: string): boolean {
+  cancelQueued(id: string): DownloadRequest | null {
     const index = this.waiting.findIndex(task => task.id === id)
-    if (index < 0) return false
-    this.waiting.splice(index, 1)
-    return true
+    if (index < 0) return null
+    return this.waiting.splice(index, 1)[0]
   }
   finish(id: string): void {
     if (this.active?.id !== id) return

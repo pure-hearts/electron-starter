@@ -103,10 +103,12 @@ export function startDownload(url: string, sender: WebContents): string {
   return id
 }
 export function controlDownload(id: string, action: 'cancel' | 'pause' | 'resume'): void {
-  if (queue.cancelQueued(id)) {
-    if (action !== 'cancel') throw new Error('A queued download cannot be paused or resumed')
-    broadcast('download:state', { id, url: '', state: 'cancelled' })
-    return
+  if (action === 'cancel') {
+    const queued = queue.cancelQueued(id)
+    if (queued) {
+      broadcast('download:state', { id, url: queued.url, state: 'cancelled' })
+      return
+    }
   }
   const item = tasks.get(id)
   if (item) {
