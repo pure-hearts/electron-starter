@@ -44,6 +44,19 @@ if (!single) {
     const main = createMainWindow()
     main.webContents.on('did-fail-load', (_event, code, desc) => log.error('Main window failed', code, desc))
     processDeepLinkArgs(process.argv)
+    if (process.env.ELECTRON_STARTER_SMOKE === '1') {
+      const timeout = setTimeout(() => { log.error('Smoke test timed out'); app.exit(1) }, 20000)
+      main.webContents.once('did-finish-load', async () => {
+        try {
+          const version = await main.webContents.executeJavaScript(`window.desktop.invoke('app:version')`)
+          const persisted = await main.webContents.executeJavaScript(`window.desktop.invoke('store:get','locale')`)
+          if (version !== app.getVersion() || typeof persisted !== 'string') throw new Error('Preload / IPC smoke check failed')
+          clearTimeout(timeout)
+          log.info('Electron smoke test passed', version)
+          app.exit(0)
+        } catch (error) { clearTimeout(timeout); log.error('Electron smoke failure', error); app.exit(1) }
+      })
+    }
   }).catch(err => { log.error('Startup failure', err); app.quit() })
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow(); else focusMainWindow() })
   app.on('window-all-closed', () => {

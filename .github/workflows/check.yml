@@ -20,3 +20,5 @@ jobs:
         run: pnpm exec vp test --run
       - name: Build
         run: pnpm exec vp build
+      - name: Electron runtime smoke
+        run: xvfb-run -a node scripts/smoke.mjs

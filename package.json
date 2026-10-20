@@ -12,6 +12,7 @@
     "check": "vp check",
     "test": "vp test --run",
     "dist:dir": "vp build && electron-builder --dir",
+    "smoke": "node scripts/smoke.mjs",
     "dist:win": "vp build && electron-builder --win nsis",
     "dist:mac": "vp build && electron-builder --mac dmg zip",
     "dist:linux": "vp build && electron-builder --linux AppImage deb",
