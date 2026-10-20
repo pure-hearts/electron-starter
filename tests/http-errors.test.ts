@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test'
-import { AxiosError, CanceledError } from 'axios'
+import { AxiosError, AxiosHeaders, CanceledError } from 'axios'
 import { normalizeRequestError, RequestError } from '../src/renderer/api/errors'
 describe('HTTP client error classification', () => {
   it('preserves cancellation and timeout reasons', () => {
@@ -8,7 +8,7 @@ describe('HTTP client error classification', () => {
   })
   it('extracts response codes without exposing arbitrary response bodies', () => {
     const err = new AxiosError('Forbidden','ERR_BAD_RESPONSE', undefined, undefined,
-      { status:403, data:{secret:'hidden'}, headers:{}, config:{headers:{}}, statusText:'Forbidden' })
+      { status:403, data:{secret:'hidden'}, headers:{}, config:{headers:new AxiosHeaders()}, statusText:'Forbidden' })
     const mapped = normalizeRequestError(err)
     expect(mapped.kind).toBe('http')
     expect(mapped.status).toBe(403)

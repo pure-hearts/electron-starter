@@ -21,6 +21,7 @@ function clearStarting(id: string): void {
   starting.delete(id)
 }
 function fail(id: string, url: string, error: string): void {
+  log.warn('Download failed:', error)
   clearStarting(id)
   tasks.delete(id)
   cancelled.delete(id)

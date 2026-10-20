@@ -1,4 +1,4 @@
-import { app, Menu } from 'electron'
+import { Menu } from 'electron'
 import { focusMainWindow } from '../window'
 import { requestQuit } from './lifecycle'
 export function createMenu() {
