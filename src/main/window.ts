@@ -44,7 +44,7 @@ export function createMainWindow() {
         const b = d.workArea
         return rect.x < b.x+b.width && rect.x+rect.width > b.x && rect.y < b.y+b.height && rect.y+rect.height > b.y
       })
-      if (visible && rect.width >= 820 && rect.height >= 540) win.setBounds(rect)
+      if (visible && rect.width >= 820 && rect.height >= 540 && rect.width <= 10000 && rect.height <= 10000) win.setBounds(rect)
     } catch { /* ignore invalid legacy bounds */ }
   }
   const dev = process.env.VITE_DEV_SERVER_URL

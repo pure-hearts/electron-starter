@@ -3,7 +3,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import fs from 'node:fs'
 import { log } from './logger'
-import { broadcast, focusMainWindow } from '../window'
+import { broadcast, focusMainWindow, getMainWindow } from '../window'
 import { activeRendererRoot } from './hot-update'
 import { DeepLinkInbox } from './deep-link-inbox'
 export const DEEP_LINK_SCHEME = 'electron-starter'
@@ -33,8 +33,12 @@ export function handleDeepLink(input: string) {
   if (!url) { log.warn('Rejected invalid Deep Link'); return }
   // macOS may deliver open-url before app.whenReady: do not create a window yet.
   if (app.isReady()) {
-    focusMainWindow()
-    broadcast('protocol:open', url)
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      focusMainWindow()
+      // Buffered URLs are delivered through protocol:pending after renderer startup.
+      // Do not broadcast here: dispatching both can deliver the same link twice.
+    }
   }
 }
 export function registerDeepLink() {
