@@ -1,4 +1,6 @@
 import { app, session, BrowserWindow } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
 import { createMainWindow, focusMainWindow } from './window'
 import { registerIPC } from './ipc'
 import { registerResourceProtocol, registerDeepLink, processDeepLinkArgs } from './modules/protocol'
@@ -8,9 +10,13 @@ import { initDownloads } from './modules/download'
 import { createMenu } from './modules/menu'
 import { createTray, destroyTray } from './modules/tray'
 import { initUpdater } from './modules/updater'
-import { recoverPendingUpdate } from './modules/hot-update'
+import { recoverPendingUpdate, checkHotUpdate, activeRendererRoot } from './modules/hot-update'
 import { getSetting } from './modules/store'
 import { markQuitting } from './modules/lifecycle'
+if (process.env.ELECTRON_STARTER_TEST_USERDATA) {
+  fs.mkdirSync(process.env.ELECTRON_STARTER_TEST_USERDATA, { recursive: true })
+  app.setPath('userData', process.env.ELECTRON_STARTER_TEST_USERDATA)
+}
 const single = app.requestSingleInstanceLock()
 if (!single) {
   app.quit()
@@ -44,6 +50,35 @@ if (!single) {
     const main = createMainWindow()
     main.webContents.on('did-fail-load', (_event, code, desc) => log.error('Main window failed', code, desc))
     processDeepLinkArgs(process.argv)
+    // CI-only installed-app hot-update integration tests. No test server, credentials
+    // or switches are enabled in ordinary application operation.
+    if (process.env.ELECTRON_STARTER_HOT_SMOKE) {
+      const mode = process.env.ELECTRON_STARTER_HOT_SMOKE
+      const timeout = setTimeout(() => { log.error('Hot update smoke timed out'); app.exit(1) }, 20000)
+      if (mode === 'abort') {
+        clearTimeout(timeout)
+        app.exit(0)
+      } else {
+        main.webContents.once('did-finish-load', async () => {
+          try {
+            if (mode === 'stage') {
+              const result = await checkHotUpdate()
+              if (result.status !== 'ready') throw new Error('Hot update not staged: ' + JSON.stringify(result))
+            } else if (mode === 'active' || mode === 'rollback') {
+              await new Promise(resolve => setTimeout(resolve, 3600))
+              const pointer = JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'renderer-updates', 'current.json'), 'utf8')) as { revision:number; phase:string }
+              const expected = Number(process.env.ELECTRON_STARTER_EXPECT_REVISION)
+              if (pointer.phase !== 'active' || pointer.revision !== expected || !activeRendererRoot().endsWith('rev-' + expected)) {
+                throw new Error('Unexpected hot update state: ' + JSON.stringify(pointer))
+              }
+            } else throw new Error('Unknown hot smoke mode')
+            clearTimeout(timeout)
+            log.info('Installed hot-update smoke passed:', mode)
+            app.exit(0)
+          } catch (error) { clearTimeout(timeout); log.error('Hot smoke failed', error); app.exit(1) }
+        })
+      }
+    }
     if (process.env.ELECTRON_STARTER_SMOKE === '1') {
       const timeout = setTimeout(() => { log.error('Smoke test timed out'); app.exit(1) }, 20000)
       main.webContents.once('did-finish-load', async () => {
