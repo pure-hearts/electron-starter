@@ -1,6 +1,10 @@
 appId: org.purehearts.electronstarter
 productName: Electron Starter
 asar: true
+protocols:
+  - name: Electron Starter Links
+    schemes:
+      - electron-starter
 directories:
   output: release
 files:
@@ -26,3 +30,4 @@ mac:
 linux:
   target: [AppImage, deb]
   category: Utility
+  syncDesktopName: true

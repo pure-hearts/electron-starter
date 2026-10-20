@@ -14,3 +14,7 @@ Tag pushes matching `v*` trigger GitHub Actions multi-platform packaging. Before
 - icon files in `resources/icons`
 
 GitHub Actions workflows provided here are **starting points**. An unsigned CI artifact is not the same as a verified signed production installer. No release tag is pushed by this template setup.
+
+## Maintainer and protocol registration
+
+The `package.json` author email `replace-before-release@example.com` is an illustrative placeholder needed for deb packaging. Replace it with your own maintainer email before public release. The installer registers `electron-starter://` via the `electron-builder.yml` protocols field. If you rename your app, update the scheme in both Builder config and `src/main/modules/protocol.ts`.
