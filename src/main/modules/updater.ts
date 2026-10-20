@@ -4,6 +4,7 @@ import { broadcast } from '../window'
 import { log } from './logger'
 import { runtimeConfig } from './config'
 import { UpdateGate } from './update-gate'
+import { validateUpdateFeedUrl } from './update-feed-url'
 let configured = false
 const gate = new UpdateGate()
 export function initUpdater() {
@@ -11,7 +12,7 @@ export function initUpdater() {
   const url = runtimeConfig().appUpdateUrl
   configured = true
   if (url) {
-    if (!url.startsWith('https://')) throw new Error('Custom update URL must be HTTPS')
+    validateUpdateFeedUrl(url)
     autoUpdater.setFeedURL({ provider: 'generic', url })
   }
   // Otherwise use electron-builder's signed GitHub Releases provider metadata.
