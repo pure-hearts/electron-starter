@@ -49,6 +49,8 @@ jobs:
         run: pnpm exec electron-builder --${{ matrix.target }} --publish never
       - name: Verify OS installable artifacts
         run: node scripts/verify-installers.mjs ${{ matrix.target }}
+      - name: Generate artifact checksums
+        run: node scripts/release-checksums.mjs
       - name: Archive package results
         uses: actions/upload-artifact@v4
         with:
