@@ -2,9 +2,9 @@
 
 ## Full installer updates
 
-Edit `resources/app-config.json`, set `appUpdateUrl` to a controlled HTTPS updater feed. Set matching `publish.url` in `electron-builder.yml`, then produce and upload update metadata and signed installers.
+Full-package updates use **GitHub Releases** by default. `electron-builder.yml` configures the `pure-hearts/electron-starter` provider, and a tagged release workflow uploads the updater metadata together with the installable assets. To use your own HTTPS feed instead, set `appUpdateUrl` in `resources/app-config.json`; it overrides the built-in GitHub feed.
 
-The default placeholder endpoint `https://example.invalid` is **not** a working update server. Do not ship it as an enabled production source. Test updates from a previous installed version using actual signing credentials.
+The repository must have a **stable, signed GitHub Release** containing a higher version before a client can find an update. Test updates from a previous installed version using actual signing credentials. Do not rely on unsigned pre-release artifacts for production.
 
 ## Renderer-only ZIP updates
 

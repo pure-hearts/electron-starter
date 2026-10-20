@@ -46,4 +46,4 @@ jobs:
         with:
           files: artifacts/**/*
           fail_on_unmatched_files: true
-          prerelease: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

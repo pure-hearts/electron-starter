@@ -18,3 +18,7 @@ GitHub Actions workflows provided here are **starting points**. An unsigned CI a
 ## Maintainer and protocol registration
 
 The `package.json` author email `replace-before-release@example.com` is an illustrative placeholder needed for deb packaging. Replace it with your own maintainer email before public release. The installer registers `electron-starter://` via the `electron-builder.yml` protocols field. If you rename your app, update the scheme in both Builder config and `src/main/modules/protocol.ts`.
+
+## Built-in GitHub updater
+
+`electron-builder.yml` publishes update metadata for `pure-hearts/electron-starter`. A `vX.Y.Z` tag (matching `package.json.version`) triggers the Release workflow, which uploads the generated installers, update metadata and block maps. Stable tags create stable releases; hyphenated prerelease tags are marked prerelease. Do not push a release tag without passing checks and verifying required code-signing credentials. `resources/app-config.json` may override the updater with a custom HTTPS feed.

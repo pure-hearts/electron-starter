@@ -16,8 +16,9 @@ extraResources:
   - from: resources
     to: resources
 publish:
-  provider: generic
-  url: https://example.invalid/electron-starter/
+  provider: github
+  owner: pure-hearts
+  repo: electron-starter
 win:
   icon: resources/icons/icon.png
   target:

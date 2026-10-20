@@ -2,7 +2,7 @@ import type { InvokeChannel, SettingKey } from './ipc'
 /** Runtime validation is required even if TS types compile. */
 export const SETTINGS = new Set<SettingKey>(['theme','locale','closeToTray','windowBounds'])
 export const allowedChannels = new Set<InvokeChannel>([
-  'app:version','app:quit','window:action','window:open','store:get','store:set','store:delete',
+  'app:version','app:quit','app:restart','app:restart','window:action','window:open','store:get','store:set','store:delete',
   'startup:get','startup:set','notification:show','download:start','download:cancel',
   'download:pause','download:resume','print:printers','print:execute','updater:check',
   'updater:install','hot:check','hot:confirm','log:write','log:export','protocol:scheme'

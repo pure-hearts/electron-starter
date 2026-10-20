@@ -2,6 +2,7 @@
 export interface DesktopInvoke {
   'app:version': { args: []; result: string }
   'app:quit': { args: []; result: void }
+  'app:restart': { args: []; result: void }
   'window:action': { args: [action: 'minimize' | 'maximize' | 'restore' | 'hide' | 'show' | 'close']; result: void }
   'window:open': { args: [route: string]; result: number }
   'store:get': { args: [key: SettingKey]; result: string | boolean | null }

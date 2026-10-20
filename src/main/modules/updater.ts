@@ -5,10 +5,14 @@ import { log } from './logger'
 import { runtimeConfig } from './config'
 let configured = false
 export function initUpdater() {
+  if (configured) return
   const url = runtimeConfig().appUpdateUrl
-  if (!url || !url.startsWith('https://') || configured) return
   configured = true
-  autoUpdater.setFeedURL({ provider: 'generic', url })
+  if (url) {
+    if (!url.startsWith('https://')) throw new Error('Custom update URL must be HTTPS')
+    autoUpdater.setFeedURL({ provider: 'generic', url })
+  }
+  // Otherwise use electron-builder's signed GitHub Releases provider metadata.
   autoUpdater.autoDownload = false
   autoUpdater.on('checking-for-update', () => broadcast('update:state', {kind:'full',status:'checking'}))
   autoUpdater.on('update-available', info => broadcast('update:state', {kind:'full',status:'available:' + info.version}))
@@ -19,7 +23,7 @@ export function initUpdater() {
 }
 export async function checkUpdate() {
   if (!app.isPackaged) throw new Error('Full updates require an installed application')
-  if (!configured) throw new Error('Full update URL is not configured in resources/app-config.json')
+  if (!configured) throw new Error('Updater was not initialized')
   const result = await autoUpdater.checkForUpdates()
   if (result && result.updateInfo.version !== app.getVersion()) {
     await autoUpdater.downloadUpdate()

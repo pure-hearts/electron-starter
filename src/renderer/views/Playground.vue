@@ -81,7 +81,9 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
     <el-card header="应用更新、日志" shadow="never">
       <el-space wrap>
         <el-button @click="run('整包更新', () => desktop.invoke('updater:check'))">检查整包更新</el-button>
+        <el-button @click="run('安装更新并重启', () => desktop.invoke('updater:install'))">安装已下载的更新</el-button>
         <el-button @click="run('热更新', () => desktop.invoke('hot:check'))">检查 ZIP 热更新</el-button>
+        <el-button @click="run('重新启动', () => desktop.invoke('app:restart'))">重启以激活资源</el-button>
         <el-button @click="run('记录日志', () => desktop.invoke('log:write','info','Playground test'))">记录日志</el-button>
         <el-button @click="run('导出日志', () => desktop.invoke('log:export'))">导出日志</el-button>
       </el-space>
