@@ -1,5 +1,6 @@
 import log from 'electron-log/main'
 import { app } from 'electron'
+import { redactLogMessage } from './log-redaction'
 export { log }
 export function initLogger() {
   log.initialize({ spyRendererConsole: false })
@@ -8,5 +9,5 @@ export function initLogger() {
   log.info('Application starting', app.getVersion(), process.platform)
 }
 export function writeRendererLog(level: 'info'|'warn'|'error', message: string) {
-  log[level]('[renderer]', message.slice(0, 2048))
+  log[level]('[renderer]', redactLogMessage(message).slice(0, 2048))
 }
