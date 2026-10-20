@@ -1,0 +1,47 @@
+name: Cross-platform Package Check
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/package-check.yml
+      - electron-builder.yml
+      - package.json
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: win
+          - os: macos-latest
+            target: mac
+          - os: ubuntu-latest
+            target: linux
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install pinned dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify source and tests
+        run: pnpm exec vp test --run
+      - name: Build application
+        run: pnpm exec vp build
+      - name: Build unsigned installable artifacts
+        run: pnpm exec electron-builder --${{ matrix.target }} --publish never
+      - name: Archive package results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-package-${{ matrix.os }}
+          path: release/
+          retention-days: 7
