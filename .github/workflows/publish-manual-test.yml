@@ -1,0 +1,51 @@
+name: Publish unsigned manual test release
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-manual-test.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    if: github.repository == 'pure-hearts/electron-starter'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch three-platform artifacts from successfully verified build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run view 39442467032 --repo "$GITHUB_REPOSITORY" --json conclusion,headSha --jq '.conclusion + " " + .headSha' | grep -Fx 'success d65822e39761819c2401aa5a50ca92a07999e04e'
+          mkdir -p artifacts dist
+          gh run download 39442467032 --repo "$GITHUB_REPOSITORY" --dir artifacts
+          for platform in windows macos ubuntu; do
+            test -d "artifacts/test-package-${platform}-latest" || { echo "Missing $platform artifact"; exit 1; }
+          done
+          while IFS= read -r -d '' file; do
+            name="$(basename "$file")"
+            test ! -e "dist/$name" || { echo "Duplicate installer $name"; exit 1; }
+            cp "$file" "dist/$name"
+          done < <(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.zip' -o -name '*.AppImage' -o -name '*.deb' \) -print0)
+          test "$(find dist -type f | wc -l)" -ge 5 || { echo "Incomplete installer set"; exit 1; }
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          ls -lh dist/
+      - name: Publish pre-release for manual installation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="manual-test-20261020"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists: $TAG"
+            exit 1
+          fi
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+            --target d65822e39761819c2401aa5a50ca92a07999e04e \
+            --title "Unsigned manual verification build (2026-10-20)" \
+            --prerelease \
+            --notes "UNSIGNED TEST BUILD — NOT A PRODUCTION RELEASE. Assets are copied from successful three-platform CI build 39442467032 at commit d65822e. Download the installer matching your OS, verify SHA256SUMS.txt, and test install/launch/upgrade only in a controlled environment. Windows SmartScreen and macOS Gatekeeper may warn because these binaries are not signed/notarized. Automated build success does not establish real hardware acceptance."
