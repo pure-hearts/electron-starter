@@ -11,6 +11,14 @@ export function safeUrl(input: string): URL {
   if (typeof input !== 'string' || input.length > 4096) throw new Error('Invalid URL')
   const url = new URL(input)
   if (url.protocol !== 'https:') throw new Error('Only HTTPS downloads are allowed')
+  if (url.username || url.password) throw new Error('Credentials in URLs are not permitted')
+  const host = url.hostname.toLowerCase()
+  if (
+    host === 'localhost' || host.endsWith('.localhost') || host === '[::1]' ||
+    host === '0.0.0.0' || host.startsWith('127.') || host.startsWith('10.') ||
+    host.startsWith('192.168.') || host.startsWith('169.254.') ||
+    /^172\.(1[6-9]|2[0-9]|3[01])\./.test(host)
+  ) throw new Error('Private network addresses are not permitted')
   return url
 }
 export function validate(channel: InvokeChannel, args: unknown[]): void {
@@ -20,7 +28,13 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
   if (channel === 'window:action' && args.length === 1 && ['minimize','maximize','restore','hide','show','close'].includes(args[0] as string)) return
   if (channel === 'window:open' && args.length === 1 && str(0) && /^\/[\w/-]*$/.test(args[0] as string)) return
   if ((channel === 'store:get' || channel === 'store:delete') && args.length === 1 && SETTINGS.has(args[0] as SettingKey)) return
-  if (channel === 'store:set' && args.length === 2 && SETTINGS.has(args[0] as SettingKey) && (typeof args[1] === 'boolean' || typeof args[1] === 'string' && args[1].length < 4096)) return
+  if (channel === 'store:set' && args.length === 2 && SETTINGS.has(args[0] as SettingKey)) {
+    const [key, value] = args
+    if (key === 'closeToTray' && typeof value === 'boolean') return
+    if (key === 'locale' && (value === 'zh-CN' || value === 'en-US')) return
+    if (key === 'theme' && (value === 'light' || value === 'dark' || value === 'system')) return
+    if (key === 'windowBounds' && typeof value === 'string' && value.length <= 512) return
+  }
   if (channel === 'startup:set' && args.length === 1 && typeof args[0] === 'boolean') return
   if (channel === 'notification:show' && args.length === 2 && str(0,128) && str(1,1000)) return
   if (channel === 'download:start' && args.length === 1 && str(0,4096)) { safeUrl(args[0] as string); return }

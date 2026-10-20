@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from './stores/app'
 const { t, locale } = useI18n()
 const appStore = useAppStore()
 const current = computed(() => locale.value)
+onMounted(async () => {
+  try { locale.value = await appStore.hydrate() }
+  catch (error) { console.warn('Could not load language preference', error) }
+})
 function change(value: string) {
   locale.value = value
   appStore.setLocale(value)
