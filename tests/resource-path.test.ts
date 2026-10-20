@@ -15,8 +15,8 @@ function fixture(run: (root: string, outside: string) => void) {
 }
 describe('safe renderer resource protocol', () => {
   it('serves only known files and index', () => fixture(root => {
-    expect(resolveRendererAsset(root, '/assets/bundle.js')).toBe(path.join(root, 'assets', 'bundle.js'))
-    expect(resolveRendererAsset(root, '/')).toBe(path.join(root, 'index.html'))
+    expect(resolveRendererAsset(root, '/assets/bundle.js')).toBe(fs.realpathSync(path.join(root, 'assets', 'bundle.js')))
+    expect(resolveRendererAsset(root, '/')).toBe(fs.realpathSync(path.join(root, 'index.html')))
     expect(resolveRendererAsset(root, '/missing.js')).toBeNull()
   }))
   it('rejects traversal and encoded separators', () => fixture(root => {
