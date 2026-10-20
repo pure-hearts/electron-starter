@@ -5,6 +5,9 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   root: 'src/renderer',
+  check: { fmt: false },
+  lint: { options: { typeAware: true, typeCheck: true } },
+  test: { include: ['tests/**/*.test.ts'] },
   publicDir: '../../public',
   base: './',
   plugins: [

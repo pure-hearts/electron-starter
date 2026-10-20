@@ -6,7 +6,7 @@ Electron + Vue 3 + TypeScript + Vite+；22 项系统级能力；单仓库、单�
 
 ## 阶段
 
-- [x] P0 初始工程文件与配置（源代码已提交；尚未安装依赖验证）
+- [ ] P0 工程配置与验证（已补依赖构建许可；等待 CI 全链路通过）
 - [x] P1 IPC、安全桥和基本窗口（代码已提交；未运行测试）
 - [x] P2 托盘、原生菜单、启动页面、通知、Deep Link、自启动（代码已提交；未在 OS 实测）
 - [x] P3 存储、国际化、Axios、下载、打印、日志、崩溃捕获（代码已提交；未在 OS 实测）
@@ -31,3 +31,9 @@ Electron + Vue 3 + TypeScript + Vite+；22 项系统级能力；单仓库、单�
 ## 功能范围
 
 IPC、窗口、electron-store、路由、Element Plus、i18n、系统托盘、原生菜单与快捷键、启动页、桌面通知、文件下载、打印、Deep Link、自启动、整包更新、ZIP 热更新、跨平台安装包、GitHub Actions、Electron 安全、日志、崩溃恢复、Axios。
+
+## 当前修复轮次
+
+- 对 pnpm 11 使用明确 `allowBuilds` 策略，避免忽略第三方构建脚本。
+- 测试代码改用 `vite-plus/test`，启用 Vite+ TypeScript 类型检查。
+- 任何 CI 失败必须保持 P0 未完成，并继续修复。
