@@ -100,7 +100,11 @@ if (!single) {
           })
           const childVersion = await child.webContents.executeJavaScript("window.desktop.invoke('app:version')")
           if (childVersion !== version) throw new Error('Child preload IPC failed')
-          child.close()
+          await new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Child window close timeout')), 5000)
+            child.once('closed', () => { clearTimeout(timer); resolve() })
+            child.close()
+          })
           if (!child.isDestroyed()) throw new Error('Child window was not destroyed')
           // Exercise typed persistent writes and cleanup through the renderer bridge.
           const oldTheme = await main.webContents.executeJavaScript("window.desktop.invoke('store:get', 'theme')")
