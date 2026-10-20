@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: write
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -13,7 +15,8 @@ jobs:
         with:
           node-version: 24
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: |
+          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install --no-frozen-lockfile; fi
       - name: Source checks
         run: pnpm exec vp check
       - name: Test
@@ -28,3 +31,21 @@ jobs:
           sudo chmod 4755 "$SANDBOX"
       - name: Electron runtime smoke
         run: xvfb-run -a node scripts/smoke.mjs
+      - name: Portable Linux package check
+        run: pnpm exec electron-builder --linux dir --publish never
+      - name: Upload portable Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-directory
+          path: release/linux-unpacked/
+          retention-days: 7
+      - name: Commit missing lockfile
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if ! git ls-files --error-unmatch pnpm-lock.yaml >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add pnpm-lock.yaml
+            git commit -m "chore: lock verified pnpm dependencies"
+            git push origin HEAD:main
+          fi

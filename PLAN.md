@@ -42,3 +42,6 @@ IPC、窗口、electron-store、路由、Element Plus、i18n、系统托盘、�
 
 - CI 已首次通过安装、Vite+ 类型检查、单元测试和全部三进程构建。
 - 修正生产沙箱中 ESM Preload 不兼容的问题，改为预打包 CJS；需后续集成测试确认。
+
+- Linux CI 的 Electron 启动烟雾测试已通过，检查了真实沙箱 Preload 和 IPC。
+- 在 CI 中验证 Linux 便携目录，并在成功后自动提交首份 `pnpm-lock.yaml`，以后使用 frozen-lockfile。
