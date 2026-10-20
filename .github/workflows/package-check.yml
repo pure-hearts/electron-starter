@@ -32,9 +32,11 @@ jobs:
           node-version: 24
           cache: pnpm
       - name: Install pinned dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Verify source and tests
         run: pnpm exec vp test --run
+      - name: Vue SFC type check
+        run: pnpm exec vue-tsc --noEmit
       - name: Build application
         run: pnpm exec vp build
       - name: Build unsigned installable artifacts

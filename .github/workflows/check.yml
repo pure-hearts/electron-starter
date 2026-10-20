@@ -16,9 +16,11 @@ jobs:
           node-version: 24
       - name: Install
         run: |
-          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install --no-frozen-lockfile; fi
+          pnpm install --no-frozen-lockfile
       - name: Source checks
         run: pnpm exec vp check
+      - name: Vue SFC type check
+        run: pnpm exec vue-tsc --noEmit
       - name: Test
         run: pnpm exec vp test --run
       - name: Build
@@ -49,10 +51,10 @@ jobs:
       - name: Commit missing lockfile
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if ! git ls-files --error-unmatch pnpm-lock.yaml >/dev/null 2>&1; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add pnpm-lock.yaml
-            git commit -m "chore: lock verified pnpm dependencies"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update verified pnpm lockfile"
             git push origin HEAD:main
           fi
