@@ -3,6 +3,8 @@ import { ref } from 'vue'
 export const useAppStore = defineStore('app', () => {
   const locale = ref(localStorage.getItem('locale') || 'zh-CN')
   const theme = ref('light')
+  const lastDeepLink = ref('')
+  function receiveDeepLink(url: string): void { lastDeepLink.value = url }
   function setLocale(value: string) {
     if (value !== 'zh-CN' && value !== 'en-US') return
     locale.value = value
@@ -18,5 +20,5 @@ export const useAppStore = defineStore('app', () => {
     }
     return locale.value
   }
-  return { locale, theme, setLocale, hydrate }
+  return { locale, theme, lastDeepLink, receiveDeepLink, setLocale, hydrate }
 })

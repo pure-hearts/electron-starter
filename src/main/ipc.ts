@@ -13,7 +13,7 @@ import { printers, printCurrentPage } from './modules/print'
 import { checkUpdate, installUpdate } from './modules/updater'
 import { checkHotUpdate, markRendererHealthy } from './modules/hot-update'
 import { log, writeRendererLog } from './modules/logger'
-import { DEEP_LINK_SCHEME } from './modules/protocol'
+import { DEEP_LINK_SCHEME, consumePendingDeepLinks } from './modules/protocol'
 import { requestQuit, requestRestart } from './modules/lifecycle'
 type Handler = (event: IpcMainInvokeEvent, args: unknown[]) => unknown
 const handlers: Record<InvokeChannel, Handler> = {
@@ -46,7 +46,8 @@ const handlers: Record<InvokeChannel, Handler> = {
     fs.copyFileSync(source, result.filePath)
     return path.basename(result.filePath)
   },
-  'protocol:scheme': () => DEEP_LINK_SCHEME
+  'protocol:scheme': () => DEEP_LINK_SCHEME,
+  'protocol:pending': () => consumePendingDeepLinks()
 }
 function assertSender(e: IpcMainInvokeEvent) {
   const frame = e.senderFrame

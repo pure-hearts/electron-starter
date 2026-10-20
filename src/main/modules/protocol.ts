@@ -5,7 +5,10 @@ import fs from 'node:fs'
 import { log } from './logger'
 import { broadcast, focusMainWindow } from '../window'
 import { activeRendererRoot } from './hot-update'
+import { DeepLinkInbox } from './deep-link-inbox'
 export const DEEP_LINK_SCHEME = 'electron-starter'
+const inbox = new DeepLinkInbox(DEEP_LINK_SCHEME)
+export function consumePendingDeepLinks(): string[] { return inbox.drain() }
 protocol.registerSchemesAsPrivileged([{
   scheme: 'app', privileges: { secure: true, standard: true, supportFetchAPI: true, stream: true }
 }])
@@ -26,12 +29,13 @@ export function registerResourceProtocol() {
 }
 function deepLinkFromArgs(args: string[]) { return args.find(x => x.startsWith(DEEP_LINK_SCHEME + '://')) }
 export function handleDeepLink(input: string) {
-  try {
-    const u = new URL(input)
-    if (u.protocol !== DEEP_LINK_SCHEME + ':' || input.length > 2048) return
+  const url = inbox.accept(input)
+  if (!url) { log.warn('Rejected invalid Deep Link'); return }
+  // macOS may deliver open-url before app.whenReady: do not create a window yet.
+  if (app.isReady()) {
     focusMainWindow()
-    broadcast('protocol:open', u.toString())
-  } catch(err) { log.warn('Rejected Deep Link', String(err)) }
+    broadcast('protocol:open', url)
+  }
 }
 export function registerDeepLink() {
   if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, [path.resolve(process.argv[1])])

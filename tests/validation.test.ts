@@ -49,3 +49,10 @@ describe('application lifecycle IPC contract', () => {
     expect(() => validate('app:restart', ['--inspect'])).toThrow()
   })
 })
+
+describe('cold-start protocol IPC', () => {
+  it('accepts only no-argument pending link collection', () => {
+    expect(() => validate('protocol:pending', [])).not.toThrow()
+    expect(() => validate('protocol:pending', ['unexpected'])).toThrow()
+  })
+})

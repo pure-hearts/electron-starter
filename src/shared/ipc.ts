@@ -24,6 +24,7 @@ export interface DesktopInvoke {
   'log:write': { args: [level: 'info' | 'warn' | 'error', message: string]; result: void }
   'log:export': { args: []; result: string | null }
   'protocol:scheme': { args: []; result: string }
+  'protocol:pending': { args: []; result: string[] }
 }
 export type SettingKey = 'theme' | 'locale' | 'closeToTray' | 'windowBounds'
 export type InvokeChannel = keyof DesktopInvoke

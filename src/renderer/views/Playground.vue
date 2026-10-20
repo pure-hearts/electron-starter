@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
+import { useAppStore } from '../stores/app'
 import type { DownloadState, UpdateState } from '../../shared/ipc'
 const desktop = window.desktop
+const appStore = useAppStore()
 const output = ref('选择系统功能进行测试')
 const downloadURL = ref('https://example.com/')
 const value = ref('dark')
@@ -52,6 +54,7 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
         <el-button @click="run('隐藏', () => desktop.invoke('window:action','hide'))">隐藏到托盘</el-button>
         <el-button @click="run('通知', () => desktop.invoke('notification:show','Electron Starter','桌面通知测试'))">桌面通知</el-button>
         <el-button @click="run('协议', () => desktop.invoke('protocol:scheme'))">协议名称</el-button>
+        <el-text v-if="appStore.lastDeepLink" type="success">最近唤醒：{{ appStore.lastDeepLink }}</el-text>
       </el-space>
       <p><el-switch v-model="closeToTray" @change="updateCloseToTray"/> 关闭窗口时隐藏到托盘</p>
       <el-button @click="run('查询开机自启', () => desktop.invoke('startup:get'))">查询开机自启</el-button>

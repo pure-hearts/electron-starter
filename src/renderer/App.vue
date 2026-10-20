@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from './stores/app'
 const { t, locale } = useI18n()
 const appStore = useAppStore()
 const current = computed(() => locale.value)
+let unsubscribeDeepLink: (() => void) | undefined
 onMounted(async () => {
+  // Register listener first, then consume cold-start links so no link is lost.
+  unsubscribeDeepLink = window.desktop.on('protocol:open', url => appStore.receiveDeepLink(url))
+  try {
+    const pending = await window.desktop.invoke('protocol:pending')
+    for (const url of pending) appStore.receiveDeepLink(url)
+  } catch (error) { console.warn('Could not load pending Deep Links', error) }
   try { locale.value = await appStore.hydrate() }
   catch (error) { console.warn('Could not load language preference', error) }
 })
+onUnmounted(() => unsubscribeDeepLink?.())
 function change(value: string) {
   locale.value = value
   appStore.setLocale(value)

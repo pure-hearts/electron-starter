@@ -5,7 +5,7 @@ export const allowedChannels = new Set<InvokeChannel>([
   'app:version','app:quit','app:restart','window:action','window:open','store:get','store:set','store:delete',
   'startup:get','startup:set','notification:show','download:start','download:cancel',
   'download:pause','download:resume','print:printers','print:execute','updater:check',
-  'updater:install','hot:check','hot:confirm','log:write','log:export','protocol:scheme'
+  'updater:install','hot:check','hot:confirm','log:write','log:export','protocol:scheme','protocol:pending'
 ])
 export function safeUrl(input: string): URL {
   if (typeof input !== 'string' || input.length > 4096) throw new Error('Invalid URL')
