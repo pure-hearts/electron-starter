@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { getSetting, setSetting } from './modules/store'
 import { rendererURL } from './modules/protocol'
 import { log } from './modules/logger'
+import { isQuitting } from './modules/lifecycle'
 const here = path.dirname(fileURLToPath(import.meta.url))
 let mainWindow: BrowserWindow | null = null
 let splash: BrowserWindow | null = null
@@ -50,7 +51,7 @@ export function createMainWindow() {
   win.webContents.once('did-fail-load', (_e, code, description) => { log.error('Window failed to load', code, description); show() })
   void win.loadURL(target).catch(err => { log.error('Renderer load failed', err); show() })
   win.on('close', event => {
-    if (!app.isQuitting && getSetting('closeToTray') === true) { event.preventDefault(); win.hide(); return }
+    if (!isQuitting() && getSetting('closeToTray') === true) { event.preventDefault(); win.hide(); return }
     setSetting('windowBounds', JSON.stringify(win.getBounds()))
   })
   win.on('closed', () => { mainWindow = null })
@@ -91,4 +92,3 @@ export function broadcast<E extends import('../shared/ipc').EventChannel>(name: 
   BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed() && !w.webContents.isDestroyed()) w.webContents.send(name, payload) })
 }
 export function focusMainWindow() { const w = createMainWindow(); if (w.isMinimized()) w.restore(); w.show(); w.focus() }
-declare module 'electron' { interface App { isQuitting?: boolean } }

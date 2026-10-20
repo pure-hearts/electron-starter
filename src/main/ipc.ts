@@ -14,10 +14,11 @@ import { checkUpdate, installUpdate } from './modules/updater'
 import { checkHotUpdate, markRendererHealthy } from './modules/hot-update'
 import { log, writeRendererLog } from './modules/logger'
 import { DEEP_LINK_SCHEME } from './modules/protocol'
-type Handler = (event: IpcMainInvokeEvent, args: unknown[]) => unknown | Promise<unknown>
+import { requestQuit } from './modules/lifecycle'
+type Handler = (event: IpcMainInvokeEvent, args: unknown[]) => unknown
 const handlers: Record<InvokeChannel, Handler> = {
   'app:version': () => app.getVersion(),
-  'app:quit': () => { app.isQuitting = true; app.quit() },
+  'app:quit': () => requestQuit(),
   'window:action': (e, [action]) => windowAction(e.sender, action as string),
   'window:open': (_e, [route]) => openChild(route as string),
   'store:get': (_e, [key]) => getSetting(key as SettingKey),

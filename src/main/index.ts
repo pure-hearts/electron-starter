@@ -10,6 +10,7 @@ import { createTray, destroyTray } from './modules/tray'
 import { initUpdater } from './modules/updater'
 import { recoverPendingUpdate } from './modules/hot-update'
 import { getSetting } from './modules/store'
+import { markQuitting } from './modules/lifecycle'
 const single = app.requestSingleInstanceLock()
 if (!single) {
   app.quit()
@@ -48,6 +49,6 @@ if (!single) {
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin' && getSetting('closeToTray') !== true) app.quit()
   })
-  app.on('before-quit', () => { app.isQuitting = true })
+  app.on('before-quit', () => { markQuitting() })
   app.on('will-quit', destroyTray)
 }

@@ -1,6 +1,7 @@
 import { Tray, Menu, nativeImage, app } from 'electron'
 import path from 'node:path'
 import { focusMainWindow } from '../window'
+import { requestQuit } from './lifecycle'
 let tray: Tray | null = null
 export function createTray() {
   if (tray) return tray
@@ -14,7 +15,7 @@ export function createTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '打开主窗口', click: focusMainWindow },
     { type: 'separator' },
-    { label: '退出', click() { app.isQuitting = true; app.quit() } }
+    { label: '退出', click: requestQuit }
   ]))
   tray.on('double-click', focusMainWindow)
   return tray

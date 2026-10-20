@@ -3,8 +3,8 @@ import type { SettingKey } from '../../shared/ipc'
 const defaults: Record<SettingKey, string | boolean> = {
   theme: 'light', locale: 'zh-CN', closeToTray: true, windowBounds: ''
 }
-let store: Store | null = null
-function currentStore() { return store ??= new Store({ name: 'settings', defaults }) }
+let store: Store<typeof defaults> | null = null
+function currentStore() { return store ??= new Store<typeof defaults>({ name: 'settings', defaults }) }
 export function getSetting(key: SettingKey): string | boolean | null {
   const value = currentStore().get(key)
   return typeof value === 'string' || typeof value === 'boolean' ? value : null
