@@ -20,5 +20,11 @@ jobs:
         run: pnpm exec vp test --run
       - name: Build
         run: pnpm exec vp build
+      - name: Configure sandbox helper on Linux CI
+        run: |
+          ELECTRON_BIN="$(node -p "require('electron')")"
+          SANDBOX="$(dirname "$ELECTRON_BIN")/chrome-sandbox"
+          sudo chown root:root "$SANDBOX"
+          sudo chmod 4755 "$SANDBOX"
       - name: Electron runtime smoke
         run: xvfb-run -a node scripts/smoke.mjs
