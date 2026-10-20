@@ -11,6 +11,12 @@ on:
       - 'tests/**'
       - 'scripts/**'
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/package-check.yml
+      - 'scripts/**'
+      - 'src/**'
+      - 'tests/**'
 permissions:
   contents: read
 jobs:
