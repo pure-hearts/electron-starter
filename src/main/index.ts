@@ -1,7 +1,7 @@
 import { app, session, BrowserWindow } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
-import { createMainWindow, focusMainWindow } from './window'
+import { createMainWindow, focusMainWindow, openChild } from './window'
 import { registerIPC } from './ipc'
 import { registerResourceProtocol, registerDeepLink, processDeepLinkArgs } from './modules/protocol'
 import { initCrashRecovery } from './modules/crash'
@@ -86,6 +86,28 @@ if (!single) {
           const version = await main.webContents.executeJavaScript(`window.desktop.invoke('app:version')`)
           const persisted = await main.webContents.executeJavaScript(`window.desktop.invoke('store:get','locale')`)
           if (version !== app.getVersion() || typeof persisted !== 'string') throw new Error('Preload / IPC smoke check failed')
+          // Exercise a real child BrowserWindow with sandboxed preload and IPC.
+          const childId = openChild('/playground')
+          const child = BrowserWindow.fromId(childId)
+          if (!child) throw new Error('Child window was not created')
+          await new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Child window navigation timeout')), 8000)
+            child.webContents.once('did-finish-load', () => { clearTimeout(timer); resolve() })
+            child.webContents.once('did-fail-load', (_event, code) => {
+              clearTimeout(timer)
+              reject(new Error('Child window navigation failed: ' + code))
+            })
+          })
+          const childVersion = await child.webContents.executeJavaScript("window.desktop.invoke('app:version')")
+          if (childVersion !== version) throw new Error('Child preload IPC failed')
+          child.close()
+          if (!child.isDestroyed()) throw new Error('Child window was not destroyed')
+          // Exercise typed persistent writes and cleanup through the renderer bridge.
+          const oldTheme = await main.webContents.executeJavaScript("window.desktop.invoke('store:get', 'theme')")
+          await main.webContents.executeJavaScript("window.desktop.invoke('store:set', 'theme', 'dark')")
+          const newTheme = await main.webContents.executeJavaScript("window.desktop.invoke('store:get', 'theme')")
+          if (newTheme !== 'dark') throw new Error('Persistent setting write/read failed')
+          await main.webContents.executeJavaScript("window.desktop.invoke('store:set', 'theme', " + JSON.stringify(oldTheme === 'dark' || oldTheme === 'system' ? oldTheme : 'light') + ")")
           clearTimeout(timeout)
           log.info('Electron smoke test passed', version)
           app.exit(0)
