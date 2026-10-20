@@ -8,16 +8,15 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { unzipSync } from 'fflate'
 import type { HotUpdateResult } from '../../shared/ipc'
 import { runtimeConfig } from './config'
 import { broadcast } from '../window'
 import { log } from './logger'
 import { verifyHotManifest } from './hot-manifest'
+import { extractSafe } from './hot-archive'
 const here = path.dirname(fileURLToPath(import.meta.url))
 type Pointer = { revision: number; directory: string; previous: string | null; compatibleApp: string; phase: 'staged' | 'trying' | 'active' }
 const MAX_ZIP = 32 * 1024 * 1024
-const MAX_EXPANDED = 128 * 1024 * 1024
 function workspace() { return path.join(app.getPath('userData'), 'renderer-updates') }
 function pointerPath() { return path.join(workspace(), 'current.json') }
 function installedRoot() { return path.resolve(here, '../dist/renderer') }
@@ -81,27 +80,6 @@ async function readLimited(url: string, max: number): Promise<Buffer> {
     }
   } finally { await reader.cancel().catch(() => undefined) }
   return Buffer.concat(chunks)
-}
-function extractSafe(zip: Buffer, directory: string) {
-  let count = 0
-  let total = 0
-  const files = unzipSync(new Uint8Array(zip), {
-    filter(info) {
-      count++
-      total += info.originalSize
-      if (count > 800 || total > MAX_EXPANDED) throw new Error('ZIP limits exceeded')
-      return true
-    }
-  })
-  for (const [name, bytes] of Object.entries(files)) {
-    if (!name || name.startsWith('/') || name.includes('\\') || name.includes('\0') || name.split('/').some(p => p === '..')) throw new Error('Unsafe ZIP path')
-    if (name.endsWith('/')) continue
-    const target = path.resolve(directory, name)
-    if (!target.startsWith(path.resolve(directory) + path.sep)) throw new Error('Unsafe ZIP target')
-    fs.mkdirSync(path.dirname(target), { recursive: true })
-    fs.writeFileSync(target, bytes, { flag: 'wx' })
-  }
-  if (!fs.existsSync(path.join(directory, 'index.html'))) throw new Error('Missing index.html')
 }
 export async function checkHotUpdate(): Promise<HotUpdateResult> {
   const config = runtimeConfig()
