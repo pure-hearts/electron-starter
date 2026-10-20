@@ -112,6 +112,20 @@ if (!single) {
           const newTheme = await main.webContents.executeJavaScript("window.desktop.invoke('store:get', 'theme')")
           if (newTheme !== 'dark') throw new Error('Persistent setting write/read failed')
           await main.webContents.executeJavaScript("window.desktop.invoke('store:set', 'theme', " + JSON.stringify(oldTheme === 'dark' || oldTheme === 'system' ? oldTheme : 'light') + ")")
+          if (app.isPackaged && process.platform === 'linux' && process.env.XDG_CONFIG_HOME) {
+            // Only change an isolated CI XDG directory, never the runner's real autostart.
+            const before = await main.webContents.executeJavaScript("window.desktop.invoke('startup:get')")
+            if (before !== false) throw new Error('Temporary XDG autostart was not empty')
+            const enabled = await main.webContents.executeJavaScript("window.desktop.invoke('startup:set', true)")
+            const current = await main.webContents.executeJavaScript("window.desktop.invoke('startup:get')")
+            const startupFile = path.join(process.env.XDG_CONFIG_HOME, 'autostart', 'electron-starter.desktop')
+            const entry = fs.readFileSync(startupFile, 'utf8')
+            if (enabled !== true || current !== true || !entry.includes('Type=Application') || !entry.includes('Exec=')) {
+              throw new Error('Linux packaged autostart enable failed')
+            }
+            const disabled = await main.webContents.executeJavaScript("window.desktop.invoke('startup:set', false)")
+            if (disabled !== false || fs.existsSync(startupFile)) throw new Error('Linux packaged autostart removal failed')
+          }
           clearTimeout(timeout)
           log.info('Electron smoke test passed', version)
           app.exit(0)

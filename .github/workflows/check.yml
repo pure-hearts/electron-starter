@@ -41,7 +41,9 @@ jobs:
           test -x "$PACKAGED_BIN"
           sudo chown root:root release/linux-unpacked/chrome-sandbox
           sudo chmod 4755 release/linux-unpacked/chrome-sandbox
-          ELECTRON_STARTER_SMOKE=1 xvfb-run -a "$PACKAGED_BIN"
+          XDG_TEST_DIR="$(mktemp -d)"
+          trap 'rm -rf "$XDG_TEST_DIR"' EXIT
+          XDG_CONFIG_HOME="$XDG_TEST_DIR" ELECTRON_STARTER_SMOKE=1 xvfb-run -a "$PACKAGED_BIN"
       - name: Signed ZIP hot-update installed-app integration
         run: node scripts/test-hot-update.mjs
       - name: Upload portable Linux artifact
