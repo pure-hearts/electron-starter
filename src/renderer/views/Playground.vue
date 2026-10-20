@@ -21,6 +21,9 @@ async function loadPrinters() {
     return printList.value
   })
 }
+function updateCloseToTray(enabled: boolean | string | number) {
+  void run('关闭到托盘', () => desktop.invoke('store:set', 'closeToTray', Boolean(enabled)))
+}
 async function beginDownload() {
   await run('下载任务', async () => { downloadId.value = await window.desktop.invoke('download:start', downloadURL.value); return downloadId.value })
 }
@@ -50,7 +53,7 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
         <el-button @click="run('通知', () => desktop.invoke('notification:show','Electron Starter','桌面通知测试'))">桌面通知</el-button>
         <el-button @click="run('协议', () => desktop.invoke('protocol:scheme'))">协议名称</el-button>
       </el-space>
-      <p><el-switch v-model="closeToTray" @change="v => run('关闭到托盘', () => desktop.invoke('store:set','closeToTray',Boolean(v)))"/> 关闭窗口时隐藏到托盘</p>
+      <p><el-switch v-model="closeToTray" @change="updateCloseToTray"/> 关闭窗口时隐藏到托盘</p>
       <el-button @click="run('查询开机自启', () => desktop.invoke('startup:get'))">查询开机自启</el-button>
       <el-button @click="run('启用开机自启', () => desktop.invoke('startup:set',true))">启用</el-button>
       <el-button @click="run('禁用开机自启', () => desktop.invoke('startup:set',false))">禁用</el-button>
