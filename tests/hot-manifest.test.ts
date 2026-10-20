@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test'
 import { generateKeyPairSync, sign } from 'node:crypto'
-import { verifyHotManifest, manifestBody } from '../src/main/modules/hot-manifest'
+import { verifyHotManifest, manifestBody, validateHotArchiveUrl } from '../src/main/modules/hot-manifest'
 
 const keys = generateKeyPairSync('ed25519')
 const publicKey = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString()
@@ -23,5 +23,22 @@ describe('signed renderer hot update manifest', () => {
   it('rejects missing signature and malformed objects', () => {
     expect(() => verifyHotManifest({ ...body }, '0.1.0', publicKey)).toThrow()
     expect(() => verifyHotManifest(null, '0.1.0', publicKey)).toThrow()
+  })
+})
+
+describe('hot archive URL validation', () => {
+  it('rejects embedded credentials, fragments and non-HTTPS URLs', () => {
+    for (const url of [
+      'https://user:pass@example.com/archive.zip',
+      'https://example.com/archive.zip#token',
+      'http://example.com/archive.zip',
+      'https://example.com/archive.zip\n',
+      'https://example.com:443/archive.zip'
+    ]) {
+      expect(() => validateHotArchiveUrl(url)).toThrow('Invalid hot update URL')
+    }
+  })
+  it('accepts a canonical HTTPS URL without credentials', () => {
+    expect(() => validateHotArchiveUrl('https://example.com/archive.zip')).not.toThrow()
   })
 })
