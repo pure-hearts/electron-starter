@@ -31,7 +31,7 @@ export function getAutoStart(): boolean {
     try { return (() => {
       const entry = fs.readFileSync(linuxAutostartPath(), 'utf8')
       return entry.split(/\r?\n/).includes('Name=Electron Starter') &&
-        entry.split(/\r?\n/).some(line => line.startsWith('Exec="') && line.endsWith('" --autostart'))
+        entry.split(/\r?\n/).includes(linuxDesktopEntry().split('\n').find(line => line.startsWith('Exec='))!)
     })() }
     catch { return false }
   }
