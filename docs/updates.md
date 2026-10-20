@@ -26,4 +26,4 @@ The public key is allowed in the installed app, but the private signing key must
 
 - Generic electron-updater behavior varies by package platform.
 - No differential patching: the hot update ZIP contains the entire renderer asset build.
-- The hot updater code has not been exercised on packaged apps yet.
+- The hot updater passed an installed Linux Electron CI test using ephemeral Ed25519 signing keys, local HTTPS, revision activation and simulated failure rollback. Production keys, CDN, certificate validation and OS-specific behavior still require release-environment testing.

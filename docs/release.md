@@ -26,3 +26,7 @@ The `package.json` author email `replace-before-release@example.com` is an illus
 ## Production signing gate
 
 `.github/workflows/release.yml` requires the exact version tag and these configured repository secrets before publishing: `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`, `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`. The signing certificate values accepted by electron-builder may be file URLs or base64-encoded P12 content as documented by electron-builder. CI package checks still build **unsigned** artifacts for development. Stable public releases are blocked until signing and macOS notarization are configured and verified. The release workflow never pushes a tag itself.
+
+## Quality gates verified
+
+GitHub Actions successfully produces Windows NSIS, macOS DMG/ZIP and Linux AppImage/deb unsigned test artifacts; CI also tests Linux packaged application startup and a complete signed ZIP resource activation/rollback via a temporary HTTPS server. These are reproducible test artifacts, **not** signed production releases. The Signed Release workflow fails early if the required publishing secrets are missing and requires the release tag to match `package.json.version`.

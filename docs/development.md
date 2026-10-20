@@ -39,3 +39,7 @@ Renderer windows use `sandbox: true`. Electron does not support ESM imports in s
 ## Autostart behavior
 
 Windows/macOS use Electron login item settings. Linux uses the XDG autostart desktop entry `~/.config/autostart/electron-starter.desktop` (or `XDG_CONFIG_HOME/autostart`). Linux autostart registration requires the packaged application; the development build deliberately refuses system-wide login setup.
+
+## Current verified CI
+
+The Linux Check workflow performs `vp check`, `vue-tsc --noEmit`, `vp test --run`, `vp build`, dev Electron runtime smoke, packaged Linux smoke, and signed HTTPS ZIP resource installation / activation / failure-rollback integration. The separate Cross-platform Package Check generates unsigned installer artifacts on native Windows, macOS and Linux GitHub runners. See links from the root README.
