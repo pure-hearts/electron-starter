@@ -4,7 +4,7 @@
  * A hot update cannot modify Main, Preload or installed Electron resources.
  */
 import { app } from 'electron'
-import { createHash, verify } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,10 +13,9 @@ import type { HotUpdateResult } from '../../shared/ipc'
 import { runtimeConfig } from './config'
 import { broadcast } from '../window'
 import { log } from './logger'
+import { verifyHotManifest } from './hot-manifest'
 const here = path.dirname(fileURLToPath(import.meta.url))
-type ManifestBody = { revision: number; compatibleApp: string; url: string; sha256: string }
-type Manifest = ManifestBody & { signature: string }
-type Pointer = { revision: number; directory: string; previous: string | null; phase: 'staged' | 'trying' | 'active' }
+type Pointer = { revision: number; directory: string; previous: string | null; compatibleApp: string; phase: 'staged' | 'trying' | 'active' }
 const MAX_ZIP = 32 * 1024 * 1024
 const MAX_EXPANDED = 128 * 1024 * 1024
 function workspace() { return path.join(app.getPath('userData'), 'renderer-updates') }
@@ -25,7 +24,7 @@ function installedRoot() { return path.resolve(here, '../dist/renderer') }
 function readPointer(): Pointer | null {
   try {
     const p: Pointer = JSON.parse(fs.readFileSync(pointerPath(), 'utf8'))
-    if (!Number.isSafeInteger(p.revision) || p.revision < 0 || !/^[a-z0-9-]+$/i.test(p.directory)) return null
+    if (!Number.isSafeInteger(p.revision) || p.revision < 0 || !/^[a-z0-9-]+$/i.test(p.directory) || p.compatibleApp !== app.getVersion()) return null
     return p
   } catch { return null }
 }
@@ -46,7 +45,7 @@ export function recoverPendingUpdate() {
     writePointer({ ...pointer, phase: 'trying' })
   } else if (pointer?.phase === 'trying') {
     log.warn('Rolling back unconfirmed renderer update', pointer.revision)
-    if (pointer.previous) writePointer({ revision: Number(pointer.previous.replace(/^rev-/, '')) || 0, directory: pointer.previous, previous: null, phase: 'active' })
+    if (pointer.previous) writePointer({ revision: Number(pointer.previous.replace(/^rev-/, '')) || 0, directory: pointer.previous, previous: null, compatibleApp: app.getVersion(), phase: 'active' })
     else fs.rmSync(pointerPath(), { force: true })
   }
 }
@@ -66,9 +65,6 @@ function signingKey(): string | null {
     : path.join(process.cwd(), 'resources', 'hot-update-public-key.pem')
   try { return fs.readFileSync(location, 'utf8') } catch { return null }
 }
-function manifestBody(manifest: Manifest): ManifestBody {
-  return { revision: manifest.revision, compatibleApp: manifest.compatibleApp, url: manifest.url, sha256: manifest.sha256 }
-}
 async function readLimited(url: string, max: number): Promise<Buffer> {
   const response = await fetch(url, { signal: AbortSignal.timeout(30_000), redirect: 'error' })
   if (!response.ok || !response.body) throw new Error('Download failed: HTTP ' + response.status)
@@ -85,12 +81,6 @@ async function readLimited(url: string, max: number): Promise<Buffer> {
     }
   } finally { await reader.cancel().catch(() => undefined) }
   return Buffer.concat(chunks)
-}
-function verifyManifest(m: Manifest, key: string) {
-  if (!Number.isSafeInteger(m.revision) || m.revision <= 0 || m.compatibleApp !== app.getVersion()) throw new Error('Incompatible update')
-  if (!m.url.startsWith('https://') || !/^[0-9a-f]{64}$/i.test(m.sha256)) throw new Error('Invalid update manifest')
-  const bytes = Buffer.from(JSON.stringify(manifestBody(m)))
-  if (!verify(null, bytes, key, Buffer.from(m.signature, 'base64'))) throw new Error('Invalid update signature')
 }
 function extractSafe(zip: Buffer, directory: string) {
   let count = 0
@@ -122,9 +112,9 @@ export async function checkHotUpdate(): Promise<HotUpdateResult> {
   try {
     broadcast('update:state', {kind:'hot',status:'checking'})
     const raw = await readLimited(url.toString(), 16_384)
-    const m = JSON.parse(raw.toString('utf8')) as Manifest
-    verifyManifest(m, key)
+    const m = verifyHotManifest(JSON.parse(raw.toString('utf8')) as unknown, app.getVersion(), key)
     const current = readPointer()
+    if (current?.phase === 'staged' || current?.phase === 'trying') return { status: 'ready', message: 'Restart app before checking another hot update' }
     if (m.revision <= (current?.revision ?? 0)) return { status: 'up-to-date' }
     broadcast('update:state', {kind:'hot',status:'downloading'})
     const bytes = await readLimited(m.url, MAX_ZIP)
@@ -140,7 +130,7 @@ export async function checkHotUpdate(): Promise<HotUpdateResult> {
       if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true })
       fs.renameSync(temp, target)
     } catch(err) { fs.rmSync(temp, { recursive: true, force: true }); throw err }
-    writePointer({ revision: m.revision, directory: name, previous: current?.directory ?? null, phase: 'staged' })
+    writePointer({ revision: m.revision, directory: name, previous: current?.directory ?? null, compatibleApp: app.getVersion(), phase: 'staged' })
     broadcast('update:state', {kind:'hot',status:'ready'})
     return { status: 'ready', message: 'Resource update is staged; restart app to activate' }
   } catch (error) {

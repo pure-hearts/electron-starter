@@ -1,0 +1,20 @@
+import { verify } from 'node:crypto'
+
+export type ManifestBody = { revision: number; compatibleApp: string; url: string; sha256: string }
+export type SignedManifest = ManifestBody & { signature: string }
+
+export function manifestBody(m: ManifestBody): ManifestBody {
+  return { revision: m.revision, compatibleApp: m.compatibleApp, url: m.url, sha256: m.sha256 }
+}
+
+/** Verify Ed25519 signature over a stable ordered manifest body before using a ZIP. */
+export function verifyHotManifest(raw: unknown, appVersion: string, key: string): SignedManifest {
+  if (!raw || typeof raw !== 'object') throw new Error('Invalid update manifest')
+  const m = raw as Partial<SignedManifest>
+  if (!Number.isSafeInteger(m.revision) || typeof m.revision !== 'number' || m.revision <= 0 || m.compatibleApp !== appVersion) throw new Error('Incompatible update')
+  if (typeof m.url !== 'string' || !m.url.startsWith('https://') || typeof m.sha256 !== 'string' || !/^[0-9a-f]{64}$/i.test(m.sha256)) throw new Error('Invalid update manifest')
+  if (typeof m.signature !== 'string' || m.signature.length < 60 || m.signature.length > 200) throw new Error('Missing update signature')
+  const bytes = Buffer.from(JSON.stringify(manifestBody(m as ManifestBody)))
+  if (!verify(null, bytes, key, Buffer.from(m.signature, 'base64'))) throw new Error('Invalid update signature')
+  return m as SignedManifest
+}
