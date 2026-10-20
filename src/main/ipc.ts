@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { IpcMainInvokeEvent } from 'electron'
 import type { InvokeChannel, SettingKey } from '../shared/ipc'
 import { allowedChannels, validate } from '../shared/validation'
-import { windowAction, openChild } from './window'
+import { windowAction, openChild, getMainWindow } from './window'
 import { getSetting, setSetting, deleteSetting } from './modules/store'
 import { getAutoStart, setAutoStart } from './modules/startup'
 import { notify } from './modules/notification'
@@ -38,7 +38,11 @@ const handlers: Record<InvokeChannel, Handler> = {
   'updater:check': () => checkUpdate(),
   'updater:install': () => installUpdate(),
   'hot:check': () => checkHotUpdate(),
-  'hot:confirm': () => markRendererHealthy(),
+  'hot:confirm': e => {
+    const main = getMainWindow()
+    if (!main || main.isDestroyed() || main.webContents.id !== e.sender.id) throw new Error('Only the main application window may confirm a renderer update')
+    markRendererHealthy()
+  },
   'log:write': (_e, [level, text]) => writeRendererLog(level as 'info' | 'warn' | 'error', text as string),
   'log:export': async () => {
     const result = await dialog.showSaveDialog({ title: '导出诊断日志', defaultPath: 'electron-starter.log' })

@@ -14,6 +14,7 @@ import { broadcast } from '../window'
 import { log } from './logger'
 import { verifyHotManifest } from './hot-manifest'
 import { extractSafe } from './hot-archive'
+import { singleFlight } from './single-flight'
 const here = path.dirname(fileURLToPath(import.meta.url))
 type Pointer = { revision: number; directory: string; previous: string | null; compatibleApp: string; phase: 'staged' | 'trying' | 'active' }
 const MAX_ZIP = 32 * 1024 * 1024
@@ -81,7 +82,7 @@ async function readLimited(url: string, max: number): Promise<Buffer> {
   } finally { await reader.cancel().catch(() => undefined) }
   return Buffer.concat(chunks)
 }
-export async function checkHotUpdate(): Promise<HotUpdateResult> {
+export const checkHotUpdate = singleFlight(async (): Promise<HotUpdateResult> => {
   const config = runtimeConfig()
   const key = signingKey()
   if (!app.isPackaged || !key || !config.hotUpdateUrl) return { status: 'disabled', message: 'Configure HTTPS update URL and release public key first' }
@@ -116,4 +117,4 @@ export async function checkHotUpdate(): Promise<HotUpdateResult> {
     broadcast('update:state', {kind:'hot',status:'error',error:String(error)})
     return { status: 'error', message: String(error) }
   }
-}
+})
