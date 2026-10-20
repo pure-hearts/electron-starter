@@ -77,4 +77,8 @@ P7：上述尚未完成的正式签名/跨平台安装与真实更新测试需�
 请核对以上每一项最新 GitHub Actions 测试结果后再视为通过 CI；此处勾选表示已提交实现。
 
 ## 跨平台回归修复
-- [ ] macOS `/var` 与 `/private/var` 路径别名导致的测试误报：测试已使用 `fs.realpathSync` 规范化预期路径，待 GitHub 三平台 CI 验证后标记完成。
+- [x] macOS `/var` 与 `/private/var` 路径别名测试已修复；Windows/macOS/Linux `Cross-platform Package Check` 均成功：https://github.com/pure-hearts/electron-starter/actions/runs/39406676893；Linux 完整 Check：https://github.com/pure-hearts/electron-starter/actions/runs/39406676789。
+
+## P7 验收边界
+- [x] 最新源码触发 Windows/macOS/Linux 三平台无签名安装包构建，三平台 CI 全部通过。
+- [ ] 三平台打包成功不等于签名、安装升级或原生交互验证成功；仍须取得实际系统测试证据。
