@@ -33,6 +33,13 @@ jobs:
         run: xvfb-run -a node scripts/smoke.mjs
       - name: Portable Linux package check
         run: pnpm exec electron-builder --linux dir --publish never
+      - name: Packaged Electron smoke
+        run: |
+          PACKAGED_BIN="release/linux-unpacked/electron-starter"
+          test -x "$PACKAGED_BIN"
+          sudo chown root:root release/linux-unpacked/chrome-sandbox
+          sudo chmod 4755 release/linux-unpacked/chrome-sandbox
+          ELECTRON_STARTER_SMOKE=1 xvfb-run -a "$PACKAGED_BIN"
       - name: Upload portable Linux artifact
         uses: actions/upload-artifact@v4
         with:
