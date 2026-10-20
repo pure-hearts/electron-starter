@@ -88,7 +88,7 @@ async function readLimited(url: string, max: number): Promise<Buffer> {
 }
 function verifyManifest(m: Manifest, key: string) {
   if (!Number.isSafeInteger(m.revision) || m.revision <= 0 || m.compatibleApp !== app.getVersion()) throw new Error('Incompatible update')
-  if (!/^https:\/\//.test(m.url) || !/^[0-9a-f]{64}$/i.test(m.sha256)) throw new Error('Invalid update manifest')
+  if (!m.url.startsWith('https://') || !/^[0-9a-f]{64}$/i.test(m.sha256)) throw new Error('Invalid update manifest')
   const bytes = Buffer.from(JSON.stringify(manifestBody(m)))
   if (!verify(null, bytes, key, Buffer.from(m.signature, 'base64'))) throw new Error('Invalid update signature')
 }

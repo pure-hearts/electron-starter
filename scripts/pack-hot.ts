@@ -2,7 +2,7 @@
 import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { createHash, createPrivateKey, sign } from 'node:crypto'
-import { zipSync, strToU8 } from 'fflate'
+import { zipSync } from 'fflate'
 const appVersion = JSON.parse(readFileSync('package.json','utf8')).version as string
 const keyPath = process.env.HOT_UPDATE_PRIVATE_KEY_PEM_PATH
 const revision = Number(process.env.HOT_UPDATE_REVISION)
