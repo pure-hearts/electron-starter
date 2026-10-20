@@ -56,3 +56,15 @@ describe('cold-start protocol IPC', () => {
     expect(() => validate('protocol:pending', ['unexpected'])).toThrow()
   })
 })
+
+describe('download hardening and retry payload', () => {
+  it('rejects local IPv6 endpoints and mapped IPv4', () => {
+    for (const target of ['https://[::1]/', 'https://[fd00::1]/', 'https://[::ffff:127.0.0.1]/','https://printer.local/']) {
+      expect(() => safeUrl(target)).toThrow()
+    }
+  })
+  it('restricts retry to one valid download ID', () => {
+    expect(() => validate('download:retry', ['abc-123'])).not.toThrow()
+    expect(() => validate('download:retry', [])).toThrow()
+  })
+})

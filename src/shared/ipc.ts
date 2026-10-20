@@ -15,6 +15,7 @@ export interface DesktopInvoke {
   'download:cancel': { args: [id: string]; result: void }
   'download:pause': { args: [id: string]; result: void }
   'download:resume': { args: [id: string]; result: void }
+  'download:retry': { args: [failedId: string]; result: string }
   'print:printers': { args: []; result: { name: string; displayName: string }[] }
   'print:execute': { args: []; result: { success: boolean; failureReason?: string } }
   'updater:check': { args: []; result: void }

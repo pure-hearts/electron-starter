@@ -10,6 +10,14 @@ import { log } from './logger'
 const tasks = new Map<string, DownloadItem>()
 const starting = new Map<string, ReturnType<typeof setTimeout>>()
 const cancelled = new Set<string>()
+const failedUrls = new Map<string, string>()
+function rememberFailure(id: string, url: string): void {
+  failedUrls.set(id, url)
+  if (failedUrls.size > 50) {
+    const oldest = failedUrls.keys().next().value
+    if (oldest !== undefined) failedUrls.delete(oldest)
+  }
+}
 const queue = new DownloadQueue((task, error) => {
   fail(task.id, task.url, 'Unable to start: ' + String(error))
 })
@@ -22,6 +30,7 @@ function clearStarting(id: string): void {
 }
 function fail(id: string, url: string, error: string): void {
   log.warn('Download failed:', error)
+  rememberFailure(id, url)
   clearStarting(id)
   tasks.delete(id)
   cancelled.delete(id)
@@ -79,6 +88,7 @@ export function initDownloads(): void {
       if (tasks.get(id) !== item) return
       tasks.delete(id)
       cancelled.delete(id)
+      if (state !== 'completed' && state !== 'cancelled') rememberFailure(id, initial)
       broadcast('download:state', {
         id, url: initial,
         state: state === 'completed' ? 'completed' : state === 'cancelled' ? 'cancelled' : 'failed',
@@ -124,4 +134,12 @@ export function controlDownload(id: string, action: 'cancel' | 'pause' | 'resume
     return
   }
   throw new Error('Unknown or completed download')
+}
+
+export function retryDownload(failedId: string, sender: WebContents): string {
+  const url = failedUrls.get(failedId)
+  if (!url) throw new Error('Download was not failed or the retry record expired')
+  const newId = startDownload(url, sender)
+  failedUrls.delete(failedId)
+  return newId
 }

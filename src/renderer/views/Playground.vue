@@ -26,6 +26,12 @@ async function loadPrinters() {
 function updateCloseToTray(enabled: boolean | string | number) {
   void run('关闭到托盘', () => desktop.invoke('store:set', 'closeToTray', Boolean(enabled)))
 }
+async function retryFailed() {
+  await run('重试失败下载', async () => {
+    downloadId.value = await desktop.invoke('download:retry', downloadId.value)
+    return downloadId.value
+  })
+}
 async function beginDownload() {
   await run('下载任务', async () => { downloadId.value = await window.desktop.invoke('download:start', downloadURL.value); return downloadId.value })
 }
@@ -73,6 +79,7 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
         <el-button :disabled="!downloadId" @click="run('暂停下载', () => desktop.invoke('download:pause',downloadId))">暂停</el-button>
         <el-button :disabled="!downloadId" @click="run('恢复下载', () => desktop.invoke('download:resume',downloadId))">恢复</el-button>
         <el-button :disabled="!downloadId" @click="run('取消下载', () => desktop.invoke('download:cancel',downloadId))">取消</el-button>
+        <el-button :disabled="!downloadId" @click="retryFailed">重试</el-button>
       </el-space>
       <p>{{ status }}</p>
       <el-space wrap>

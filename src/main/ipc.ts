@@ -8,7 +8,7 @@ import { windowAction, openChild } from './window'
 import { getSetting, setSetting, deleteSetting } from './modules/store'
 import { getAutoStart, setAutoStart } from './modules/startup'
 import { notify } from './modules/notification'
-import { startDownload, controlDownload } from './modules/download'
+import { startDownload, controlDownload, retryDownload } from './modules/download'
 import { printers, printCurrentPage } from './modules/print'
 import { checkUpdate, installUpdate } from './modules/updater'
 import { checkHotUpdate, markRendererHealthy } from './modules/hot-update'
@@ -32,6 +32,7 @@ const handlers: Record<InvokeChannel, Handler> = {
   'download:cancel': (_e, [id]) => controlDownload(id as string, 'cancel'),
   'download:pause': (_e, [id]) => controlDownload(id as string, 'pause'),
   'download:resume': (_e, [id]) => controlDownload(id as string, 'resume'),
+  'download:retry': (e, [id]) => retryDownload(id as string, e.sender),
   'print:printers': e => printers(e.sender),
   'print:execute': e => printCurrentPage(e.sender),
   'updater:check': () => checkUpdate(),
