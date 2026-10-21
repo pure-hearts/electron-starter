@@ -76,3 +76,13 @@ describe('通知结束状态', () => {
     expect(h.center.close(receipt.id)).toBe(false)
   })
 })
+
+describe('通知终态后的点击保护', () => {
+  it('通知关闭后迟到的 click 不再唤醒窗口', () => {
+    const h = harness()
+    const receipt = h.center.send({ title: '测试', body: '说明' })
+    h.center.close(receipt.id)
+    h.notices[0].handlers.click()
+    expect(h.activations).toEqual([])
+  })
+})
