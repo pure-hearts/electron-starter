@@ -1,3 +1,8 @@
+/**
+ * IPC 运行时安全校验。
+ * 通道白名单限制可调用的功能，validate 检查参数数量、类型和内容。
+ * safeUrl 约束下载地址；TypeScript 类型不能替代这些实际运行时检查。
+ */
 import type { InvokeChannel, SettingKey } from './ipc'
 /** Runtime validation is required even if TS types compile. */
 export const SETTINGS = new Set<SettingKey>(['theme','locale','closeToTray','windowBounds'])
