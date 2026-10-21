@@ -3,6 +3,7 @@
  * DesktopInvoke 约定每个请求的参数与返回值；DesktopEvents 约定主动推送的消息。
  * TypeScript 类型只负责开发期检查，主进程仍需做运行时校验。
  */
+import type { NotificationOptions, NotificationReceipt, NotificationActivation } from './notification'
 /** Shared IPC channel names, payloads, and subscription events. */
 // 以通道名称作为键，args 是可传入参数元组，result 是 Promise 解析后的结果类型。
 export interface DesktopInvoke {
@@ -18,6 +19,9 @@ export interface DesktopInvoke {
   'store:delete': { args: [key: SettingKey]; result: void }
   'startup:get': { args: []; result: boolean }
   'startup:set': { args: [enabled: boolean]; result: boolean }
+  'notification:capabilities': { args: []; result: { supported: boolean } }
+  'notification:send': { args: [options: NotificationOptions]; result: NotificationReceipt }
+  'notification:close': { args: [id: string]; result: boolean }
   'notification:show': { args: [title: string, body: string]; result: void }
   'download:concurrency:get': { args: []; result: number }
   'download:concurrency:set': { args: [count: number]; result: number }
@@ -55,6 +59,7 @@ export interface DesktopEvents {
   'update:state': UpdateState
   'protocol:open': string
   'notification:clicked': string
+  'notification:activated': NotificationActivation
 }
 export type EventChannel = keyof DesktopEvents
 // Preload 中的 bridge 必须满足此接口，因此页面调用时拥有类型提示。
