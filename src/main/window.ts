@@ -1,3 +1,7 @@
+/**
+ * Electron 窗口管理：BrowserWindow 由主进程创建，窗口内部加载 Vue 页面。
+ * 管理主窗口、启动画面、子窗口、窗口状态保存和安全导航规则。
+ */
 import { BrowserWindow, screen } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +15,7 @@ let splash: BrowserWindow | null = null
 const children = new Set<BrowserWindow>()
 // Sandboxed preload must use bundled CommonJS, not ESM.
 const preload = path.join(here, 'preload.cjs')
+/** 统一的窗口安全配置：启用隔离和沙箱，禁止页面直接访问 Node.js。 */
 function options(): Electron.BrowserWindowConstructorOptions {
   return {
     width: 1140, height: 760, minWidth: 820, minHeight: 540, show: false,
@@ -22,6 +27,7 @@ function options(): Electron.BrowserWindowConstructorOptions {
   }
 }
 export function getMainWindow() { return mainWindow }
+/** 创建主窗口；如果已存在则复用，并恢复上次的可见位置和尺寸。 */
 export function createMainWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) { mainWindow.show(); mainWindow.focus(); return mainWindow }
   const win = new BrowserWindow(options())
@@ -92,6 +98,7 @@ export function openChild(route: string) {
   void win.loadURL(base + '#' + route).then(() => win.show())
   return win.id
 }
+/** 根据调用 IPC 的页面定位其窗口，执行最小化、最大化等原生操作。 */
 export function windowAction(sender: Electron.WebContents, action: string) {
   const win = BrowserWindow.fromWebContents(sender)
   if (!win) throw new Error('Window unavailable')
