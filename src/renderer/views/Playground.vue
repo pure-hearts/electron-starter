@@ -8,8 +8,21 @@ const output = ref('选择系统功能进行测试')
 const downloadURL = ref('https://example.com/')
 const value = ref('dark')
 const closeToTray = ref(false)
-const downloadId = ref('')
-const status = ref('')
+// 用任务 ID 分别记录状态；同时下载时互不覆盖。
+const downloads = ref<DownloadState[]>([])
+function updateDownload(state: DownloadState) {
+  const index = downloads.value.findIndex(task => task.id === state.id)
+  if (index < 0) downloads.value.push(state)
+  else downloads.value[index] = { ...downloads.value[index], ...state }
+}
+async function operateDownload(id: string, action: 'pause' | 'resume' | 'cancel' | 'retry') {
+  await run('下载操作', async () => {
+    if (action === 'pause') return window.desktop.invoke('download:pause', id)
+    if (action === 'resume') return window.desktop.invoke('download:resume', id)
+    if (action === 'cancel') return window.desktop.invoke('download:cancel', id)
+    return window.desktop.invoke('download:retry', id)
+  })
+}
 const printList = ref<string[]>([])
 const version = ref('')
 const unsubscribers: Array<() => void> = []
@@ -26,17 +39,16 @@ async function loadPrinters() {
 function updateCloseToTray(enabled: boolean | string | number) {
   void run('关闭到托盘', () => desktop.invoke('store:set', 'closeToTray', Boolean(enabled)))
 }
-async function retryFailed() {
-  await run('重试失败下载', async () => {
-    downloadId.value = await desktop.invoke('download:retry', downloadId.value)
-    return downloadId.value
+async function beginDownload() {
+  await run('下载任务', async () => {
+    const id = await window.desktop.invoke('download:start', downloadURL.value)
+    if (!downloads.value.some(task => task.id === id))
+      downloads.value.push({ id, url: downloadURL.value, state: 'queued' })
+    return id
   })
 }
-async function beginDownload() {
-  await run('下载任务', async () => { downloadId.value = await window.desktop.invoke('download:start', downloadURL.value); return downloadId.value })
-}
 onMounted(async () => {
-  unsubscribers.push(window.desktop.on('download:state', (state: DownloadState) => { status.value = state.state + ' ' + (state.percent ?? '') + '%'; output.value = JSON.stringify(state) }))
+  unsubscribers.push(window.desktop.on('download:state', (state: DownloadState) => { updateDownload(state); output.value = JSON.stringify(state) }))
   unsubscribers.push(window.desktop.on('update:state', (state: UpdateState) => { output.value = JSON.stringify(state) }))
   unsubscribers.push(window.desktop.on('protocol:open', url => { output.value = 'Deep Link: ' + url }))
   unsubscribers.push(window.desktop.on('notification:clicked', title => { output.value = '通知点击：' + title }))
@@ -74,14 +86,18 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
         <el-button @click="run('存储读取', () => desktop.invoke('store:get','theme'))">读取主题</el-button>
       </el-space>
       <p><el-input v-model="downloadURL" placeholder="HTTPS 文件下载地址"/></p>
-      <el-space wrap>
-        <el-button @click="beginDownload">开始下载</el-button>
-        <el-button :disabled="!downloadId" @click="run('暂停下载', () => desktop.invoke('download:pause',downloadId))">暂停</el-button>
-        <el-button :disabled="!downloadId" @click="run('恢复下载', () => desktop.invoke('download:resume',downloadId))">恢复</el-button>
-        <el-button :disabled="!downloadId" @click="run('取消下载', () => desktop.invoke('download:cancel',downloadId))">取消</el-button>
-        <el-button :disabled="!downloadId" @click="retryFailed">重试</el-button>
-      </el-space>
-      <p>{{ status }}</p>
+      <el-button @click="beginDownload">添加下载任务</el-button>
+      <div v-for="item in downloads" :key="item.id" style="margin: 12px 0">
+        <div style="overflow-wrap: anywhere">{{ item.url }}</div>
+        <el-progress :percentage="item.percent ?? 0" />
+        <div>状态：{{ item.state }} <span v-if="item.error">— {{ item.error }}</span></div>
+        <el-space wrap>
+          <el-button size="small" :disabled="!['started', 'progress'].includes(item.state)" @click="operateDownload(item.id, 'pause')">暂停</el-button>
+          <el-button size="small" :disabled="item.state !== 'paused'" @click="operateDownload(item.id, 'resume')">恢复</el-button>
+          <el-button size="small" :disabled="!['queued', 'started', 'progress', 'paused'].includes(item.state)" @click="operateDownload(item.id, 'cancel')">取消</el-button>
+          <el-button size="small" :disabled="item.state !== 'failed'" @click="operateDownload(item.id, 'retry')">重试</el-button>
+        </el-space>
+      </div>
       <el-space wrap>
         <el-button @click="loadPrinters">获取打印机</el-button>
         <el-button @click="run('打印', () => desktop.invoke('print:execute'))">打印当前页面</el-button>
