@@ -1,9 +1,13 @@
+/** 热更新清单：用 Ed25519 公钥验证清单签名，用 SHA-256 核对下载 ZIP 完整性。 */
 import { verify } from 'node:crypto'
 
+// revision 是资源版本；compatibleApp 用于约束可兼容的主程序版本。
 export type ManifestBody = { revision: number; compatibleApp: string; url: string; sha256: string }
+// signature 是离线私钥生成的签名；私钥绝不能随安装包分发。
 export type SignedManifest = ManifestBody & { signature: string }
 
 /** Reject credentials, fragments and ambiguous/non-HTTPS update origins. */
+/** 要求资源包下载地址为规范 HTTPS，且不能包含账号凭据。 */
 export function validateHotArchiveUrl(input: string): void {
   let url: URL
   try { url = new URL(input) } catch { throw new Error('Invalid hot update URL') }
@@ -18,6 +22,7 @@ export function manifestBody(m: ManifestBody): ManifestBody {
 }
 
 /** Verify Ed25519 signature over a stable ordered manifest body before using a ZIP. */
+/** 验证热更新元数据与数字签名，失败时不可继续安装资源包。 */
 export function verifyHotManifest(raw: unknown, appVersion: string, key: string): SignedManifest {
   if (!raw || typeof raw !== 'object') throw new Error('Invalid update manifest')
   const m = raw as Partial<SignedManifest>
