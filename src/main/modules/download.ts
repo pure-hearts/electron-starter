@@ -2,6 +2,7 @@
 import { app, session } from 'electron'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import Store from 'electron-store'
 import type { DownloadItem, WebContents } from 'electron'
 import { broadcast } from '../window'
 import { safeUrl } from '../../shared/validation'
@@ -27,6 +28,25 @@ function rememberFailure(id: string, url: string): void {
 const queue = new DownloadQueue((task, error) => {
   fail(task.id, task.url, 'Unable to start: ' + String(error))
 })
+// 下载专属配置使用独立持久化文件，避免影响既有用户偏好的迁移结构。
+let downloadSettings: Store<{ concurrency: number }> | null = null
+function currentDownloadSettings(): Store<{ concurrency: number }> {
+  downloadSettings ??= new Store<{ concurrency: number }>({
+    name: 'download-settings', defaults: { concurrency: 10 }, clearInvalidConfig: true
+  })
+  return downloadSettings
+}
+/** 读取并校正可能被手动修改的配置文件。 */
+export function getDownloadConcurrency(): number {
+  const value: unknown = currentDownloadSettings().get('concurrency')
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 50 ? value : 10
+}
+/** 更新运行中队列并保存配置，重新启动应用后仍然有效。 */
+export function setDownloadConcurrency(value: number): number {
+  queue.setConcurrency(value)
+  currentDownloadSettings().set('concurrency', value)
+  return value
+}
 let initialized = false
 
 function clearStarting(id: string): void {
@@ -47,6 +67,8 @@ function fail(id: string, url: string, error: string): void {
 export function initDownloads(): void {
   if (initialized) return
   initialized = true
+  // 应用 ready 后加载配置，首次创建队列之前完成并发上限恢复。
+  queue.setConcurrency(getDownloadConcurrency())
   session.defaultSession.on('will-download', (_event, item) => {
     const chain = item.getURLChain()
     const initial = chain[0] ?? item.getURL()
