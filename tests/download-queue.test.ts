@@ -50,7 +50,7 @@ describe('single-flight FIFO download queue', () => {
 describe('并行下载调度', () => {
   it('最多三个同时传输，且同 URL 的开始事件不会串号', async () => {
     const starts: string[] = []
-    const q = new DownloadQueue(() => { throw new Error('不应失败') })
+    const q = new DownloadQueue(() => { throw new Error('不应失败') }, 3)
     for (let n = 1; n <= 4; n++) {
       q.enqueue({ id: String(n), url: 'https://example.com/same', begin: () => starts.push(String(n)) })
     }
