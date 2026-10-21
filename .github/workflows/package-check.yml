@@ -1,3 +1,4 @@
+# 跨平台无签名打包验证：分别在 Windows、macOS、Linux Runner 生成安装包。
 name: Cross-platform Package Check
 on:
   push:
@@ -11,6 +12,7 @@ on:
       - 'tests/**'
       - 'scripts/**'
   workflow_dispatch:
+  # PR 修改相关文件时也触发，以便合并前发现跨平台构建问题。
   pull_request:
     paths:
       - .github/workflows/package-check.yml
@@ -21,8 +23,10 @@ permissions:
   contents: read
 jobs:
   package:
+    # fail-fast:false 使某个平台失败时其他平台仍继续，方便收集完整诊断。
     strategy:
       fail-fast: false
+      # 每个平台在独立 Runner 运行，避免主机 OS 与构建产物类型不一致。
       matrix:
         include:
           - os: windows-latest
@@ -33,6 +37,7 @@ jobs:
             target: linux
     runs-on: ${{ matrix.os }}
     env:
+# 仅测试无签名产物，禁止自动发现本机代码签名身份。
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
@@ -51,12 +56,16 @@ jobs:
         run: pnpm exec vue-tsc --noEmit
       - name: Build application
         run: pnpm exec vp build
+      # 调用 electron-builder 打包，但不向 GitHub Releases 发布。
       - name: Build unsigned installable artifacts
         run: pnpm exec electron-builder --${{ matrix.target }} --publish never
+      # 验证目标平台的预期扩展名与合理文件尺寸。
       - name: Verify OS installable artifacts
         run: node scripts/verify-installers.mjs ${{ matrix.target }}
+      # 为安装包生成 SHA-256 清单，方便用户核对下载文件。
       - name: Generate artifact checksums
         run: node scripts/release-checksums.mjs
+      # 上传到 Actions Artifacts；此处不等于正式 Release 发布。
       - name: Archive package results
         uses: actions/upload-artifact@v4
         with:

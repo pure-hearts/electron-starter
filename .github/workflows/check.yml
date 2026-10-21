@@ -1,11 +1,14 @@
+# 主分支持续集成：源码类型检查、单元测试、构建和真正启动 Electron 的运行验证。
 name: Check
 on:
   push:
     branches: [main]
   pull_request:
+# 使用最小 GitHub Token 权限，本工作流只需要读取仓库代码。
 permissions:
   contents: read
 jobs:
+  # 所有检查在 Linux Runner 上执行，部分图形测试借助 Xvfb 虚拟显示器。
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -14,6 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      # frozen-lockfile 确保 CI 使用锁文件中的确定版本，避免依赖漂移。
       - name: Install
         run: |
           pnpm install --frozen-lockfile
@@ -31,10 +35,12 @@ jobs:
           SANDBOX="$(dirname "$ELECTRON_BIN")/chrome-sandbox"
           sudo chown root:root "$SANDBOX"
           sudo chmod 4755 "$SANDBOX"
+      # 启动真实 Electron 进程，检验主窗口、Preload、IPC 等运行链路。
       - name: Electron runtime smoke
         run: xvfb-run -a node scripts/smoke.mjs
       - name: Portable Linux package check
         run: pnpm exec electron-builder --linux dir --publish never
+      # 对 electron-builder 输出的 Linux 便携版再次运行检查。
       - name: Packaged Electron smoke
         run: |
           PACKAGED_BIN="release/linux-unpacked/electron-starter"
@@ -44,6 +50,7 @@ jobs:
           XDG_TEST_DIR="$(mktemp -d)"
           trap 'rm -rf "$XDG_TEST_DIR"' EXIT
           XDG_CONFIG_HOME="$XDG_TEST_DIR" ELECTRON_STARTER_SMOKE=1 xvfb-run -a "$PACKAGED_BIN"
+      # 通过临时 HTTPS 服务模拟已签名资源升级、激活和中断回滚。
       - name: Signed ZIP hot-update installed-app integration
         run: node scripts/test-hot-update.mjs
       - name: Upload portable Linux artifact

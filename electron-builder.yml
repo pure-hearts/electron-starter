@@ -1,35 +1,46 @@
+# 应用在系统内的唯一标识；正式发布后尽量保持不变，否则可能影响更新与用户数据路径。
 appId: org.purehearts.electronstarter
 productName: Electron Starter
+# asar 将应用源代码归档到安装包中，但不等同于加密或安全沙箱。
 asar: true
+# 安装时把自定义 Deep Link 协议注册给操作系统。
 protocols:
   - name: Electron Starter Links
     schemes:
       - electron-starter
+# electron-builder 输出安装包的目录，不能与 Web 资源 dist 目录混淆。
 directories:
   output: release
+# 打包应用代码和 package.json；排除 source map 减少发布体积。
 files:
   - dist/**/*
   - dist-electron/**/*
   - package.json
   - "!**/*.map"
+# 额外复制配置和图标等资源，运行时可通过 process.resourcesPath 找到。
 extraResources:
   - from: resources
     to: resources
+# 正式整包更新默认从对应 GitHub Releases 仓库获取版本元数据。
 publish:
   provider: github
   owner: pure-hearts
   repo: electron-starter
+# Windows 生成 NSIS 安装向导（x64）；生产发布还必须验证代码签名。
 win:
   icon: resources/icons/icon.png
   target:
     - target: nsis
       arch: [x64]
+# 允许用户选择安装目录，关闭一键无界面安装。
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+# macOS 同时产出 DMG 及用于自动更新的 ZIP；正式发布需要签名和公证。
 mac:
   icon: resources/icons/icon.png
   target: [dmg, zip]
+# Linux 提供免安装 AppImage 和发行版 deb 格式。
 linux:
   icon: resources/icons/icon.png
   target: [AppImage, deb]
