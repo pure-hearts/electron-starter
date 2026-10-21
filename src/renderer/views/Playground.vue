@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useAppStore } from '../stores/app'
 import type { DownloadState, UpdateState } from '../../shared/ipc'
-const desktop = window.desktop
+const desktop = window.$ipcBridge
 const appStore = useAppStore()
 const output = ref('选择系统功能进行测试')
 const downloadURL = ref('https://example.com/')
@@ -19,7 +19,7 @@ async function run(label: string, fn: () => Promise<unknown>) {
 }
 async function loadPrinters() {
   await run('打印机', async () => {
-    printList.value = (await window.desktop.invoke('print:printers')).map(p => p.displayName)
+    printList.value = (await window.$ipcBridge.invoke('print:printers')).map(p => p.displayName)
     return printList.value
   })
 }
@@ -33,15 +33,15 @@ async function retryFailed() {
   })
 }
 async function beginDownload() {
-  await run('下载任务', async () => { downloadId.value = await window.desktop.invoke('download:start', downloadURL.value); return downloadId.value })
+  await run('下载任务', async () => { downloadId.value = await window.$ipcBridge.invoke('download:start', downloadURL.value); return downloadId.value })
 }
 onMounted(async () => {
-  unsubscribers.push(window.desktop.on('download:state', (state: DownloadState) => { status.value = state.state + ' ' + (state.percent ?? '') + '%'; output.value = JSON.stringify(state) }))
-  unsubscribers.push(window.desktop.on('update:state', (state: UpdateState) => { output.value = JSON.stringify(state) }))
-  unsubscribers.push(window.desktop.on('protocol:open', url => { output.value = 'Deep Link: ' + url }))
-  unsubscribers.push(window.desktop.on('notification:clicked', title => { output.value = '通知点击：' + title }))
-  await run('版本', async () => { version.value = await window.desktop.invoke('app:version'); return version.value })
-  const saved = await window.desktop.invoke('store:get', 'closeToTray')
+  unsubscribers.push(window.$ipcBridge.on('download:state', (state: DownloadState) => { status.value = state.state + ' ' + (state.percent ?? '') + '%'; output.value = JSON.stringify(state) }))
+  unsubscribers.push(window.$ipcBridge.on('update:state', (state: UpdateState) => { output.value = JSON.stringify(state) }))
+  unsubscribers.push(window.$ipcBridge.on('protocol:open', url => { output.value = 'Deep Link: ' + url }))
+  unsubscribers.push(window.$ipcBridge.on('notification:clicked', title => { output.value = '通知点击：' + title }))
+  await run('版本', async () => { version.value = await window.$ipcBridge.invoke('app:version'); return version.value })
+  const saved = await window.$ipcBridge.invoke('store:get', 'closeToTray')
   closeToTray.value = saved === true
 })
 onUnmounted(() => unsubscribers.forEach(stop => stop()))
