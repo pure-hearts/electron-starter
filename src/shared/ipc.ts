@@ -1,3 +1,8 @@
+/**
+ * 主进程和 Preload 共用的通信协议。
+ * DesktopInvoke 约定每个请求的参数与返回值；DesktopEvents 约定主动推送的消息。
+ * TypeScript 类型只负责开发期检查，主进程仍需做运行时校验。
+ */
 /** Shared IPC channel names, payloads, and subscription events. */
 export interface DesktopInvoke {
   'app:version': { args: []; result: string }
