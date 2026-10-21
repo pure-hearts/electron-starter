@@ -18,7 +18,7 @@
 ## 双向 IPC：请求和响应
 
 ```text
-Vue 页面：window.desktop.invoke('app:version')
+Vue 页面：window.$ipcBridge.invoke('app:version')
     ↓
 预加载脚本：检查通道白名单，ipcRenderer.invoke(...)
     ↓
@@ -30,7 +30,7 @@ Vue 页面：window.desktop.invoke('app:version')
 ## 主动推送：主进程到页面
 
 主进程调用 `webContents.send('download:state', payload)`，页面使用
-`window.desktop.on('download:state', callback)` 接收。
+`window.$ipcBridge.on('download:state', callback)` 接收。
 `on` 返回取消订阅函数；页面不再需要监听时应执行它。
 
 ## 常见疑问
