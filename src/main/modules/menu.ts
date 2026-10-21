@@ -1,10 +1,11 @@
+import { platform } from '../platform'
 /** 应用原生菜单。与 Vue 组件菜单不同，这里使用 Electron Menu 构建操作系统菜单。 */
 import { Menu } from 'electron'
 import { focusMainWindow } from '../window'
 import { requestQuit } from './lifecycle'
 export function createMenu() {
   // macOS 的应用菜单与 Windows/Linux 结构不同，需单独包含 appMenu。
-  const mac = process.platform === 'darwin'
+  const mac = platform.isMac
   // MenuItemConstructorOptions 是每一项原生菜单的配置类型。
   const template: Electron.MenuItemConstructorOptions[] = [
     // 展开运算符仅在 macOS 插入系统标准应用菜单。
