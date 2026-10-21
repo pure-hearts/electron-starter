@@ -1,3 +1,8 @@
+/**
+ * Electron 主进程入口。启动顺序：
+ * 申请单实例锁 → 等待 app.whenReady → 设置安全策略 → 注册 IPC → 创建主窗口。
+ * 此进程能访问操作系统和 Node.js，页面必须通过受控 Preload 桥梁调用能力。
+ */
 import { app, session, BrowserWindow } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -17,6 +22,7 @@ if (process.env.ELECTRON_STARTER_TEST_USERDATA) {
   fs.mkdirSync(process.env.ELECTRON_STARTER_TEST_USERDATA, { recursive: true })
   app.setPath('userData', process.env.ELECTRON_STARTER_TEST_USERDATA)
 }
+// 阻止同时运行多个实例；第二次启动的命令行参数转交给已存在的实例。
 const single = app.requestSingleInstanceLock()
 if (!single) {
   app.quit()
@@ -26,6 +32,7 @@ if (!single) {
     processDeepLinkArgs(argv)
   })
   registerDeepLink()
+  // Electron 初始化完成之后才能安全使用窗口、托盘等桌面模块。
   app.whenReady().then(() => {
     initLogger()
     recoverPendingUpdate()
@@ -41,6 +48,7 @@ if (!single) {
       })
     }
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
+    // 必须先注册消息处理器，再加载可能调用 window.desktop 的页面。
     registerIPC()
     initDownloads()
     initUpdater()
