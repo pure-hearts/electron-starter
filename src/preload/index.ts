@@ -40,5 +40,5 @@ const bridge: DesktopBridge = {
     return () => ipcRenderer.removeListener(channel, listener)
   }
 }
-// contextIsolation 开启时，网页不能直接读取 Preload 变量；这里显式暴露 window.desktop。
-contextBridge.exposeInMainWorld('desktop', bridge)
+// contextIsolation 开启时，网页不能直接读取 Preload 变量；这里显式暴露 window.$ipcBridge。
+contextBridge.exposeInMainWorld('$ipcBridge', bridge)
