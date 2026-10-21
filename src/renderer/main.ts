@@ -9,10 +9,10 @@ import { i18n } from './i18n'
 const app = createApp(App)
 app.config.errorHandler = (error, _instance, info) => {
   console.error('Vue error', info, error)
-  void window.desktop?.invoke('log:write', 'error', String(error)).catch(() => undefined)
+  void window.$ipcBridge?.invoke('log:write', 'error', String(error)).catch(() => undefined)
 }
 window.addEventListener('unhandledrejection', e => {
-  void window.desktop?.invoke('log:write', 'error', String(e.reason)).catch(() => undefined)
+  void window.$ipcBridge?.invoke('log:write', 'error', String(e.reason)).catch(() => undefined)
 })
 app.use(createPinia()).use(router).use(i18n).use(ElementPlus).mount('#app')
 // A healthy render includes a mounted app and a resolved route. Confirming after
@@ -20,7 +20,7 @@ app.use(createPinia()).use(router).use(i18n).use(ElementPlus).mount('#app')
 void router.isReady().then(() => {
   window.setTimeout(() => {
     if (document.querySelector('#app')?.childElementCount) {
-      void window.desktop.invoke('hot:confirm').catch(() => undefined)
+      void window.$ipcBridge.invoke('hot:confirm').catch(() => undefined)
     }
   }, 2500)
 }).catch(() => undefined)

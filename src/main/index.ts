@@ -54,7 +54,7 @@ if (!single) {
       })
     }
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
-    // 必须先注册消息处理器，再加载可能调用 window.desktop 的页面。
+    // 必须先注册消息处理器，再加载可能调用 window.$ipcBridge 的页面。
     registerIPC()
     initDownloads()
     // electron-updater 负责整包更新，不等同于 ZIP 渲染资源热更新。
@@ -101,8 +101,8 @@ if (!single) {
       const timeout = setTimeout(() => { log.error('Smoke test timed out'); app.exit(1) }, 20000)
       main.webContents.once('did-finish-load', async () => {
         try {
-          const version = await main.webContents.executeJavaScript(`window.desktop.invoke('app:version')`)
-          const persisted = await main.webContents.executeJavaScript(`window.desktop.invoke('store:get','locale')`)
+          const version = await main.webContents.executeJavaScript(`window.$ipcBridge.invoke('app:version')`)
+          const persisted = await main.webContents.executeJavaScript(`window.$ipcBridge.invoke('store:get','locale')`)
           if (version !== app.getVersion() || typeof persisted !== 'string') throw new Error('Preload / IPC smoke check failed')
           // Exercise a real child BrowserWindow with sandboxed preload and IPC.
           const childId = openChild('/playground')
@@ -116,7 +116,7 @@ if (!single) {
               reject(new Error('Child window navigation failed: ' + code))
             })
           })
-          const childVersion = await child.webContents.executeJavaScript("window.desktop.invoke('app:version')")
+          const childVersion = await child.webContents.executeJavaScript("window.$ipcBridge.invoke('app:version')")
           if (childVersion !== version) throw new Error('Child preload IPC failed')
           await new Promise<void>((resolve, reject) => {
             const timer = setTimeout(() => reject(new Error('Child window close timeout')), 5000)
@@ -125,23 +125,23 @@ if (!single) {
           })
           if (!child.isDestroyed()) throw new Error('Child window was not destroyed')
           // Exercise typed persistent writes and cleanup through the renderer bridge.
-          const oldTheme = await main.webContents.executeJavaScript("window.desktop.invoke('store:get', 'theme')")
-          await main.webContents.executeJavaScript("window.desktop.invoke('store:set', 'theme', 'dark')")
-          const newTheme = await main.webContents.executeJavaScript("window.desktop.invoke('store:get', 'theme')")
+          const oldTheme = await main.webContents.executeJavaScript("window.$ipcBridge.invoke('store:get', 'theme')")
+          await main.webContents.executeJavaScript("window.$ipcBridge.invoke('store:set', 'theme', 'dark')")
+          const newTheme = await main.webContents.executeJavaScript("window.$ipcBridge.invoke('store:get', 'theme')")
           if (newTheme !== 'dark') throw new Error('Persistent setting write/read failed')
-          await main.webContents.executeJavaScript("window.desktop.invoke('store:set', 'theme', " + JSON.stringify(oldTheme === 'dark' || oldTheme === 'system' ? oldTheme : 'light') + ")")
+          await main.webContents.executeJavaScript("window.$ipcBridge.invoke('store:set', 'theme', " + JSON.stringify(oldTheme === 'dark' || oldTheme === 'system' ? oldTheme : 'light') + ")")
           if (app.isPackaged && process.platform === 'linux' && process.env.XDG_CONFIG_HOME) {
             // Only change an isolated CI XDG directory, never the runner's real autostart.
-            const before = await main.webContents.executeJavaScript("window.desktop.invoke('startup:get')")
+            const before = await main.webContents.executeJavaScript("window.$ipcBridge.invoke('startup:get')")
             if (before !== false) throw new Error('Temporary XDG autostart was not empty')
-            const enabled = await main.webContents.executeJavaScript("window.desktop.invoke('startup:set', true)")
-            const current = await main.webContents.executeJavaScript("window.desktop.invoke('startup:get')")
+            const enabled = await main.webContents.executeJavaScript("window.$ipcBridge.invoke('startup:set', true)")
+            const current = await main.webContents.executeJavaScript("window.$ipcBridge.invoke('startup:get')")
             const startupFile = path.join(process.env.XDG_CONFIG_HOME, 'autostart', 'electron-starter.desktop')
             const entry = fs.readFileSync(startupFile, 'utf8')
             if (enabled !== true || current !== true || !entry.includes('Type=Application') || !entry.includes('Exec=')) {
               throw new Error('Linux packaged autostart enable failed')
             }
-            const disabled = await main.webContents.executeJavaScript("window.desktop.invoke('startup:set', false)")
+            const disabled = await main.webContents.executeJavaScript("window.$ipcBridge.invoke('startup:set', false)")
             if (disabled !== false || fs.existsSync(startupFile)) throw new Error('Linux packaged autostart removal failed')
           }
           clearTimeout(timeout)

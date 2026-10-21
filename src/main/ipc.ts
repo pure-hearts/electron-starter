@@ -1,5 +1,5 @@
 /**
- * 主进程 IPC 路由：集中处理渲染进程通过 window.desktop.invoke 发起的请求。
+ * 主进程 IPC 路由：集中处理渲染进程通过 window.$ipcBridge.invoke 发起的请求。
  * registerIPC 先检查调用来源和参数，再把请求分发给对应业务模块。
  * 这里拥有系统权限，不能直接信任页面发来的数据。
  */
