@@ -1,3 +1,5 @@
+# 手动验收专用：从成功的历史构建复制未签名安装包，创建预发布版。
+# 与 release.yml 的正式签名发布不同，不能用于生产分发。
 name: Publish unsigned manual test release
 on:
   push:
@@ -6,13 +8,16 @@ on:
       - .github/workflows/publish-manual-test.yml
   workflow_dispatch:
 permissions:
+  # 需要创建 GitHub Release，另需读取之前 Actions 产物。
   contents: write
   actions: read
 jobs:
+  # 仅允许在指定仓库运行，防止 Fork 意外触发该仓库的发布流程。
   publish:
     if: github.repository == 'pure-hearts/electron-starter'
     runs-on: ubuntu-latest
     steps:
+      # 从指定成功构建下载三平台安装包，避免再次构建出现版本差异。
       - name: Fetch three-platform artifacts from successfully verified build
         env:
           GH_TOKEN: ${{ github.token }}
@@ -33,6 +38,7 @@ jobs:
           test "$(find dist -type f | wc -l)" -ge 5 || { echo "Incomplete installer set"; exit 1; }
           (cd dist && sha256sum * > SHA256SUMS.txt)
           ls -lh dist/
+      # 创建带有未签名警告的 Pre-release，供测试设备手动下载安装。
       - name: Publish pre-release for manual installation
         env:
           GH_TOKEN: ${{ github.token }}
