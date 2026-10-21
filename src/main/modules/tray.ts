@@ -1,3 +1,4 @@
+import { platform } from '../platform'
 /** 系统托盘由主进程管理；关闭窗口不一定退出程序，托盘可提供恢复和退出入口。 */
 import { Tray, Menu, nativeImage, app } from 'electron'
 import path from 'node:path'
@@ -9,14 +10,14 @@ export function createTray() {
   // 多次初始化时复用同一个托盘图标，避免重复出现。
   if (tray) return tray
   // Windows 通常使用 ICO 格式，其他平台使用 PNG。
-  const icon = process.platform === 'win32' ? 'icon.ico' : 'icon.png'
+  const icon = platform.isWindows ? 'icon.ico' : 'icon.png'
   const imagePath = path.join(process.resourcesPath, 'resources', 'icons', icon)
   const fallbackPath = path.join(process.resourcesPath, 'resources', 'icons', 'icon.png')
   // nativeImage 将图片文件加载为 Electron 可用于系统托盘的图像。
   const image = nativeImage.createFromPath(imagePath)
   const trayImage = image.isEmpty() ? nativeImage.createFromPath(fallbackPath) : image
   // macOS 菜单栏图标较小，因此单独缩放为 18×18。
-  tray = new Tray(process.platform === 'darwin' ? trayImage.resize({ width: 18, height: 18 }) : trayImage)
+  tray = new Tray(platform.isMac ? trayImage.resize({ width: 18, height: 18 }) : trayImage)
   tray.setToolTip(app.getName())
   // Menu.buildFromTemplate 构建右键菜单，菜单事件调用主进程函数。
   tray.setContextMenu(Menu.buildFromTemplate([
