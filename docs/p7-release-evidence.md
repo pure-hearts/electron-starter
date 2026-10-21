@@ -1,3 +1,13 @@
-# Final release acceptance
+# P7：最终发布验收
 
-Checksum generation creates a deterministic list of installed distribution artifacts. Prior to publishing, verify platform-specific metadata, signing certificates, macOS notarization, download contents, uploaded filenames and checksums, installation, upgrade and uninstall. No GitHub Release is considered accepted until actual production artifact and upgrade evidence exists.
+安装包校验和脚本会生成顺序稳定的产物清单，但摘要校验不等于代码签名验证。
+
+正式发布前需要核对：
+
+1. 各平台安装包名称、应用版本和平台对应的发布元数据。
+2. Windows 代码签名证书及 macOS 签名、公证结果。
+3. GitHub Release 实际上传的文件名称、数量及下载内容。
+4. 下载后的 SHA-256 摘要是否与校验清单一致。
+5. 实际安装、启动、升级以及卸载的行为。
+
+**完成条件：** 必须取得真实生产发布产物和整包升级的验收证据，才能将正式 Release 标记为已验收。

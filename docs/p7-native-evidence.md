@@ -1,3 +1,18 @@
-# P7 Windows/macOS native acceptance
+# P7：Windows / macOS 原生功能验收
 
-CI: protocol launch buffering and queue regressions. Remaining evidence: perform actual installation and native tests on Windows/macOS, capturing OS version, build SHA, tray/menu, native notifications, cold/warm Deep Links, login autostart and printing. No simulated/unit result may be treated as proof of those native interactions.
+## 已具备的自动化检查
+
+CI 已覆盖协议唤起链接的缓存顺序和队列回归测试。这些检查只能证明对应代码逻辑符合预期，不能替代操作系统原生交互验收。
+
+## 仍需收集的实测证据
+
+请分别在 Windows 和 macOS 上安装实际构建产物，并记录：
+
+- 操作系统名称及版本、安装包版本和对应 Git 提交 SHA。
+- 系统托盘、应用菜单的显示和点击行为。
+- 原生通知的显示及点击回调。
+- 冷启动与应用运行期间的 Deep Link 唤起。
+- 用户登录后的开机自启动行为。
+- 打印机列表和系统打印对话框的实际表现。
+
+**验收原则：** 模拟测试、单元测试和无签名打包成功，都不能单独证明上述真实系统交互已经通过。
