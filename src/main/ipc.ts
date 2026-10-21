@@ -29,8 +29,13 @@ function assertSender(e: IpcMainInvokeEvent) {
     throw new Error('IPC sender is not trusted')
 }
 /** 用 ipcMain.handle 建立请求/响应通道，与 Preload 的 ipcRenderer.invoke 对应。 */
+let ipcRegistered = false
 export function registerIPC() {
+  if (ipcRegistered) return
+  const installed: InvokeChannel[] = []
+  try {
   for (const channel of allowedChannels) {
+    if (ipcMain.hasHandler(channel)) throw new Error('IPC channel is already registered: ' + channel)
     // invoke 的 Promise 会收到该异步处理函数返回值或抛出的错误。
     ipcMain.handle(channel, async (event, ...args: unknown[]) => {
       assertSender(event)
@@ -39,5 +44,12 @@ export function registerIPC() {
       // 只有两层校验全部通过，才执行可能访问操作系统的业务操作。
       return handlers[channel](event, args)
     })
+    installed.push(channel)
+  }
+  ipcRegistered = true
+  } catch (error) {
+    // 仅撤销本次注册的处理器，不影响其他模块的 IPC。
+    for (const channel of installed) ipcMain.removeHandler(channel)
+    throw error
   }
 }

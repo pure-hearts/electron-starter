@@ -15,6 +15,7 @@ import { registerSmokeChecks } from './smoke'
 let bootstrapped = false
 export function bootstrapMain(): void {
   if (bootstrapped) return
+  // 进入初始化过程后禁止重入。异常时保留状态，避免重试重复注册部分资源。
   bootstrapped = true
   // 日志最先初始化，确保后续模块初始化失败时有诊断记录。
   initLogger()
