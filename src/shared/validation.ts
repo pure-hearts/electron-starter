@@ -67,7 +67,7 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
           typeof o.body === 'string' && o.body.length > 0 && o.body.length <= 1000 &&
           (o.kind === undefined || ['info','success','warning','error'].includes(o.kind as string)) &&
           (o.dedupeKey === undefined || (typeof o.dedupeKey === 'string' && o.dedupeKey.length > 0 && o.dedupeKey.length <= 128)) &&
-          (o.action === undefined || (typeof o.action === 'string' && /^\\/[\\w/-]{0,128}$/.test(o.action)))) return
+          (o.action === undefined || (typeof o.action === 'string' && /^\/[A-Za-z0-9_/-]{0,128}$/.test(o.action)))) return
     }
   }
   // 只允许 1～50 的整数，拒绝小数、NaN、Infinity 和越界值。
