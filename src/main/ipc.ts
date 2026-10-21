@@ -1,3 +1,8 @@
+/**
+ * 主进程 IPC 路由：集中处理渲染进程通过 window.desktop.invoke 发起的请求。
+ * registerIPC 先检查调用来源和参数，再把请求分发给对应业务模块。
+ * 这里拥有系统权限，不能直接信任页面发来的数据。
+ */
 import { ipcMain, app, dialog } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -54,6 +59,7 @@ const handlers: Record<InvokeChannel, Handler> = {
   'protocol:scheme': () => DEEP_LINK_SCHEME,
   'protocol:pending': () => consumePendingDeepLinks()
 }
+/** 校验发送者为可信应用页面的顶层 Frame，阻止外部页面与 iframe 冒用权限。 */
 function assertSender(e: IpcMainInvokeEvent) {
   const frame = e.senderFrame
   if (!frame || frame !== e.sender.mainFrame) throw new Error('IPC only allowed from top-level application frame')
@@ -63,6 +69,7 @@ function assertSender(e: IpcMainInvokeEvent) {
   if (viteURL && u.origin === new URL(viteURL).origin) return
   throw new Error('IPC sender is not trusted')
 }
+/** 用 ipcMain.handle 建立请求/响应通道，与 Preload 的 ipcRenderer.invoke 对应。 */
 export function registerIPC() {
   for (const channel of allowedChannels) {
     ipcMain.handle(channel, async (event, ...args: unknown[]) => {
