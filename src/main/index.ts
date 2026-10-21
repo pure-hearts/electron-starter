@@ -59,7 +59,6 @@ if (!single) {
     main.webContents.on('did-fail-load', (_event, code, desc) => log.error('Main window failed', code, desc))
     processDeepLinkArgs(process.argv)
     registerSmokeChecks(main)
-
   }).catch(err => { log.error('Startup failure', err); app.quit() })
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createMainWindow(); else focusMainWindow() })
   // macOS 默认允许关闭全部窗口后应用仍留在 Dock；其他系统通常退出。
