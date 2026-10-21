@@ -125,3 +125,28 @@ describe('下载并发上限动态配置', () => {
     expect(q.concurrency).toBe(10)
   })
 })
+
+describe('下载队列状态一致性回归', () => {
+  it('拒绝运行中和排队中的重复业务 ID，但允许不同 ID 的相同 URL', () => {
+    const q = new DownloadQueue(() => undefined, 1)
+    q.enqueue({ id: 'same', url: 'https://example.com/a', begin: () => undefined })
+    q.enqueue({ id: 'waiting', url: 'https://example.com/a', begin: () => undefined })
+    expect(() => q.enqueue({ id: 'same', url: 'https://example.com/b', begin: () => undefined })).toThrow('Duplicate download task ID')
+    expect(() => q.enqueue({ id: 'waiting', url: 'https://example.com/b', begin: () => undefined })).toThrow('Duplicate download task ID')
+    expect(q.runningCount).toBe(1)
+    expect(q.pendingCount).toBe(1)
+    q.finish('same')
+    expect(q.runningCount).toBe(0)
+  })
+  it('任务失败后释放槽位并继续启动排队任务', async () => {
+    const errors: string[] = []
+    const starts: string[] = []
+    const q = new DownloadQueue(task => errors.push(task.id), 1)
+    q.enqueue({ id: 'first', url: 'https://example.com/a', begin: () => { throw new Error('closed') } })
+    q.enqueue({ id: 'second', url: 'https://example.com/b', begin: () => starts.push('second') })
+    await Promise.resolve()
+    expect(errors).toEqual(['first'])
+    expect(starts).toEqual(['second'])
+    expect(q.runningCount).toBe(1)
+  })
+})
