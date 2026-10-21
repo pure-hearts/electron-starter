@@ -10,7 +10,7 @@ import type { DesktopBridge, InvokeChannel, InvokeArgs, InvokeResult, EventChann
 import { allowedChannels } from '../shared/validation'
 
 // 事件白名单：仅允许页面订阅下载进度、更新状态、协议唤起和通知点击等事件。
-const eventNames = new Set<EventChannel>(['download:state','update:state','protocol:open','notification:clicked'])
+const eventNames = new Set<EventChannel>(['download:state','update:state','protocol:open','notification:clicked','notification:activated'])
 
 // bridge 是唯一提供给页面的桌面 API，而不是暴露整个 ipcRenderer。
 const bridge: DesktopBridge = {
