@@ -9,6 +9,7 @@ import { getSetting, setSetting } from './modules/store'
 import { rendererURL, markDeepLinkRendererUnready } from './modules/protocol'
 import { log } from './modules/logger'
 import { isQuitting } from './modules/lifecycle'
+import { isTrustedWindowNavigation } from './modules/window-navigation-policy'
 // ESM 中没有 __dirname，需通过 import.meta.url 推算当前打包代码所在目录。
 const here = path.dirname(fileURLToPath(import.meta.url))
 // 缓存窗口引用，避免重复创建；窗口销毁后会置为 null。
@@ -97,10 +98,11 @@ export function createMainWindow() {
   })
   return win
 }
-function isInternalURL(url: string) {
-  try { const u = new URL(url); return u.protocol === 'app:' && u.host === 'renderer' || process.env.VITE_DEV_SERVER_URL !== undefined && u.origin === new URL(process.env.VITE_DEV_SERVER_URL).origin }
-  catch { return false }
+/** 主、子窗口共享纯函数导航策略，减少策略漂移。 */
+function isInternalURL(url: string): boolean {
+  return isTrustedWindowNavigation(url, { devServerUrl: process.env.VITE_DEV_SERVER_URL })
 }
+
 /** 创建独立子窗口，沿用与主窗口相同的沙箱/导航安全策略。 */
 export function openChild(route: string) {
   const win = new BrowserWindow({ ...options(), width: 900, height: 650 })
