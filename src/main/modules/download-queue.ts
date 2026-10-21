@@ -1,4 +1,4 @@
-/** 下载调度器：最多同时传输三个文件，但启动握手严格串行，避免同 URL 任务认领错位。 */
+/** 下载调度器：默认同时传输十个文件，但启动握手严格串行，避免同 URL 任务认领错位。 */
 export type DownloadRequest = { id: string; url: string; begin: () => void }
 export class DownloadQueue {
   // waiting 是等待队列；running 保存正在启动或传输的业务任务。
@@ -9,10 +9,19 @@ export class DownloadQueue {
   private scheduled = false
   constructor(
     private readonly onStartError: (task: DownloadRequest, error: unknown) => void,
-    private readonly maxConcurrent = 3
+    private maxConcurrent = 10
   ) {
-    if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1 || maxConcurrent > 5)
-      throw new RangeError('Download concurrency must be between 1 and 5')
+    if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1 || maxConcurrent > 50)
+      throw new RangeError('Download concurrency must be between 1 and 50')
+  }
+  /** 查询当前最大并发数，供 Renderer 显示配置。 */
+  get concurrency(): number { return this.maxConcurrent }
+  /** 动态修改并发上限；调高后立即调度，调低时不强行中断已启动任务。 */
+  setConcurrency(value: number): void {
+    if (!Number.isInteger(value) || value < 1 || value > 50)
+      throw new RangeError('Download concurrency must be between 1 and 50')
+    this.maxConcurrent = value
+    this.schedule()
   }
   /** 提交业务任务；任务运行与否由并发槽位和握手是否完成共同决定。 */
   enqueue(task: DownloadRequest): boolean {

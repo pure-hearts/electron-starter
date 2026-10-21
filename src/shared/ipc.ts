@@ -19,6 +19,8 @@ export interface DesktopInvoke {
   'startup:get': { args: []; result: boolean }
   'startup:set': { args: [enabled: boolean]; result: boolean }
   'notification:show': { args: [title: string, body: string]; result: void }
+  'download:concurrency:get': { args: []; result: number }
+  'download:concurrency:set': { args: [count: number]; result: number }
   'download:start': { args: [url: string]; result: string }
   'download:cancel': { args: [id: string]; result: void }
   'download:pause': { args: [id: string]; result: void }

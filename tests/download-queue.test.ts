@@ -50,7 +50,7 @@ describe('single-flight FIFO download queue', () => {
 describe('并行下载调度', () => {
   it('最多三个同时传输，且同 URL 的开始事件不会串号', async () => {
     const starts: string[] = []
-    const q = new DownloadQueue(() => { throw new Error('不应失败') })
+    const q = new DownloadQueue(() => { throw new Error('不应失败') }, 3)
     for (let n = 1; n <= 4; n++) {
       q.enqueue({ id: String(n), url: 'https://example.com/same', begin: () => starts.push(String(n)) })
     }
@@ -82,5 +82,46 @@ describe('并行下载调度', () => {
     expect(starts).toEqual(['a','b'])
     q.finish('a')
     expect(q.claim('https://example.com/b')).toBe('b')
+  })
+})
+
+describe('下载并发上限动态配置', () => {
+  it('默认允许十个任务并发传输，第十一个排队', async () => {
+    const starts: string[] = []
+    const queue = new DownloadQueue(() => { throw new Error('unexpected error') })
+    for (let n = 1; n <= 11; n++)
+      queue.enqueue({ id: String(n), url: 'https://example.com/' + n, begin: () => starts.push(String(n)) })
+    for (let n = 1; n <= 10; n++) {
+      expect(queue.claim('https://example.com/' + n)).toBe(String(n))
+      await Promise.resolve()
+    }
+    expect(starts).toHaveLength(10)
+    queue.finish('1')
+    await Promise.resolve()
+    expect(starts).toHaveLength(11)
+  })
+  it('调高时补充任务，调低时不终止正在传输的任务', async () => {
+    const starts: string[] = []
+    const q = new DownloadQueue(() => undefined, 1)
+    for (let i = 1; i <= 3; i++)
+      q.enqueue({ id: String(i), url: 'https://example.com/' + i, begin: () => starts.push(String(i)) })
+    expect(q.claim('https://example.com/1')).toBe('1')
+    q.setConcurrency(2)
+    await Promise.resolve()
+    expect(starts).toEqual(['1', '2'])
+    expect(q.claim('https://example.com/2')).toBe('2')
+    q.setConcurrency(1)
+    q.finish('1')
+    await Promise.resolve()
+    expect(starts).toHaveLength(2)
+    q.finish('2')
+    await Promise.resolve()
+    expect(starts).toEqual(['1', '2', '3'])
+  })
+  it('拒绝非法并发数量', () => {
+    const q = new DownloadQueue(() => undefined)
+    for (const value of [0, 51, -1, 1.5, NaN, Infinity])
+      expect(() => q.setConcurrency(value)).toThrow(RangeError)
+    expect(q.concurrency).toBe(10)
   })
 })
