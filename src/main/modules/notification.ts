@@ -10,10 +10,7 @@ export const notificationCenter = new NotificationCenter({
   activated: (payload, title) => {
     // 兼容旧版只接收 title 的通知点击监听器。
     broadcast('notification:clicked', title)
-    const target = payload.sourceWindowId === undefined ? null : BrowserWindow.fromWebContents(
-      BrowserWindow.getAllWindows().find(w => w.webContents.id === payload.sourceWindowId)?.webContents ?? 
-      BrowserWindow.getAllWindows()[0]?.webContents
-    )
+    const target = payload.sourceWindowId === undefined ? undefined : BrowserWindow.getAllWindows().find(w => w.webContents.id === payload.sourceWindowId)
     // 原窗口仍在时聚焦，否则恢复主窗口；不主动执行传入的路由动作。
     if (target && !target.isDestroyed()) { target.show(); target.focus() }
     else focusMainWindow()
