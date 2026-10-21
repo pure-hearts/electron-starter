@@ -40,11 +40,20 @@ export class NotificationCenter {
       this.active.delete(id)
       this.adapter.settled?.({ id, reason })
     }
-    notice.on('click', () => this.adapter.activated({ id, kind, action: options.action, sourceWindowId }, options.title))
+    // 终态到达后忽略迟到点击，避免旧通知错误唤醒窗口。
+    notice.on('click', () => {
+      if (settled) return
+      this.adapter.activated({ id, kind, action: options.action, sourceWindowId }, options.title)
+    })
     notice.on('close', () => settle('closed'))
     notice.on('failed', () => settle('failed'))
     // show 抛异常时不计入成功数，也不保留失败记录。
-    notice.show()
+    try { notice.show() }
+    catch (error) {
+      // show 可能同步抛错；仍然向 Renderer 发出失败终态并释放对象。
+      settle('failed')
+      throw error
+    }
     if (!settled) this.active.set(id, { notice, settle })
     this.history.push(time)
     if (options.dedupeKey) this.recent.set(options.dedupeKey, time)
