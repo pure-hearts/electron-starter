@@ -144,7 +144,16 @@ export function startDownload(url: string, sender: WebContents): string {
   broadcast('download:state', { id, url: href, state: 'queued' })
   queue.enqueue({ id, url: href, begin: () => {
     if (sender.isDestroyed()) throw new Error('Requesting window was closed')
-    const timer = setTimeout(() => fail(id, href, 'Download did not start within 20 seconds'), 20_000)
+    // 取消与启动超时竞态：用户取消的任务不得被迟到的超时回调重新标记失败。
+    const timer = setTimeout(() => {
+      if (cancelled.delete(id)) {
+        clearStarting(id)
+        if (terminals.finish(id)) broadcast('download:state', { id, url: href, state: 'cancelled' })
+        queue.finish(id)
+        return
+      }
+      fail(id, href, 'Download did not start within 20 seconds')
+    }, 20_000)
     starting.set(id, timer)
     sender.downloadURL(href)
     broadcast('download:state', { id, url: href, state: 'started' })
