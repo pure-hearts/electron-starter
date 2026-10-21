@@ -13,7 +13,7 @@ import { windowAction, openChild, getMainWindow } from './window'
 import { getSetting, setSetting, deleteSetting } from './modules/store'
 import { getAutoStart, setAutoStart } from './modules/startup'
 import { notify } from './modules/notification'
-import { startDownload, controlDownload, retryDownload } from './modules/download'
+import { startDownload, controlDownload, retryDownload, getDownloadConcurrency, setDownloadConcurrency } from './modules/download'
 import { printers, printCurrentPage } from './modules/print'
 import { checkUpdate, installUpdate } from './modules/updater'
 import { checkHotUpdate, markRendererHealthy } from './modules/hot-update'
@@ -36,6 +36,8 @@ const handlers: Record<InvokeChannel, Handler> = {
   'startup:get': () => getAutoStart(),
   'startup:set': (_e, [value]) => setAutoStart(value as boolean),
   'notification:show': (_e, [title, body]) => notify(title as string, body as string),
+  'download:concurrency:get': () => getDownloadConcurrency(),
+  'download:concurrency:set': (_e, [count]) => setDownloadConcurrency(count as number),
   'download:start': (e, [url]) => startDownload(url as string, e.sender),
   'download:cancel': (_e, [id]) => controlDownload(id as string, 'cancel'),
   'download:pause': (_e, [id]) => controlDownload(id as string, 'pause'),
