@@ -10,3 +10,6 @@ export interface NotificationOptions {
 }
 export interface NotificationReceipt { id: string; accepted: boolean; reason?: 'unsupported' | 'duplicate' | 'rate-limited' }
 export interface NotificationActivation { id: string; kind: NotificationKind; action?: string; sourceWindowId?: number }
+
+/** 通知退出生命周期：关闭/失败事件由主进程发出，不能代表系统实际展示成功。 */
+export interface NotificationSettled { id: string; reason: 'closed' | 'failed' }
