@@ -1,3 +1,4 @@
+import { platform } from '../platform'
 /** 跨平台开机自启动：Windows/macOS 使用 Electron 登录项 API，Linux 写入 XDG .desktop 文件。 */
 import { app } from 'electron'
 import fs from 'node:fs'
@@ -33,7 +34,7 @@ function linuxDesktopEntry(): string {
 }
 /** 查询当前用户的自启动状态；Linux 需要核对条目中的实际程序路径。 */
 export function getAutoStart(): boolean {
-  if (process.platform === 'linux') {
+  if (platform.isLinux) {
     try { return (() => {
       // 读取当前用户的 XDG autostart 文件，不修改系统级启动配置。
       const entry = fs.readFileSync(linuxAutostartPath(), 'utf8')
@@ -47,7 +48,7 @@ export function getAutoStart(): boolean {
 }
 /** 修改开机自启动；返回实际读取到的状态，供渲染页面同步显示。 */
 export function setAutoStart(enabled: boolean): boolean {
-  if (process.platform === 'linux') {
+  if (platform.isLinux) {
     // Linux 开发环境无法代表安装包路径，因此限制仅打包应用启用此功能。
     if (!app.isPackaged) throw new Error('Linux autostart must be configured in an installed application')
     const location = linuxAutostartPath()
