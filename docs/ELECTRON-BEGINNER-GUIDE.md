@@ -2,9 +2,9 @@
 
 ## 先理解三个角色
 
-- **Main 主进程**：管理应用生命周期、窗口、操作系统功能。
-- **Preload 预加载脚本**：使用 contextBridge 将有限的 IPC 接口暴露给页面。
-- **Renderer 渲染进程**：运行 Vue 界面，不直接获取 Node.js 权限。
+- **主进程（Main）**：管理应用生命周期、窗口、操作系统功能。
+- **预加载脚本（Preload）**：使用 contextBridge 将有限的 IPC 接口暴露给页面。
+- **渲染进程（Renderer）**：运行 Vue 界面，不直接获取 Node.js 权限。
 
 ## 推荐源码阅读顺序
 
@@ -20,9 +20,9 @@
 ```text
 Vue 页面：window.desktop.invoke('app:version')
     ↓
-Preload：检查通道白名单，ipcRenderer.invoke(...)
+预加载脚本：检查通道白名单，ipcRenderer.invoke(...)
     ↓
-Main：ipcMain.handle(...) 校验发送者和参数
+主进程：ipcMain.handle(...) 校验发送者和参数
     ↓
 调用 app.getVersion()，Promise 将结果返回给页面
 ```
