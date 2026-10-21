@@ -1,3 +1,4 @@
+/** Electron DownloadItem 管理：统一处理下载启动、进度、暂停/继续、取消和失败重试。 */
 import { app, session } from 'electron'
 import path from 'node:path'
 import crypto from 'node:crypto'
@@ -7,10 +8,15 @@ import { safeUrl } from '../../shared/validation'
 import { DownloadQueue } from './download-queue'
 import { log } from './logger'
 
+// 正在下载的任务表：任务 ID 对应 Electron DownloadItem 实例。
 const tasks = new Map<string, DownloadItem>()
+// 记录下载启动超时计时器，防止 will-download 事件未到导致永久等待。
 const starting = new Map<string, ReturnType<typeof setTimeout>>()
+// 标记已取消任务，避免后到的异步事件错误更新任务状态。
 const cancelled = new Set<string>()
+// 保留失败任务的原下载地址，让用户可以通过任务 ID 重新发起下载。
 const failedUrls = new Map<string, string>()
+/** 限制失败记录容量，避免长期运行不断增加内存占用。 */
 function rememberFailure(id: string, url: string): void {
   failedUrls.set(id, url)
   if (failedUrls.size > 50) {
@@ -37,6 +43,7 @@ function fail(id: string, url: string, error: string): void {
   broadcast('download:state', { id, url, state: 'failed', error })
   queue.finish(id)
 }
+/** 注册 Electron 会话级 will-download 事件，将真实下载项关联到队列任务。 */
 export function initDownloads(): void {
   if (initialized) return
   initialized = true
@@ -99,6 +106,7 @@ export function initDownloads(): void {
     })
   })
 }
+/** 生成下载任务 ID，排队并通知页面状态。 */
 export function startDownload(url: string, sender: WebContents): string {
   const href = safeUrl(url).toString()
   const id = crypto.randomUUID()
@@ -113,6 +121,7 @@ export function startDownload(url: string, sender: WebContents): string {
   } })
   return id
 }
+/** 根据任务 ID 控制暂停、恢复和取消，防止操作错误任务。 */
 export function controlDownload(id: string, action: 'cancel' | 'pause' | 'resume'): void {
   if (action === 'cancel') {
     const queued = queue.cancelQueued(id)
@@ -136,6 +145,7 @@ export function controlDownload(id: string, action: 'cancel' | 'pause' | 'resume
   throw new Error('Unknown or completed download')
 }
 
+/** 使用失败任务原 URL 创建新任务，而不是复用已结束的 DownloadItem。 */
 export function retryDownload(failedId: string, sender: WebContents): string {
   const url = failedUrls.get(failedId)
   if (!url) throw new Error('Download was not failed or the retry record expired')
