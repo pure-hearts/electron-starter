@@ -12,7 +12,9 @@ import { allowedChannels, validate } from '../shared/validation'
 import { windowAction, openChild, getMainWindow } from './window'
 import { getSetting, setSetting, deleteSetting } from './modules/store'
 import { getAutoStart, setAutoStart } from './modules/startup'
-import { notify } from './modules/notification'
+import { notify, notificationCenter } from './modules/notification'
+import type { NotificationOptions } from '../shared/notification'
+import { Notification } from 'electron'
 import { startDownload, controlDownload, retryDownload, getDownloadConcurrency, setDownloadConcurrency } from './modules/download'
 import { printers, printCurrentPage } from './modules/print'
 import { checkUpdate, installUpdate } from './modules/updater'
@@ -35,6 +37,9 @@ const handlers: Record<InvokeChannel, Handler> = {
   'store:delete': (_e, [key]) => deleteSetting(key as SettingKey),
   'startup:get': () => getAutoStart(),
   'startup:set': (_e, [value]) => setAutoStart(value as boolean),
+  'notification:capabilities': () => ({ supported: Notification.isSupported() }),
+  'notification:send': (e, [options]) => notificationCenter.send(options as NotificationOptions, e.sender.id),
+  'notification:close': (_e, [id]) => notificationCenter.close(id as string),
   'notification:show': (_e, [title, body]) => notify(title as string, body as string),
   'download:concurrency:get': () => getDownloadConcurrency(),
   'download:concurrency:set': (_e, [count]) => setDownloadConcurrency(count as number),
