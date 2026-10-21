@@ -10,6 +10,7 @@ import { rendererURL, markDeepLinkRendererUnready } from './modules/protocol'
 import { log } from './modules/logger'
 import { isQuitting } from './modules/lifecycle'
 import { isTrustedWindowNavigation } from './modules/window-navigation-policy'
+import { safeWindowBounds } from './modules/window-bounds-policy'
 // ESM 中没有 __dirname，需通过 import.meta.url 推算当前打包代码所在目录。
 const here = path.dirname(fileURLToPath(import.meta.url))
 // 缓存窗口引用，避免重复创建；窗口销毁后会置为 null。
@@ -53,13 +54,8 @@ export function createMainWindow() {
   const bounds = getSetting('windowBounds')
   if (typeof bounds === 'string') {
     try {
-      const rect = JSON.parse(bounds) as Electron.Rectangle
-      // 显示器可能被拔掉，只有旧窗口位置与当前任一工作区相交才恢复坐标。
-      const visible = screen.getAllDisplays().some(d => {
-        const b = d.workArea
-        return rect.x < b.x+b.width && rect.x+rect.width > b.x && rect.y < b.y+b.height && rect.y+rect.height > b.y
-      })
-      if (visible && rect.width >= 820 && rect.height >= 540 && rect.width <= 10000 && rect.height <= 10000) win.setBounds(rect)
+      const rect = safeWindowBounds(JSON.parse(bounds), screen.getAllDisplays().map(d => d.workArea))
+      if (rect) win.setBounds(rect)
     } catch { /* ignore invalid legacy bounds */ }
   }
   // 开发模式使用 Vite 服务器，生产模式使用应用内注册的 app:// 协议。
@@ -89,6 +85,8 @@ export function createMainWindow() {
   win.on('closed', () => {
     if (boundsTimer) clearTimeout(boundsTimer)
     mainWindow = null
+    if (splash && !splash.isDestroyed()) splash.close()
+    splash = null
   })
   // 默认拒绝网页 window.open 创建不受控窗口；新窗口须走专用 IPC。
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
