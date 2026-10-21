@@ -6,6 +6,13 @@ const desktop = window.$ipcBridge
 const appStore = useAppStore()
 const output = ref('选择系统功能进行测试')
 const downloadURL = ref('https://example.com/')
+const downloadConcurrency = ref(10)
+async function saveDownloadConcurrency() {
+  await run('下载并发设置', async () => {
+    downloadConcurrency.value = await desktop.invoke('download:concurrency:set', downloadConcurrency.value)
+    return downloadConcurrency.value
+  })
+}
 const value = ref('dark')
 const closeToTray = ref(false)
 // 用任务 ID 分别记录状态；同时下载时互不覆盖。
@@ -53,6 +60,7 @@ onMounted(async () => {
   unsubscribers.push(window.$ipcBridge.on('protocol:open', url => { output.value = 'Deep Link: ' + url }))
   unsubscribers.push(window.$ipcBridge.on('notification:clicked', title => { output.value = '通知点击：' + title }))
   await run('版本', async () => { version.value = await window.$ipcBridge.invoke('app:version'); return version.value })
+  downloadConcurrency.value = await desktop.invoke('download:concurrency:get')
   const saved = await window.$ipcBridge.invoke('store:get', 'closeToTray')
   closeToTray.value = saved === true
 })
@@ -84,6 +92,11 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
         <el-input v-model="value" style="width:150px"/>
         <el-button @click="run('存储写入', () => desktop.invoke('store:set','theme',value))">写入主题</el-button>
         <el-button @click="run('存储读取', () => desktop.invoke('store:get','theme'))">读取主题</el-button>
+      </el-space>
+      <el-space wrap>
+        <span>最大同时下载数：</span>
+        <el-input-number v-model="downloadConcurrency" :min="1" :max="50" :step="1" />
+        <el-button @click="saveDownloadConcurrency">保存并立即生效</el-button>
       </el-space>
       <p><el-input v-model="downloadURL" placeholder="HTTPS 文件下载地址"/></p>
       <el-button @click="beginDownload">添加下载任务</el-button>
