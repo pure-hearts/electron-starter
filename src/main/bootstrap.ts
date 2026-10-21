@@ -1,5 +1,4 @@
 /** 主进程启动顺序集中在这里：先安全与 IPC，最后创建窗口。 */
-import { app } from 'electron'
 import { createMainWindow } from './window'
 import { registerIPC } from './ipc'
 import { registerResourceProtocol, processDeepLinkArgs } from './modules/protocol'
@@ -34,5 +33,4 @@ export function bootstrapMain(): void {
   main.webContents.on('did-fail-load', (_event, code, desc) => log.error('Main window failed', code, desc))
   processDeepLinkArgs(process.argv)
   registerSmokeChecks(main)
-
 }
