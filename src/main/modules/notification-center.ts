@@ -1,6 +1,6 @@
 /** 系统通知状态管理，依赖注入原生适配器以便不启动 Electron 也能测试。 */
 import { randomUUID } from 'node:crypto'
-import type { NotificationOptions, NotificationReceipt, NotificationActivation } from '../../shared/notification'
+import type { NotificationOptions, NotificationReceipt, NotificationActivation, NotificationSettled } from '../../shared/notification'
 
 export interface NativeNotice {
   show(): void
@@ -11,8 +11,9 @@ export interface NotificationAdapter {
   supported(): boolean
   create(options: NotificationOptions): NativeNotice
   activated(payload: NotificationActivation, title: string): void
+  settled?(payload: NotificationSettled): void
 }
-type Entry = { notice: NativeNotice; dedupeKey?: string }
+type Entry = { notice: NativeNotice; settle: (reason: NotificationSettled['reason']) => void }
 export class NotificationCenter {
   private active = new Map<string, Entry>()
   private recent = new Map<string, number>()
@@ -31,13 +32,20 @@ export class NotificationCenter {
     const id = randomUUID()
     const notice = this.adapter.create(options)
     const kind = options.kind ?? 'info'
-    const cleanup = () => { this.active.delete(id) }
+    // 不同平台可能重复发送 close/failed，必须最多分发一次终态。
+    let settled = false
+    const settle = (reason: NotificationSettled['reason']) => {
+      if (settled) return
+      settled = true
+      this.active.delete(id)
+      this.adapter.settled?.({ id, reason })
+    }
     notice.on('click', () => this.adapter.activated({ id, kind, action: options.action, sourceWindowId }, options.title))
-    notice.on('close', cleanup)
-    notice.on('failed', cleanup)
+    notice.on('close', () => settle('closed'))
+    notice.on('failed', () => settle('failed'))
     // show 抛异常时不计入成功数，也不保留失败记录。
     notice.show()
-    this.active.set(id, { notice, dedupeKey: options.dedupeKey })
+    if (!settled) this.active.set(id, { notice, settle })
     this.history.push(time)
     if (options.dedupeKey) this.recent.set(options.dedupeKey, time)
     return { id, accepted: true }
@@ -46,7 +54,8 @@ export class NotificationCenter {
     const entry = this.active.get(id)
     if (!entry) return false
     this.active.delete(id)
-    entry.notice.close()
+    try { entry.notice.close() }
+    finally { entry.settle('closed') }
     return true
   }
   get activeCount(): number { return this.active.size }

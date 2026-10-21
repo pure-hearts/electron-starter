@@ -7,6 +7,7 @@ import { NotificationCenter } from './notification-center'
 export const notificationCenter = new NotificationCenter({
   supported: () => Notification.isSupported(),
   create: (options: NotificationOptions) => new Notification({ title: options.title, body: options.body }),
+  settled: payload => broadcast('notification:settled', payload),
   activated: (payload, title) => {
     // 兼容旧版只接收 title 的通知点击监听器。
     broadcast('notification:clicked', title)
