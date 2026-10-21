@@ -5,6 +5,8 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   root: 'src/renderer',
+  // envDir 指向仓库根目录，允许各模式加载根目录下对应的 .env 文件。
+  envDir: fileURLToPath(new URL('.', import.meta.url)),
   check: { fmt: false },
   lint: { options: { typeAware: true, typeCheck: true } },
   test: { root: fileURLToPath(new URL('.', import.meta.url)), include: ['tests/**/*.test.ts'] },
