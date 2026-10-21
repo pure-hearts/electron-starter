@@ -1,3 +1,14 @@
-# P7 signed full installer upgrade E2E
+# P7：已签名整包更新端到端验收
 
-Required: produce independently signed A/B installers, publish update metadata to a controlled feed, install A, persist settings, download B, upgrade, verify running version and data preservation, repeat on Windows/macOS with interrupted downloads, wrong signing identity and recovery. This branch adds update-state regressions only; full native installation remains unverified.
+## 必须执行的测试流程
+
+1. 独立构建并签名旧版本 A 和新版本 B 的安装包。
+2. 将更新元数据和新版本安装包发布到受控更新源。
+3. 在目标操作系统安装版本 A，并保存用于验证的用户配置。
+4. 从版本 A 触发下载、安装并升级到版本 B。
+5. 确认应用实际运行版本为 B，原有用户配置保持完整。
+6. 在 Windows 和 macOS 上重复测试下载中断、签名身份错误和故障恢复场景。
+
+## 当前证据边界
+
+现有分支已经增加更新状态与重试行为的回归测试，但**尚未完成真实已签名安装包的跨版本原生升级验收**。不能将单元测试通过等同于正式整包升级成功。
