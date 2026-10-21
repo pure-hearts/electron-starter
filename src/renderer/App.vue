@@ -8,9 +8,9 @@ const current = computed(() => locale.value)
 let unsubscribeDeepLink: (() => void) | undefined
 onMounted(async () => {
   // Register listener first, then consume cold-start links so no link is lost.
-  unsubscribeDeepLink = window.desktop.on('protocol:open', url => appStore.receiveDeepLink(url))
+  unsubscribeDeepLink = window.$ipcBridge.on('protocol:open', url => appStore.receiveDeepLink(url))
   try {
-    const pending = await window.desktop.invoke('protocol:pending')
+    const pending = await window.$ipcBridge.invoke('protocol:pending')
     for (const url of pending) appStore.receiveDeepLink(url)
   } catch (error) { console.warn('Could not load pending Deep Links', error) }
   try { locale.value = await appStore.hydrate() }
