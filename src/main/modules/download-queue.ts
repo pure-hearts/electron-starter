@@ -23,8 +23,14 @@ export class DownloadQueue {
     this.maxConcurrent = value
     this.schedule()
   }
+  /** 供调试与测试读取任务量，不暴露内部可变集合。 */
+  get pendingCount(): number { return this.waiting.length }
+  get runningCount(): number { return this.running.size }
   /** 提交业务任务；任务运行与否由并发槽位和握手是否完成共同决定。 */
   enqueue(task: DownloadRequest): boolean {
+    // 任务 ID 必须唯一，否则 running Map 会覆盖旧任务并破坏并发计数。
+    if (this.running.has(task.id) || this.waiting.some(waiting => waiting.id === task.id))
+      throw new Error('Duplicate download task ID: ' + task.id)
     const queued = this.launching !== null || this.running.size >= this.maxConcurrent || this.waiting.length > 0
     this.waiting.push(task)
     this.pump()
@@ -42,7 +48,11 @@ export class DownloadQueue {
   get activeId(): string | null { return this.launching?.id ?? null }
   cancelQueued(id: string): DownloadRequest | null {
     const index = this.waiting.findIndex(task => task.id === id)
-    return index < 0 ? null : this.waiting.splice(index, 1)[0]
+    if (index < 0) return null
+    const removed = this.waiting.splice(index, 1)[0]
+    // 队首取消后继续唤醒调度，避免队列在可用槽位时停滞。
+    this.schedule()
+    return removed
   }
   /** 下载结束后释放槽位，唤醒 FIFO 队列；忽略重复结束通知。 */
   finish(id: string): void {
@@ -69,8 +79,8 @@ export class DownloadQueue {
     catch (error) {
       this.running.delete(task.id)
       this.launching = null
-      this.onStartError(task, error)
-      this.schedule()
+      try { this.onStartError(task, error) }
+      finally { this.schedule() }
     }
   }
 }
