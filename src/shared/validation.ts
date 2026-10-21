@@ -11,7 +11,7 @@ export const SETTINGS = new Set<SettingKey>(['theme','locale','closeToTray','win
 export const allowedChannels = new Set<InvokeChannel>([
   'app:version','app:quit','app:restart','window:action','window:open','store:get','store:set','store:delete',
   'startup:get','startup:set','notification:show','download:start','download:cancel',
-  'download:pause','download:resume','download:retry','print:printers','print:execute','updater:check',
+  'download:pause','download:resume','download:retry','download:concurrency:get','download:concurrency:set','print:printers','print:execute','updater:check',
   'updater:install','hot:check','hot:confirm','log:write','log:export','protocol:scheme','protocol:pending'
 ])
 export function safeUrl(input: string): URL {
@@ -40,7 +40,7 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
   // 通用字符串校验辅助函数：同时限制类型、非空和最大长度。
   const str = (i: number, max = 512) => typeof args[i] === 'string' && (args[i] as string).length > 0 && (args[i] as string).length <= max
   // 不需要参数的通道只能携带空参数数组，额外参数不会被静默忽略。
-  const noArgs = ['app:version','app:quit','app:restart','startup:get','print:printers','print:execute','updater:check','updater:install','hot:check','hot:confirm','log:export','protocol:scheme','protocol:pending']
+  const noArgs = ['app:version','app:quit','app:restart','startup:get','download:concurrency:get','print:printers','print:execute','updater:check','updater:install','hot:check','hot:confirm','log:export','protocol:scheme','protocol:pending']
   if (noArgs.includes(channel) && args.length === 0) return
   if (channel === 'window:action' && args.length === 1 && ['minimize','maximize','restore','hide','show','close'].includes(args[0] as string)) return
   if (channel === 'window:open' && args.length === 1 && str(0) && /^\/[\w/-]*$/.test(args[0] as string)) return
@@ -55,6 +55,10 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
   }
   if (channel === 'startup:set' && args.length === 1 && typeof args[0] === 'boolean') return
   if (channel === 'notification:show' && args.length === 2 && str(0,128) && str(1,1000)) return
+  // 只允许 1～50 的整数，拒绝小数、NaN、Infinity 和越界值。
+  if (channel === 'download:concurrency:set' && args.length === 1 &&
+      typeof args[0] === 'number' && Number.isInteger(args[0]) &&
+      args[0] >= 1 && args[0] <= 50) return
   if (channel === 'download:start' && args.length === 1 && str(0,4096)) { safeUrl(args[0] as string); return }
   if (['download:cancel','download:pause','download:resume','download:retry'].includes(channel) && args.length === 1 && str(0,64)) return
   if (channel === 'log:write' && args.length === 2 && ['info','warn','error'].includes(args[0] as string) && str(1,2048)) return
