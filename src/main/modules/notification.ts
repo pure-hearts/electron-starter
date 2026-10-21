@@ -1,14 +1,25 @@
-/** 系统通知：由 Electron 主进程调用系统通知接口，不是网页内的提示框。 */
-import { Notification } from 'electron'
+/** Electron 原生通知适配器：统一持有对象，并向安全的 Renderer 桥接发送事件。 */
+import { Notification, BrowserWindow } from 'electron'
+import type { NotificationOptions } from '../../shared/notification'
 import { broadcast, focusMainWindow } from '../window'
-/** 显示标题和正文，并在用户点击通知时把事件发送回所有窗口。 */
-export function notify(title: string, body: string) {
-  // 部分操作系统或当前会话不支持通知，先检查以避免调用失败。
-  if (!Notification.isSupported()) throw new Error('Notifications are not supported by this OS')
-  // Notification 创建通知对象，尚未显示到系统通知中心。
-  const n = new Notification({ title, body })
-  // 点击系统通知后，聚焦主窗口并广播 IPC 事件给渲染页面。
-  n.on('click', () => { focusMainWindow(); broadcast('notification:clicked', title) })
-  // show() 才向操作系统请求实际展示通知；是否弹出受系统权限设置影响。
-  n.show()
+import { NotificationCenter } from './notification-center'
+
+export const notificationCenter = new NotificationCenter({
+  supported: () => Notification.isSupported(),
+  create: (options: NotificationOptions) => new Notification({ title: options.title, body: options.body }),
+  activated: (payload, title) => {
+    // 兼容旧版只接收 title 的通知点击监听器。
+    broadcast('notification:clicked', title)
+    const target = payload.sourceWindowId === undefined ? undefined : BrowserWindow.getAllWindows().find(w => w.webContents.id === payload.sourceWindowId)
+    // 原窗口仍在时聚焦，否则恢复主窗口；不主动执行传入的路由动作。
+    if (target && !target.isDestroyed()) { target.show(); target.focus() }
+    else focusMainWindow()
+    broadcast('notification:activated', payload)
+  }
+})
+/** 旧接口原样保留，内部接入新的通知中心。 */
+export function notify(title: string, body: string): void {
+  const result = notificationCenter.send({ title, body })
+  if (!result.accepted && result.reason === 'unsupported')
+    throw new Error('Notifications are not supported by this OS')
 }

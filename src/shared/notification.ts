@@ -1,0 +1,12 @@
+/** 主进程与 Renderer 共用的通知业务协议；不暴露 Electron 原生对象。 */
+export type NotificationKind = 'info' | 'success' | 'warning' | 'error'
+export interface NotificationOptions {
+  title: string
+  body: string
+  kind?: NotificationKind
+  dedupeKey?: string
+  // 只允许应用内部路径，绝不能作为外部网址或命令执行。
+  action?: string
+}
+export interface NotificationReceipt { id: string; accepted: boolean; reason?: 'unsupported' | 'duplicate' | 'rate-limited' }
+export interface NotificationActivation { id: string; kind: NotificationKind; action?: string; sourceWindowId?: number }
