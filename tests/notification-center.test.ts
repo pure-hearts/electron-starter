@@ -7,6 +7,7 @@ function harness() {
   let time = 10000
   const notices: Array<{ handlers: Record<string, () => void>; shown: boolean; closed: boolean }> = []
   const activations: unknown[] = []
+  const settled: unknown[] = []
   const center = new NotificationCenter({
     supported: () => true,
     create: () => {
@@ -18,9 +19,10 @@ function harness() {
         on: (event, fn) => { state.handlers[event] = fn }
       } satisfies NativeNotice
     },
-    activated: data => { activations.push(data) }
+    activated: data => { activations.push(data) },
+    settled: data => { settled.push(data) }
   }, () => time)
-  return { center, notices, activations, advance: (ms: number) => { time += ms } }
+  return { center, notices, activations, settled, advance: (ms: number) => { time += ms } }
 }
 describe('通知中心', () => {
   it('通知具有唯一 ID，点击包含来源窗口并兼容原生生命周期', () => {
@@ -53,5 +55,24 @@ describe('通知中心', () => {
       { title: 'Hi', body: 'OK', arbitraryCommand: 'rm' },
       { title: '', body: 'OK' }
     ]) expect(() => validate('notification:send', [bad])).toThrow()
+  })
+})
+
+describe('通知结束状态', () => {
+  it('主动关闭时只派发一次，迟到的原生 close 不重复通知', () => {
+    const h = harness()
+    const receipt = h.center.send({ title: '提示', body: '正文' })
+    expect(h.center.close(receipt.id)).toBe(true)
+    h.notices[0].handlers.close()
+    h.notices[0].handlers.failed()
+    expect(h.settled).toEqual([{ id: receipt.id, reason: 'closed' }])
+    expect(h.center.activeCount).toBe(0)
+  })
+  it('原生 failed 状态清除记录并准确通知', () => {
+    const h = harness()
+    const receipt = h.center.send({ title: '失败', body: '正文' })
+    h.notices[0].handlers.failed()
+    expect(h.settled).toEqual([{ id: receipt.id, reason: 'failed' }])
+    expect(h.center.close(receipt.id)).toBe(false)
   })
 })
