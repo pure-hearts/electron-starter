@@ -1,3 +1,8 @@
+/**
+ * Preload 运行在隔离的预加载环境，负责连接网页和 Electron 主进程。
+ * invoke 发起请求并等待结果，on 订阅主进程推送的事件。
+ * 页面只接触 window.desktop，不直接获取 ipcRenderer。
+ */
 import { contextBridge, ipcRenderer } from 'electron'
 import type { DesktopBridge, InvokeChannel, InvokeArgs, InvokeResult, EventChannel, DesktopEvents } from '../shared/ipc'
 import { allowedChannels } from '../shared/validation'
