@@ -1,3 +1,4 @@
+/** 热更新协调器：下载仅包含 Renderer 的签名 ZIP，校验后切换资源目录；Main/Preload 不参与热更新。 */
 /**
  * Signed renderer-only resource updates.
  * Private signing key NEVER ships with the application.
@@ -39,6 +40,7 @@ function candidate(name: string) {
   return name && /^[a-z0-9-]+$/i.test(name) && fs.existsSync(path.join(root, 'index.html')) ? root : null
 }
 /** Pending update from previous launch is reverted before any application UI loads. */
+/** 启动时检查上次更新是否未完成，必要时回退至上一份可用资源。 */
 export function recoverPendingUpdate() {
   const pointer = readPointer()
   if (pointer?.phase === 'staged') {
@@ -49,10 +51,12 @@ export function recoverPendingUpdate() {
     else fs.rmSync(pointerPath(), { force: true })
   }
 }
+/** 由主窗口确认新资源正常运行，完成从待验证到稳定版本的状态迁移。 */
 export function markRendererHealthy() {
   const p = readPointer()
   if (p?.phase === 'trying') writePointer({ ...p, phase: 'active' })
 }
+/** 根据当前持久化指针返回实际生效的 Renderer 资源目录。 */
 export function activeRendererRoot(): string {
   const pointer = readPointer()
   if (pointer?.phase === 'staged') return (pointer.previous && candidate(pointer.previous)) || installedRoot()
@@ -82,6 +86,7 @@ async function readLimited(url: string, max: number): Promise<Buffer> {
   } finally { await reader.cancel().catch(() => undefined) }
   return Buffer.concat(chunks)
 }
+// singleFlight 合并同时发生的热更新请求，避免重复安装/覆盖相同资源。
 export const checkHotUpdate = singleFlight(async (): Promise<HotUpdateResult> => {
   const config = runtimeConfig()
   const key = signingKey()
