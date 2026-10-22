@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { DownloadQueue } from '../src/main/modules/download-queue'
+import { DownloadQueue } from '../src/main/modules/download/queue'
 
 describe('single-flight FIFO download queue', () => {
   it('runs tasks in insertion order and allows duplicate URLs', async () => {

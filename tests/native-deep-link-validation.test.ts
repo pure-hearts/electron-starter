@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { DeepLinkInbox } from '../src/main/modules/deep-link-inbox'
+import { DeepLinkInbox } from '../src/main/modules/protocol/deep-link-inbox'
 
 // 这一组是纯逻辑回归测试：不模拟系统级协议注册，也不声称已完成 Windows/macOS 真机验收。
 describe('native deep-link input validation', () => {

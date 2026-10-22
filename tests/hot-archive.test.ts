@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { zipSync, strToU8 } from 'fflate'
-import { extractSafe } from '../src/main/modules/hot-archive'
+import { extractSafe } from '../src/main/modules/update/hot/archive'
 
 function withTemporaryDirectory(run: (dir: string) => void) {
   const dir = mkdtempSync(join(tmpdir(), 'electron-starter-zip-'))

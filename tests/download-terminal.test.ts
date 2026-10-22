@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { DownloadTerminalRegistry } from '../src/main/modules/download-terminal'
+import { DownloadTerminalRegistry } from '../src/main/modules/download/terminal'
 
 describe('下载终态去重器', () => {
   it('同一任务只允许一次终态，不同任务相互独立', () => {

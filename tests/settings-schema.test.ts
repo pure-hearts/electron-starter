@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test'
-import { migrateSettings, settingsNeedMigration, normalizeWindowBounds } from '../src/main/modules/settings-schema'
+import { migrateSettings, settingsNeedMigration, normalizeWindowBounds } from '../src/main/modules/store/schema'
 
 describe('persistent settings migration', () => {
   it('fills defaults for outdated, incomplete settings', () => {

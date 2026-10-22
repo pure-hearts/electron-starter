@@ -3,10 +3,10 @@ import type { IpcMainInvokeEvent } from 'electron'
 
 const mocks = vi.hoisted(() => ({ handle: vi.fn(), removeHandler: vi.fn(), version: vi.fn(), error: vi.fn() }))
 vi.mock('electron', () => ({ ipcMain: { handle: mocks.handle, removeHandler: mocks.removeHandler } }))
-vi.mock('../src/main/handlers/system', () => ({ systemHandlers: { 'app:version': mocks.version } }))
-vi.mock('../src/main/handlers/services', () => ({ serviceHandlers: {} }))
-vi.mock('../src/main/handlers/transfer', () => ({ transferHandlers: {} }))
-vi.mock('../src/main/modules/logger', () => ({ log: { error: mocks.error } }))
+vi.mock('../src/main/ipc/handlers/system', () => ({ systemHandlers: { 'app:version': mocks.version } }))
+vi.mock('../src/main/ipc/handlers/services', () => ({ serviceHandlers: {} }))
+vi.mock('../src/main/ipc/handlers/transfer', () => ({ transferHandlers: {} }))
+vi.mock('../src/main/modules/core/logger', () => ({ log: { error: mocks.error } }))
 import { registerIPC, unregisterIPC } from '../src/main/ipc'
 import { allowedChannels } from '../src/shared/validation'
 

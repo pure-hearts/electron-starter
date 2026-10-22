@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { singleFlight } from '../src/main/modules/single-flight'
+import { singleFlight } from '../src/main/modules/core/single-flight'
 
 describe('hot update concurrency lock', () => {
   it('shares one active operation and permits another after completion', async () => {

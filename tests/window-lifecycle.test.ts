@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 const state = vi.hoisted(() => ({ settings: new Map<string, unknown>(), save: vi.fn(), quitting: false, error: vi.fn(), unready: vi.fn() }))
 vi.mock('../src/main/modules/store', () => ({ getSetting: (key: string) => state.settings.get(key), setSetting: state.save }))
 vi.mock('../src/main/modules/protocol', () => ({ rendererURL: (route: string) => 'app://renderer' + route, markDeepLinkRendererUnready: state.unready }))
-vi.mock('../src/main/modules/logger', () => ({ log: { error: state.error } }))
-vi.mock('../src/main/modules/lifecycle', () => ({ isQuitting: () => state.quitting }))
+vi.mock('../src/main/modules/core/logger', () => ({ log: { error: state.error } }))
+vi.mock('../src/main/modules/core/lifecycle', () => ({ isQuitting: () => state.quitting }))
 vi.mock('electron', async () => {
   const { EventEmitter } = await import('node:events')
   class Window extends EventEmitter {

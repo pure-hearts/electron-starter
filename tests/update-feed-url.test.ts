@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { validateUpdateFeedUrl } from '../src/main/modules/update-feed-url'
+import { validateUpdateFeedUrl } from '../src/main/modules/update/full/feed-url'
 describe('full update feed URL policy', () => {
   it('accepts canonical HTTPS feeds', () => {
     expect(() => validateUpdateFeedUrl('https://updates.example.com/stable/')).not.toThrow()
