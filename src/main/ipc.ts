@@ -35,7 +35,6 @@ export function registerIPC() {
   const installed: InvokeChannel[] = []
   try {
   for (const channel of allowedChannels) {
-    if (ipcMain.hasHandler(channel)) throw new Error('IPC channel is already registered: ' + channel)
     // invoke 的 Promise 会收到该异步处理函数返回值或抛出的错误。
     ipcMain.handle(channel, async (event, ...args: unknown[]) => {
       assertSender(event)
