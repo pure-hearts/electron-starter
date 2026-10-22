@@ -1,5 +1,7 @@
-import type { DesktopBridge } from '../shared/ipc'
+import type { DesktopBridge } from "../shared/ipc";
 declare global {
-  interface Window { $ipcBridge: DesktopBridge }
+  interface Window {
+    $ipcBridge: DesktopBridge;
+  }
 }
-export {}
+export {};

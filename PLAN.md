@@ -63,6 +63,7 @@ P0–P6：主要代码、工程化验证和无签名打包已完成，Linux ZIP 
 P7：上述尚未完成的正式签名/跨平台安装与真实更新测试需要外部发布证书及目标操作系统，不得在未取得实测结果时标记完成。
 
 ## P1 可靠性增强与 P2 单元测试（本轮开发）
+
 - [x] F11：单任务顺序执行的 FIFO 下载队列、重复 URL 下载、排队取消、失败重试、启动超时和重定向 URL 校验
 - [x] F03：对旧配置进行 schemaVersion=1 迁移，丢弃无效选项及窗口边界，损坏文件可恢复
 - [x] F22：Axios 取消、超时、HTTP、网络及未知异常分类（避免把响应体中的敏感字段带入错误）
@@ -77,8 +78,10 @@ P7：上述尚未完成的正式签名/跨平台安装与真实更新测试需�
 请核对以上每一项最新 GitHub Actions 测试结果后再视为通过 CI；此处勾选表示已提交实现。
 
 ## 跨平台回归修复
+
 - [x] macOS `/var` 与 `/private/var` 路径别名测试已修复；Windows/macOS/Linux `Cross-platform Package Check` 均成功：https://github.com/pure-hearts/electron-starter/actions/runs/39406676893；Linux 完整 Check：https://github.com/pure-hearts/electron-starter/actions/runs/39406676789。
 
 ## P7 验收边界
+
 - [x] 最新源码触发 Windows/macOS/Linux 三平台无签名安装包构建，三平台 CI 全部通过。
 - [ ] 三平台打包成功不等于签名、安装升级或原生交互验证成功；仍须取得实际系统测试证据。

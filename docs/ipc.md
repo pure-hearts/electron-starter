@@ -6,16 +6,16 @@
 
 ```ts
 // 请求主进程保存深色主题配置。
-await window.$ipcBridge.invoke('store:set', 'theme', 'dark')
+await window.$ipcBridge.invoke("store:set", "theme", "dark");
 // 读取当前主题。
-const current = await window.$ipcBridge.invoke('store:get', 'theme')
+const current = await window.$ipcBridge.invoke("store:get", "theme");
 
 // 订阅主进程推送的下载状态。
-const stop = window.$ipcBridge.on('download:state', state => {
-  console.log(state.percent)
-})
+const stop = window.$ipcBridge.on("download:state", (state) => {
+  console.log(state.percent);
+});
 // 不再需要监听时，调用返回的取消订阅函数。
-stop()
+stop();
 ```
 
 ## 如何新增 IPC 功能？
