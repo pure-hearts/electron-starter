@@ -20,7 +20,8 @@
     "typecheck:vue": "vue-tsc --noEmit",
     "dev:testing": "vp dev --mode testing",
     "build:testing": "vp build --mode testing",
-    "build:production": "vp build --mode production"
+    "build:production": "vp build --mode production",
+    "postinstall": "node scripts/prepare-macos-dev.mjs"
   },
   "engines": {
     "node": ">=24"

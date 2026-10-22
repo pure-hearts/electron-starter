@@ -41,7 +41,11 @@ export function initUpdater() {
 }
 /** 主动检查整包版本并启动下载；具体更新事件会推送给页面。 */
 export async function checkUpdate() {
-  if (!app.isPackaged) throw new Error('Full updates require an installed application')
+  if (!app.isPackaged) {
+    log.info('Full update check skipped: application is not packaged')
+    broadcast('update:state', { kind: 'full', status: 'disabled', error: '开发环境不支持整包更新，请在打包安装后的应用中运行。' })
+    return
+  }
   if (!configured) throw new Error('Updater was not initialized')
   if (!gate.start()) throw new Error('An update check is already in progress')
   try {
@@ -58,7 +62,12 @@ export async function checkUpdate() {
 }
 /** 仅允许在更新包准备就绪后触发退出并安装。 */
 export function installUpdate() {
-  if (!configured || !app.isPackaged) throw new Error('Updates require an installed application')
+  if (!app.isPackaged) {
+    log.info('Full update install skipped: application is not packaged')
+    broadcast('update:state', { kind: 'full', status: 'disabled', error: '开发环境不支持整包更新安装。' })
+    return
+  }
+  if (!configured) throw new Error('Updater was not initialized')
   gate.assertInstallReady()
   // 在调用原生安装器之前消费就绪状态，防止双击重复退出安装。
   gate.invalidate()

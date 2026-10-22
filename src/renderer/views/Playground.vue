@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { useAppStore } from '../stores/app'
+import { useAppStore, type ThemeMode } from '../stores/app'
 import type { DownloadState, UpdateState } from '../../shared/ipc'
 const desktop = window.$ipcBridge
 const appStore = useAppStore()
@@ -90,7 +90,7 @@ onUnmounted(() => unsubscribers.forEach(stop => stop()))
     <el-card header="本地持久化、下载、打印" shadow="never">
       <el-space wrap>
         <el-input v-model="value" style="width:150px"/>
-        <el-button @click="run('存储写入', () => desktop.invoke('store:set','theme',value))">写入主题</el-button>
+        <el-button @click="run('存储写入', () => appStore.setTheme(value as ThemeMode))">写入主题</el-button>
         <el-button @click="run('存储读取', () => desktop.invoke('store:get','theme'))">读取主题</el-button>
       </el-space>
       <el-space wrap>

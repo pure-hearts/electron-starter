@@ -7,7 +7,13 @@ import { log } from '../core/logger'
 
 export const notificationCenter = new NotificationCenter({
   supported: () => Notification.isSupported(),
-  create: (options: NotificationOptions) => new Notification({ title: options.title, body: options.body }),
+  create: (options: NotificationOptions) => {
+    const notice = new Notification({ title: options.title, body: options.body })
+    notice.on('failed', (_event, error) => {
+      log.warn('Notification failed to display', error)
+    })
+    return notice
+  },
   settled: payload => broadcast('notification:settled', payload),
   activated: (payload, title) => {
     // 兼容旧版只接收 title 的通知点击监听器。

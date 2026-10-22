@@ -12,3 +12,5 @@ release/
 !*.pem.example
 .DS_Store
 coverage/
+*.pid
+.dev-electron.pid

@@ -16,11 +16,11 @@ export const transferHandlers = {
   'updater:check': () => checkUpdate(),
   'updater:install': () => installUpdate(),
   'hot:check': () => checkHotUpdate(),
-  // 热更新确认只能由主窗口发送，避免其他页面错误确认新资源已健康。
+  // 热更新确认只能由主窗口发送，避免子窗口或未就绪页面错误确认新资源已健康；非主窗口静默忽略，不引发 IPC 假告警。
   'hot:confirm': e => {
     const main = getMainWindow()
     if (!main || main.isDestroyed() || main.webContents.id !== e.sender.id) {
-      throw new Error('Only the main application window may confirm a renderer update')
+      return
     }
     markRendererHealthy()
   },
