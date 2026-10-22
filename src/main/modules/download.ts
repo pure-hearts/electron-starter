@@ -80,9 +80,9 @@ export function initDownloads(): void {
     if (!id) { item.cancel(); return }
     clearStarting(id)
     if (cancelled.delete(id)) {
-      terminals.finish(id)
+      const firstTerminal = terminals.finish(id)
       item.cancel()
-      broadcast('download:state', { id, url: initial, state: 'cancelled' })
+      if (firstTerminal) broadcast('download:state', { id, url: initial, state: 'cancelled' })
       queue.finish(id)
       return
     }
@@ -156,7 +156,8 @@ export function startDownload(url: string, sender: WebContents): string {
     }, 20_000)
     starting.set(id, timer)
     sender.downloadURL(href)
-    broadcast('download:state', { id, url: href, state: 'started' })
+    // 同步下载事件可能已完成；不能让 started 覆盖终态。
+    if (!terminals.has(id)) broadcast('download:state', { id, url: href, state: 'started' })
   } })
   return id
 }
@@ -165,7 +166,7 @@ export function controlDownload(id: string, action: 'cancel' | 'pause' | 'resume
   if (action === 'cancel') {
     const queued = queue.cancelQueued(id)
     if (queued) {
-      broadcast('download:state', { id, url: queued.url, state: 'cancelled' })
+      if (terminals.finish(id)) broadcast('download:state', { id, url: queued.url, state: 'cancelled' })
       return
     }
   }

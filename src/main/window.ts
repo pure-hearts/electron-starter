@@ -80,7 +80,9 @@ export function createMainWindow() {
   // close 可被阻止：启用关闭到托盘时隐藏窗口，而不是销毁应用。
   win.on('close', event => {
     if (!isQuitting() && getSetting('closeToTray') === true) { event.preventDefault(); win.hide(); return }
-    setSetting('windowBounds', JSON.stringify(win.getBounds()))
+    // 最大化/最小化时的坐标不是用户希望恢复的常规窗口尺寸。
+    if (!win.isDestroyed() && !win.isMaximized() && !win.isMinimized())
+      setSetting('windowBounds', JSON.stringify(win.getBounds()))
   })
   win.on('closed', () => {
     if (boundsTimer) clearTimeout(boundsTimer)
@@ -109,7 +111,9 @@ export function openChild(route: string) {
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   win.webContents.on('will-navigate', (event, url) => { if (!isInternalURL(url)) event.preventDefault() })
   const base = process.env.VITE_DEV_SERVER_URL || rendererURL('/')
-  void win.loadURL(base + '#' + route).then(() => win.show())
+  void win.loadURL(base + '#' + route)
+    .then(() => { if (!win.isDestroyed()) win.show() })
+    .catch(error => { log.error('Child window failed to load', error); if (!win.isDestroyed()) win.close() })
   return win.id
 }
 /** 根据调用 IPC 的页面定位其窗口，执行最小化、最大化等原生操作。 */
