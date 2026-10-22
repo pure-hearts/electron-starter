@@ -48,7 +48,10 @@ async function changeTheme(value: string) {
 <template>
   <el-container class="app">
     <el-header class="header">
-      <strong>Electron Starter</strong>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <strong>Electron Starter</strong>
+        <el-tag size="small" type="success" effect="plain" round>v0.1.1</el-tag>
+      </div>
       <nav>
         <router-link to="/">{{ t("home") }}</router-link>
         <router-link to="/playground">{{ t("playground") }}</router-link>

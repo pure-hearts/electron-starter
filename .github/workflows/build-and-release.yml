@@ -53,3 +53,22 @@ jobs:
 
       - name: Build installable artifacts & publish to GitHub Releases
         run: pnpm exec electron-builder --${{ matrix.target }} --publish always
+
+  publish-release:
+    name: Finalize and Publish Release
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then
+            TAG="v$(node -p "require('./package.json').version")"
+          fi
+          echo "Publishing release for tag: $TAG"
+          gh release edit "$TAG" --draft=false || true
