@@ -1,5 +1,6 @@
 /** electron-store 持久化用户偏好：首次使用时初始化，发现旧结构后迁移。 */
 import Store from 'electron-store'
+import { validate } from '../../shared/validation'
 import type { SettingKey } from '../../shared/ipc'
 import { migrateSettings, settingsDefaults, settingsNeedMigration } from './settings-schema'
 import type { SettingsState } from './settings-schema'
@@ -10,7 +11,7 @@ let store: Store<SettingsState> | null = null
 function currentStore(): Store<SettingsState> {
   // 已初始化时直接复用，避免多个实例分别写同一配置文件。
   if (store) return store
-  // A corrupted JSON file must never prevent the desktop app from starting.
+  // JSON 损坏时回退默认配置，避免用户无法启动应用。
   const created = new Store<SettingsState>({
     name: 'settings', defaults: settingsDefaults, clearInvalidConfig: true
   })
@@ -26,8 +27,9 @@ export function getSetting(key: SettingKey): string | boolean | null {
   const value = currentStore().get(key)
   return typeof value === 'string' || typeof value === 'boolean' ? value : null
 }
-/** 写入已定义的配置键；IPC 层负责对具体取值做严格校验。 */
+/** 使用同一份纯校验规则，保护非 IPC 的内部写入调用。 */
 export function setSetting(key: SettingKey, value: string | boolean): void {
+  validate('store:set', [key, value])
   currentStore().set(key, value)
 }
 /** 删除指定配置项，随后读取时恢复到 Store 预设默认值。 */

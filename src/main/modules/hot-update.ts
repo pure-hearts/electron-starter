@@ -16,17 +16,21 @@ import { log } from './logger'
 import { verifyHotManifest } from './hot-manifest'
 import { extractSafe } from './hot-archive'
 import { singleFlight } from './single-flight'
+import { parseHotPointer, type HotPointer as Pointer } from './hot-pointer'
+import { validateUpdateFeedUrl } from './update-feed-url'
+import { notifyBusiness } from './notification'
 const here = path.dirname(fileURLToPath(import.meta.url))
-type Pointer = { revision: number; directory: string; previous: string | null; compatibleApp: string; phase: 'staged' | 'trying' | 'active' }
+// 一个生命周期对应一个取消信号；退出后中止网络请求，避免继续写入更新指针。
+let lifetime = new AbortController()
+export function disposeHotUpdate(): void { lifetime.abort() }
+export function initHotUpdate(): void { if (lifetime.signal.aborted) lifetime = new AbortController() }
 const MAX_ZIP = 32 * 1024 * 1024
 function workspace() { return path.join(app.getPath('userData'), 'renderer-updates') }
 function pointerPath() { return path.join(workspace(), 'current.json') }
 function installedRoot() { return path.resolve(here, '../dist/renderer') }
 function readPointer(): Pointer | null {
   try {
-    const p: Pointer = JSON.parse(fs.readFileSync(pointerPath(), 'utf8'))
-    if (!Number.isSafeInteger(p.revision) || p.revision < 0 || !/^[a-z0-9-]+$/i.test(p.directory) || p.compatibleApp !== app.getVersion()) return null
-    return p
+    return parseHotPointer(JSON.parse(fs.readFileSync(pointerPath(), 'utf8')) as unknown, app.getVersion())
   } catch { return null }
 }
 function writePointer(pointer: Pointer) {
@@ -69,8 +73,8 @@ function signingKey(): string | null {
     : path.join(process.cwd(), 'resources', 'hot-update-public-key.pem')
   try { return fs.readFileSync(location, 'utf8') } catch { return null }
 }
-async function readLimited(url: string, max: number): Promise<Buffer> {
-  const response = await fetch(url, { signal: AbortSignal.timeout(30_000), redirect: 'error' })
+async function readLimited(url: string, max: number, signal: AbortSignal): Promise<Buffer> {
+  const response = await fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]), redirect: 'error' })
   if (!response.ok || !response.body) throw new Error('Download failed: HTTP ' + response.status)
   const reader = response.body.getReader()
   const chunks: Uint8Array[] = []
@@ -91,17 +95,20 @@ export const checkHotUpdate = singleFlight(async (): Promise<HotUpdateResult> =>
   const config = runtimeConfig()
   const key = signingKey()
   if (!app.isPackaged || !key || !config.hotUpdateUrl) return { status: 'disabled', message: 'Configure HTTPS update URL and release public key first' }
-  const url = new URL(config.hotUpdateUrl)
-  if (url.protocol !== 'https:') return { status: 'error', message: 'Hot update must use HTTPS' }
+  const signal = lifetime.signal
   try {
+    signal.throwIfAborted()
+    validateUpdateFeedUrl(config.hotUpdateUrl)
+    const url = new URL(config.hotUpdateUrl)
     broadcast('update:state', {kind:'hot',status:'checking'})
-    const raw = await readLimited(url.toString(), 16_384)
+    const raw = await readLimited(url.toString(), 16_384, signal)
     const m = verifyHotManifest(JSON.parse(raw.toString('utf8')) as unknown, app.getVersion(), key)
     const current = readPointer()
     if (current?.phase === 'staged' || current?.phase === 'trying') return { status: 'ready', message: 'Restart app before checking another hot update' }
     if (m.revision <= (current?.revision ?? 0)) return { status: 'up-to-date' }
     broadcast('update:state', {kind:'hot',status:'downloading'})
-    const bytes = await readLimited(m.url, MAX_ZIP)
+    const bytes = await readLimited(m.url, MAX_ZIP, signal)
+    signal.throwIfAborted()
     if (createHash('sha256').update(bytes).digest('hex') !== m.sha256) throw new Error('SHA-256 mismatch')
     const name = 'rev-' + m.revision
     const temp = path.join(workspace(), name + '-tmp')
@@ -116,10 +123,11 @@ export const checkHotUpdate = singleFlight(async (): Promise<HotUpdateResult> =>
     } catch(err) { fs.rmSync(temp, { recursive: true, force: true }); throw err }
     writePointer({ revision: m.revision, directory: name, previous: current?.directory ?? null, compatibleApp: app.getVersion(), phase: 'staged' })
     broadcast('update:state', {kind:'hot',status:'ready'})
+    notifyBusiness({ title: '资源更新已就绪', body: '重启应用后将启用新资源。', kind: 'success', dedupeKey: 'hot-update-ready' })
     return { status: 'ready', message: 'Resource update is staged; restart app to activate' }
   } catch (error) {
     log.error('Hot update failed', error)
-    broadcast('update:state', {kind:'hot',status:'error',error:String(error)})
-    return { status: 'error', message: String(error) }
+    broadcast('update:state', {kind:'hot',status:'error',error:'资源更新失败，请稍后重试。'})
+    return { status: 'error', message: '资源更新失败，请稍后重试。' }
   }
 })

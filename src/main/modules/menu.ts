@@ -24,3 +24,6 @@ export function createMenu() {
   // 把菜单模板转换成原生 Menu，再安装为整个应用的菜单栏。
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
+
+/** 移除应用菜单及其快捷键回调。 */
+export function destroyMenu(): void { Menu.setApplicationMenu(null) }

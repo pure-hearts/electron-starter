@@ -6,6 +6,7 @@ export interface NativeNotice {
   show(): void
   close(): void
   on(event: 'click' | 'close' | 'failed', handler: () => void): void
+  removeListener?(event: 'click' | 'close' | 'failed', handler: () => void): void
 }
 export interface NotificationAdapter {
   supported(): boolean
@@ -38,15 +39,21 @@ export class NotificationCenter {
       if (settled) return
       settled = true
       this.active.delete(id)
+      notice.removeListener?.('click', onClick)
+      notice.removeListener?.('close', onClose)
+      notice.removeListener?.('failed', onFailed)
       this.adapter.settled?.({ id, reason })
     }
     // 终态到达后忽略迟到点击，避免旧通知错误唤醒窗口。
-    notice.on('click', () => {
+    const onClick = () => {
       if (settled) return
       this.adapter.activated({ id, kind, action: options.action, sourceWindowId }, options.title)
-    })
-    notice.on('close', () => settle('closed'))
-    notice.on('failed', () => settle('failed'))
+    }
+    const onClose = () => settle('closed')
+    const onFailed = () => settle('failed')
+    notice.on('click', onClick)
+    notice.on('close', onClose)
+    notice.on('failed', onFailed)
     // show 抛异常时不计入成功数，也不保留失败记录。
     try { notice.show() }
     catch (error) {
@@ -66,6 +73,16 @@ export class NotificationCenter {
     try { entry.notice.close() }
     finally { entry.settle('closed') }
     return true
+  }
+  /** 逐个关闭，即使某个平台关闭失败也继续释放其他通知。 */
+  dispose(): void {
+    const failures: unknown[] = []
+    for (const id of [...this.active.keys()]) {
+      try { this.close(id) } catch (error) { failures.push(error) }
+    }
+    this.recent.clear()
+    this.history = []
+    if (failures.length) throw new AggregateError(failures, 'Notification cleanup failed')
   }
   get activeCount(): number { return this.active.size }
 }

@@ -9,7 +9,7 @@ export function isTrustedWindowNavigation(target: string, config: WindowNavigati
   try {
     const url = new URL(target)
     // 打包应用的自定义协议只能是 renderer 主机，不能放行外部 app:// 地址。
-    if (url.protocol === 'app:' && url.hostname === 'renderer' && !url.username && !url.password) return true
+    if (url.protocol === 'app:' && url.hostname === 'renderer' && !url.port && !url.username && !url.password) return true
     if (!config.devServerUrl) return false
     const dev = new URL(config.devServerUrl)
     // 开发模式仅支持 loopback HTTP / HTTPS，避免配置被意外指向不可信站点。

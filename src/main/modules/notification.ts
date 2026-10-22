@@ -3,6 +3,7 @@ import { Notification, BrowserWindow } from 'electron'
 import type { NotificationOptions } from '../../shared/notification'
 import { broadcast, focusMainWindow } from '../window'
 import { NotificationCenter } from './notification-center'
+import { log } from './logger'
 
 export const notificationCenter = new NotificationCenter({
   supported: () => Notification.isSupported(),
@@ -23,4 +24,10 @@ export function notify(title: string, body: string): void {
   const result = notificationCenter.send({ title, body })
   if (!result.accepted && result.reason === 'unsupported')
     throw new Error('Notifications are not supported by this OS')
+}
+
+/** 业务通知属于辅助反馈；系统不支持或通知失败不能改变下载/更新的真实结果。 */
+export function notifyBusiness(options: NotificationOptions): void {
+  try { notificationCenter.send(options) }
+  catch (error) { log.warn('Business notification failed', error) }
 }
