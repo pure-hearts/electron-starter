@@ -5,8 +5,8 @@ import { isTrustedWindowNavigation } from '../modules/system/window-navigation-p
 
 // ESM 中没有 __dirname，需通过 import.meta.url 推算当前打包代码所在目录。
 const here = path.dirname(fileURLToPath(import.meta.url))
-// Sandboxed preload must use bundled CommonJS, not ESM.
-export const preloadPath = path.join(here, '../preload.cjs')
+// 打包产物中 main.js 与 preload.cjs 始终处于同一目录（dist-electron）。
+export const preloadPath = path.join(here, 'preload.cjs')
 
 /** 统一的窗口安全配置：启用隔离和沙箱，禁止页面直接访问 Node.js。 */
 export function windowOptions(): Electron.BrowserWindowConstructorOptions {
