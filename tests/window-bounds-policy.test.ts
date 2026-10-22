@@ -10,3 +10,8 @@ describe('跨平台窗口边界规则', () => {
       expect(safeWindowBounds(r, displays)).toBeNull()
   })
 })
+
+it('纠正部分离屏窗口，使标题栏和操作区域可见', () => {
+  expect(safeWindowBounds({ x: -850, y: -600, width: 900, height: 650 }, [{ x: 0, y: 0, width: 1920, height: 1080 }]))
+    .toEqual({ x: 0, y: 0, width: 900, height: 650 })
+})

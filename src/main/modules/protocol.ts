@@ -25,7 +25,9 @@ protocol.registerSchemesAsPrivileged([{
 /** 创建生产构建页面地址；与用于外部唤起的 electron-starter:// 不同。 */
 export function rendererURL(resource = '/') { return 'app://renderer' + (resource.startsWith('/') ? resource : '/' + resource) }
 /** 注册 app:// 资源处理器，读取当前生效的渲染资源目录。 */
+let resourceRegistered = false
 export function registerResourceProtocol() {
+  if (resourceRegistered) return
   protocol.handle('app', req => {
     const u = new URL(req.url)
     // 拒绝不是 renderer 主机名的请求，避免把该协议当作通用文件读取入口。
@@ -36,6 +38,13 @@ export function registerResourceProtocol() {
     // 将通过校验的真实文件路径转为 file: URL，再交给 Electron 网络层读取。
     return net.fetch(pathToFileURL(resolved).toString())
   })
+  resourceRegistered = true
+}
+/** 仅撤销本模块拥有的资源协议处理器，保留协议特权声明。 */
+export function disposeResourceProtocol(): void {
+  if (!resourceRegistered) return
+  protocol.unhandle('app')
+  resourceRegistered = false
 }
 function deepLinkFromArgs(args: string[]) { return args.find(x => x.startsWith(DEEP_LINK_SCHEME + '://')) }
 /** 处理系统传入的链接；冷启动时先入队，窗口可用且订阅后再广播。 */
@@ -55,14 +64,26 @@ export function handleDeepLink(input: string) {
   }
 }
 /** 注册操作系统协议关联，并监听 macOS 的 open-url 事件。 */
+const onOpenUrl = (event: Electron.Event, url: string) => { event.preventDefault(); handleDeepLink(url) }
+let deepLinkRegistered = false
 export function registerDeepLink() {
+  if (deepLinkRegistered) return
   // 开发模式需要附加脚本入口参数；打包后则只注册可执行文件。
   if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME, process.execPath, [path.resolve(process.argv[1])])
   else app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME)
-  app.on('open-url', (event, url) => { event.preventDefault(); handleDeepLink(url) })
+  app.on('open-url', onOpenUrl)
+  deepLinkRegistered = true
 }
 /** Windows/Linux 等平台常把协议 URL 放在启动命令行参数中。 */
 export function processDeepLinkArgs(argv: string[]) {
   const url = deepLinkFromArgs(argv)
   if (url) handleDeepLink(url)
+}
+
+/** 退出时取消本进程监听，不删除用户操作系统中的协议关联。 */
+export function disposeDeepLink(): void {
+  app.removeListener('open-url', onOpenUrl)
+  deepLinkRegistered = false
+  rendererSubscribed = false
+  inbox.drain()
 }

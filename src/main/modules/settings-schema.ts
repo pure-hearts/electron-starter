@@ -27,7 +27,9 @@ export function normalizeWindowBounds(value: unknown): string {
     if ((b.width as number) < 820 || (b.width as number) > 10000 ||
         (b.height as number) < 540 || (b.height as number) > 10000 ||
         Math.abs(b.x as number) > 100000 || Math.abs(b.y as number) > 100000) return ''
-    return JSON.stringify({ x: b.x, y: b.y, width: b.width, height: b.height })
+    // 旧矩形没有 maximized 字段仍保持原结构，新增状态只接受严格布尔值。
+    return JSON.stringify({ x: b.x, y: b.y, width: b.width, height: b.height,
+      ...(typeof b.maximized === 'boolean' ? { maximized: b.maximized } : {}) })
   } catch { return '' }
 }
 /** Upgrade untrusted, potentially outdated settings to the current schema. */

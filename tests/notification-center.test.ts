@@ -107,3 +107,18 @@ describe('通知原生适配器异常', () => {
     expect(settled[0].id.length).toBeGreaterThan(10)
   })
 })
+
+describe('通知退出清理', () => {
+  it('释放所有通知后迟到点击不会唤醒窗口，可重复清理', () => {
+    const h = harness()
+    h.center.send({ title: '一', body: '正文' })
+    h.center.send({ title: '二', body: '正文' })
+    h.center.dispose()
+    h.center.dispose()
+    expect(h.center.activeCount).toBe(0)
+    expect(h.notices.every(n => n.closed)).toBe(true)
+    h.notices[0].handlers.click?.()
+    expect(h.activations).toEqual([])
+    expect(h.settled).toHaveLength(2)
+  })
+})

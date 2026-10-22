@@ -12,6 +12,7 @@ import { transferHandlers } from './handlers/transfer'
 import { serviceHandlers } from './handlers/services'
 import type { Handler } from './handlers/types'
 import { isTrustedIpcOrigin } from './handlers/ipc-origin'
+import { log } from './modules/logger'
 // 把每个通道映射到具体主进程功能；Record 确保通道与处理函数对应。
 /** 汇总业务域 Handler；satisfies 保证每个约定通道均有处理器。 */
 const handlers = {
@@ -23,32 +24,49 @@ const handlers = {
 function assertSender(e: IpcMainInvokeEvent) {
   // senderFrame 表示消息来源 frame；只接受主框架，拒绝嵌入的 iframe。
   const frame = e.senderFrame
-  if (!frame || frame !== e.sender.mainFrame) throw new Error('IPC only allowed from top-level application frame')
+  if (e.sender.isDestroyed() || !frame || frame !== e.sender.mainFrame) throw new Error('IPC only allowed from top-level application frame')
   // URL 用于检查页面是否来自受信任的 app://renderer 或开发服务器。
   if (!isTrustedIpcOrigin(frame.url, process.env.VITE_DEV_SERVER_URL))
     throw new Error('IPC sender is not trusted')
 }
+/**
+ * 保持原有 invoke 的返回值与 Promise rejection 协议，只替换不受控异常的消息。
+ * Electron 会把 Error.message 传给页面，不能直接抛出文件系统/网络 SDK 的错误。
+ */
+async function dispatch(channel: InvokeChannel, event: IpcMainInvokeEvent, args: unknown[]) {
+  try { assertSender(event) }
+  catch { throw new Error('IPC_FORBIDDEN: 页面无权执行此操作') }
+  try { validate(channel, args) }
+  catch { throw new Error('IPC_INVALID_ARGUMENTS: 请求参数无效') }
+  try {
+    // 必须 await，才能同时捕获同步 throw 与异步 Promise rejection。
+    return await handlers[channel](event, args)
+  } catch (error) {
+    // 详细上下文仅记录在主进程；页面收到固定文案，不含路径、凭据或原始堆栈。
+    log.error('IPC operation failed', channel, error)
+    throw new Error('IPC_OPERATION_FAILED: 操作失败，请重试或查看诊断日志')
+  }
+}
 /** 用 ipcMain.handle 建立请求/响应通道，与 Preload 的 ipcRenderer.invoke 对应。 */
-let ipcRegistered = false
+let registeredChannels: InvokeChannel[] = []
 export function registerIPC() {
-  if (ipcRegistered) return
+  if (registeredChannels.length) return
   const installed: InvokeChannel[] = []
   try {
-  for (const channel of allowedChannels) {
-    // invoke 的 Promise 会收到该异步处理函数返回值或抛出的错误。
-    ipcMain.handle(channel, async (event, ...args: unknown[]) => {
-      assertSender(event)
-      // TS 类型不会校验运行时参数；因此主进程必须再次检查。
-      validate(channel, args)
-      // 只有两层校验全部通过，才执行可能访问操作系统的业务操作。
-      return handlers[channel](event, args)
-    })
-    installed.push(channel)
-  }
-  ipcRegistered = true
+    for (const channel of allowedChannels) {
+      ipcMain.handle(channel, (event, ...args: unknown[]) => dispatch(channel, event, args))
+      installed.push(channel)
+    }
+    registeredChannels = installed
   } catch (error) {
-    // 仅撤销本次注册的处理器，不影响其他模块的 IPC。
+    // 只撤销本次成功注册的处理器，不移除产生冲突的其他所有者的通道。
     for (const channel of installed) ipcMain.removeHandler(channel)
     throw error
   }
+}
+/** 初始化回滚和退出时释放本模块拥有的通道；可重复调用。 */
+export function unregisterIPC(): void {
+  const previous = registeredChannels
+  registeredChannels = []
+  for (const channel of previous) ipcMain.removeHandler(channel)
 }
