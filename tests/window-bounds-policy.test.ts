@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { safeWindowBounds } from '../src/main/modules/window-bounds-policy'
+import { safeWindowBounds } from '../src/main/modules/system/window-bounds-policy'
 describe('跨平台窗口边界规则', () => {
   const displays = [{ x: 0, y: 0, width: 1920, height: 1080 }]
   it('可恢复合法窗口', () => {

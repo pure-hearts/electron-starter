@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test'
 import { generateKeyPairSync, sign } from 'node:crypto'
-import { verifyHotManifest, manifestBody, validateHotArchiveUrl } from '../src/main/modules/hot-manifest'
+import { verifyHotManifest, manifestBody, validateHotArchiveUrl } from '../src/main/modules/update/hot/manifest'
 
 const keys = generateKeyPairSync('ed25519')
 const publicKey = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString()

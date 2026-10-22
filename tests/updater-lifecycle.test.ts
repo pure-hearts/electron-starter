@@ -4,14 +4,14 @@ const mocks = vi.hoisted(() => ({ broadcast: vi.fn(), notify: vi.fn(), config: {
 vi.mock('electron', () => ({ app: { isPackaged: true, getVersion: () => '1.0.0' } }))
 vi.mock('../src/main/window', () => ({ broadcast: mocks.broadcast }))
 vi.mock('../src/main/modules/notification', () => ({ notifyBusiness: mocks.notify }))
-vi.mock('../src/main/modules/logger', () => ({ log: { error: vi.fn() } }))
-vi.mock('../src/main/modules/config', () => ({ runtimeConfig: () => mocks.config }))
+vi.mock('../src/main/modules/core/logger', () => ({ log: { error: vi.fn() } }))
+vi.mock('../src/main/modules/core/config', () => ({ runtimeConfig: () => mocks.config }))
 vi.mock('electron-updater', () => ({ autoUpdater: Object.assign(new EventEmitter(), {
   autoDownload: true, autoInstallOnAppQuit: true, setFeedURL: vi.fn(),
   checkForUpdates: vi.fn(), downloadUpdate: vi.fn(), quitAndInstall: vi.fn()
 }) }))
 import { autoUpdater } from 'electron-updater'
-import { initUpdater, disposeUpdater, checkUpdate, installUpdate } from '../src/main/modules/updater'
+import { initUpdater, disposeUpdater, checkUpdate, installUpdate } from '../src/main/modules/update/full'
 
 describe('整包更新生命周期', () => {
   beforeEach(() => { disposeUpdater(); vi.clearAllMocks(); mocks.config.appUpdateUrl = '' })

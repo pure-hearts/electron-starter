@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { RecoveryPolicy } from '../src/main/modules/recovery-policy'
+import { RecoveryPolicy } from '../src/main/modules/core/recovery-policy'
 describe('crash recovery guard', () => {
   it('stops infinite reload loops', () => {
     const policy = new RecoveryPolicy(2, 60_000)

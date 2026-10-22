@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { DeepLinkInbox } from '../src/main/modules/deep-link-inbox'
+import { DeepLinkInbox } from '../src/main/modules/protocol/deep-link-inbox'
 
 describe('native deep-link launch contract', () => {
   it('stores cold-start links until renderer subscribes', () => {

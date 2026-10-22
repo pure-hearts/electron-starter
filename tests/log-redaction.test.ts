@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { redactLogMessage } from '../src/main/modules/log-redaction'
+import { redactLogMessage } from '../src/main/modules/core/log-redaction'
 describe('renderer diagnostic redaction', () => {
   it('masks bearer tokens and sensitive query values', () => {
     expect(redactLogMessage('Bearer abcdef https://site.test?a=1&token=xyz'))

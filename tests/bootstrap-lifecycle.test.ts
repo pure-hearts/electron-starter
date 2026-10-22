@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
-import { StartupLifecycle } from '../src/main/modules/startup-lifecycle'
+import { StartupLifecycle } from '../src/main/modules/system/startup-lifecycle'
 
 describe('启动事务与资源释放', () => {
   it('重复启动仅初始化一次，按逆序释放且重复释放无副作用', () => {

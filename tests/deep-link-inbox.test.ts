@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test'
-import { DeepLinkInbox } from '../src/main/modules/deep-link-inbox'
+import { DeepLinkInbox } from '../src/main/modules/protocol/deep-link-inbox'
 describe('Deep Link cold-start inbox', () => {
   it('buffers early URLs and drains once renderer subscribes', () => {
     const inbox = new DeepLinkInbox('electron-starter')

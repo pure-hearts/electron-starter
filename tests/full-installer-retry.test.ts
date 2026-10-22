@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { UpdateGate } from '../src/main/modules/update-gate'
+import { UpdateGate } from '../src/main/modules/update/full/gate'
 describe('full installer upgrade retry behavior', () => {
   it('prevents concurrent checks and invalidated install after retry', () => {
     const gate = new UpdateGate()

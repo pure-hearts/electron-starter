@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { isTrustedWindowNavigation } from '../src/main/modules/window-navigation-policy'
+import { isTrustedWindowNavigation } from '../src/main/modules/system/window-navigation-policy'
 
 describe('窗口导航边界', () => {
   it('允许打包应用内协议与 fragment 路由', () => {

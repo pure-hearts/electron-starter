@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
-import { DownloadManager } from '../src/main/modules/download-manager'
+import { DownloadManager } from '../src/main/modules/download/manager'
 import type { DownloadState } from '../src/shared/ipc'
 
 class Item extends EventEmitter {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { NotificationCenter, type NativeNotice } from '../src/main/modules/notification-center'
+import { NotificationCenter, type NativeNotice } from '../src/main/modules/notification/center'
 import { validate } from '../src/shared/validation'
 
 // 用最小模拟原生适配器验证主进程逻辑，无需启动桌面图形环境。

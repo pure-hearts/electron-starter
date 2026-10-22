@@ -4,16 +4,17 @@
  */
 import { app } from 'electron'
 import fs from 'node:fs'
-import { registerDeepLink } from './modules/protocol'
-import { log } from './modules/logger'
+import { registerDeepLink } from './modules/protocol/deep-link'
+import { log } from './modules/core/logger'
 import { bootstrapMain } from './bootstrap'
-import { registerAppLifecycle } from './app-lifecycle'
+import { registerAppLifecycle } from './bootstrap/lifecycle'
 
 // 自动化测试使用隔离目录，避免 Smoke 测试覆盖用户真实配置。
 if (process.env.ELECTRON_STARTER_TEST_USERDATA) {
   fs.mkdirSync(process.env.ELECTRON_STARTER_TEST_USERDATA, { recursive: true })
   app.setPath('userData', process.env.ELECTRON_STARTER_TEST_USERDATA)
 }
+
 // 第二实例无需再次注册 IPC、托盘等系统资源。
 if (!app.requestSingleInstanceLock()) {
   app.quit()

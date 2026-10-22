@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test'
-import { UpdateGate } from '../src/main/modules/update-gate'
+import { UpdateGate } from '../src/main/modules/update/full/gate'
 
 describe('installer update lifecycle regression', () => {
   it('never installs during a new check or after a failure', () => {
