@@ -11,7 +11,12 @@ import { initUpdater } from './modules/updater'
 import { recoverPendingUpdate } from './modules/hot-update'
 import { configureSessionSecurity } from './session-security'
 import { registerSmokeChecks } from './smoke'
+// 防止重复调用导致系统托盘、更新事件和窗口重复注册。
+let bootstrapped = false
 export function bootstrapMain(): void {
+  if (bootstrapped) return
+  // 进入初始化过程后禁止重入。异常时保留状态，避免重试重复注册部分资源。
+  bootstrapped = true
   // 日志最先初始化，确保后续模块初始化失败时有诊断记录。
   initLogger()
   // 启动时检查上一次热更新是否中断，必要时恢复到安全资源版本。

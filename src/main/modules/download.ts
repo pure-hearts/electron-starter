@@ -7,10 +7,13 @@ import type { DownloadItem, WebContents } from 'electron'
 import { broadcast } from '../window'
 import { safeUrl } from '../../shared/validation'
 import { DownloadQueue } from './download-queue'
+import { DownloadTerminalRegistry } from './download-terminal'
 import { log } from './logger'
 
 // 正在下载的任务表：任务 ID 对应 Electron DownloadItem 实例。
 const tasks = new Map<string, DownloadItem>()
+// 终态去重：超时、取消、安全校验失败及 Electron done 可能竞态发生。
+const terminals = new DownloadTerminalRegistry()
 // 记录下载启动超时计时器，防止 will-download 事件未到导致永久等待。
 const starting = new Map<string, ReturnType<typeof setTimeout>>()
 // 标记已取消任务，避免后到的异步事件错误更新任务状态。
@@ -55,6 +58,7 @@ function clearStarting(id: string): void {
   starting.delete(id)
 }
 function fail(id: string, url: string, error: string): void {
+  if (!terminals.finish(id)) return
   log.warn('Download failed:', error)
   rememberFailure(id, url)
   clearStarting(id)
@@ -76,8 +80,9 @@ export function initDownloads(): void {
     if (!id) { item.cancel(); return }
     clearStarting(id)
     if (cancelled.delete(id)) {
+      const firstTerminal = terminals.finish(id)
       item.cancel()
-      broadcast('download:state', { id, url: initial, state: 'cancelled' })
+      if (firstTerminal) broadcast('download:state', { id, url: initial, state: 'cancelled' })
       queue.finish(id)
       return
     }
@@ -95,6 +100,8 @@ export function initDownloads(): void {
     try { item.setSavePath(destination) }
     catch (error) { item.cancel(); fail(id, initial, String(error)); return }
     item.on('updated', (_event, state) => {
+      // 任务已经失败或取消后，迟到的进度事件不能覆盖最终状态。
+      if (terminals.has(id)) return
       try {
         for (const address of item.getURLChain()) safeUrl(address)
       } catch {
@@ -104,7 +111,8 @@ export function initDownloads(): void {
       }
       const total = item.getTotalBytes()
       if (state === 'interrupted') {
-        broadcast('download:state', { id, url: initial, state: 'failed', error: 'Transfer interrupted' })
+        // interrupted 不一定意味着任务终止；等待 done 决定最终状态。
+        log.warn('Download interrupted; awaiting final completion event', id)
       } else {
         broadcast('download:state', {
           id, url: initial, state: item.isPaused() ? 'paused' : 'progress',
@@ -114,7 +122,7 @@ export function initDownloads(): void {
     })
     item.once('done', (_event, state) => {
       // done may occur after cancellation or an earlier security failure.
-      if (tasks.get(id) !== item) return
+      if (tasks.get(id) !== item || !terminals.finish(id)) return
       tasks.delete(id)
       cancelled.delete(id)
       if (state !== 'completed' && state !== 'cancelled') rememberFailure(id, initial)
@@ -136,10 +144,20 @@ export function startDownload(url: string, sender: WebContents): string {
   broadcast('download:state', { id, url: href, state: 'queued' })
   queue.enqueue({ id, url: href, begin: () => {
     if (sender.isDestroyed()) throw new Error('Requesting window was closed')
-    const timer = setTimeout(() => fail(id, href, 'Download did not start within 20 seconds'), 20_000)
+    // 取消与启动超时竞态：用户取消的任务不得被迟到的超时回调重新标记失败。
+    const timer = setTimeout(() => {
+      if (cancelled.delete(id)) {
+        clearStarting(id)
+        if (terminals.finish(id)) broadcast('download:state', { id, url: href, state: 'cancelled' })
+        queue.finish(id)
+        return
+      }
+      fail(id, href, 'Download did not start within 20 seconds')
+    }, 20_000)
     starting.set(id, timer)
     sender.downloadURL(href)
-    broadcast('download:state', { id, url: href, state: 'started' })
+    // 同步下载事件可能已完成；不能让 started 覆盖终态。
+    if (!terminals.has(id)) broadcast('download:state', { id, url: href, state: 'started' })
   } })
   return id
 }
@@ -148,7 +166,7 @@ export function controlDownload(id: string, action: 'cancel' | 'pause' | 'resume
   if (action === 'cancel') {
     const queued = queue.cancelQueued(id)
     if (queued) {
-      broadcast('download:state', { id, url: queued.url, state: 'cancelled' })
+      if (terminals.finish(id)) broadcast('download:state', { id, url: queued.url, state: 'cancelled' })
       return
     }
   }

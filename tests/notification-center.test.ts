@@ -76,3 +76,34 @@ describe('通知结束状态', () => {
     expect(h.center.close(receipt.id)).toBe(false)
   })
 })
+
+describe('通知终态后的点击保护', () => {
+  it('通知关闭后迟到的 click 不再唤醒窗口', () => {
+    const h = harness()
+    const receipt = h.center.send({ title: '测试', body: '说明' })
+    h.center.close(receipt.id)
+    h.notices[0].handlers.click()
+    expect(h.activations).toEqual([])
+  })
+})
+
+describe('通知原生适配器异常', () => {
+  it('原生 show 同步异常时发送一次 failed 终态，不残留活跃对象', () => {
+    const settled: Array<{ id: string; reason: string }> = []
+    const center = new NotificationCenter({
+      supported: () => true,
+      create: () => ({
+        show: () => { throw new Error('native show failed') },
+        close: () => undefined,
+        on: () => undefined
+      }),
+      activated: () => undefined,
+      settled: state => { settled.push(state) }
+    })
+    expect(() => center.send({ title: '提醒', body: '内容' })).toThrow('native show failed')
+    expect(center.activeCount).toBe(0)
+    expect(settled).toHaveLength(1)
+    expect(settled[0].reason).toBe('failed')
+    expect(settled[0].id.length).toBeGreaterThan(10)
+  })
+})
