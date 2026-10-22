@@ -19,8 +19,8 @@ export default defineConfig({
         entry: fileURLToPath(new URL('./src/main/index.ts', import.meta.url)),
         vite: { build: { outDir: '../../dist-electron', emptyOutDir: false, rolldownOptions: { output: { entryFileNames: 'main.js' } } } },
         async onstart({ startup }) {
-          // Explicitly avoid the plugin default '--no-sandbox' switch.
-          await startup(['.'])
+          // Explicitly avoid the plugin default '--no-sandbox' switch and resolve root cwd.
+          await startup(['.'], { cwd: fileURLToPath(new URL('.', import.meta.url)) })
         }
       },
       preload: {
