@@ -77,7 +77,7 @@ export class NotificationCenter {
   /** 逐个关闭，即使某个平台关闭失败也继续释放其他通知。 */
   dispose(): void {
     const failures: unknown[] = []
-    for (const id of [...this.active.keys()]) {
+    for (const id of Array.from(this.active.keys())) {
       try { this.close(id) } catch (error) { failures.push(error) }
     }
     this.recent.clear()

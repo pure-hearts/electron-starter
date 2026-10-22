@@ -8,5 +8,5 @@ export function redactLogMessage(input: string): string {
     // URL 查询串中的 token/api_key/password/secret 等参数值不落盘。
     .replace(/([?&](?:access_token|refresh_token|token|api_key|password|secret)=)[^&\s]+/gi, '$1[REDACTED]')
     // 针对常见 JSON 日志中的敏感字段替换字符串值。
-    .replace(/(\"(?:password|token|secret|api_key|authorization)\"\s*:\s*\")[^"]+(\")/gi, '$1[REDACTED]$2')
+    .replace(/("(?:password|token|secret|api_key|authorization)"\s*:\s*")[^"]+(")/gi, '$1[REDACTED]$2')
 }

@@ -39,7 +39,7 @@ describe('整包更新生命周期', () => {
     initUpdater()
     vi.mocked(autoUpdater.checkForUpdates).mockResolvedValue({ updateInfo: { version: '1.1.0' } } as never)
     vi.mocked(autoUpdater.downloadUpdate).mockImplementation(() => {
-      autoUpdater.emit('update-downloaded', { version: '1.1.0' })
+      autoUpdater.emit('update-downloaded', { version: '1.1.0' } as never)
       return Promise.resolve([])
     })
     await checkUpdate()
