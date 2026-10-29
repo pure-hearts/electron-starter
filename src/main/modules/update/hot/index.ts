@@ -117,13 +117,47 @@ export function recoverPendingUpdate(): void {
   }
 }
 
-/** 主窗口加载成功后触发健康确认，将 trying 提升为 active 稳定版本 */
+import { filterStaleRevisions } from "./gc";
+export { filterStaleRevisions } from "./gc";
+
+/**
+ * 异步清理废弃的历史版本目录，仅保留当前版本与备用回滚版本。
+ * 捕获所有潜在的 I/O 异常，保证后台 GC 绝不影响主流程。
+ */
+export async function cleanupStaleRevisions(): Promise<string[]> {
+  try {
+    const ws = workspace();
+    if (!fs.existsSync(ws)) return [];
+
+    const pointer = readPointer();
+    const all = await fs.promises.readdir(ws);
+    const staleList = filterStaleRevisions(all, pointer?.directory, pointer?.previous);
+
+    for (const stale of staleList) {
+      const target = path.join(ws, stale);
+      try {
+        await fs.promises.rm(target, { recursive: true, force: true });
+        log.info(`Cleaned up stale hot update revision: ${stale}`);
+      } catch (err) {
+        log.warn(`Failed to clean up stale revision directory: ${stale}`, err);
+      }
+    }
+    return staleList;
+  } catch (error) {
+    log.warn("Error running hot update garbage collection", error);
+    return [];
+  }
+}
+
+/** 主窗口加载成功后触发健康确认，将 trying 提升为 active 稳定版本并执行历史 GC */
 export function markRendererHealthy(): void {
   const p = readPointer();
   if (p?.phase === "trying") {
     writePointer({ ...p, phase: "active" });
     log.info(`Renderer update marked healthy and active: rev-${p.revision}`);
   }
+  // 只要主窗口确认加载健康，异步执行历史版本垃圾回收
+  void cleanupStaleRevisions();
 }
 
 /** 根据当前指针返回实际应当生效的前端静态资源根目录 */

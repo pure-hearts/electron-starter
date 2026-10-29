@@ -11,6 +11,7 @@ import { systemHandlers } from "./handlers/system";
 import { transferHandlers } from "./handlers/transfer";
 import { serviceHandlers } from "./handlers/services";
 import { isTrustedIpcOrigin } from "./origin";
+import { withTimeoutAndMetrics } from "./timeout";
 import { log } from "../modules/core/logger";
 
 // 把每个通道映射到具体主进程功能；Record 确保通道与处理函数对应。
@@ -50,9 +51,13 @@ async function dispatch(channel: InvokeChannel, event: IpcMainInvokeEvent, args:
     throw new Error("IPC_INVALID_ARGUMENTS: 请求参数无效");
   }
   try {
-    // 必须 await，才能同时捕获同步 throw 与异步 Promise rejection。
-    return await handlers[channel](event, args);
+    // 注入统一的超时熔断与执行耗时度量，杜绝渲染层无限等待
+    return await withTimeoutAndMetrics(async () => await handlers[channel](event, args), channel);
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("IPC_TIMEOUT:")) {
+      log.error("IPC operation timed out", channel, error);
+      throw error;
+    }
     // 详细上下文仅记录在主进程；页面收到固定文案，不含路径、凭据或原始堆栈。
     log.error("IPC operation failed", channel, error);
     throw new Error("IPC_OPERATION_FAILED: 操作失败，请重试或查看诊断日志");
