@@ -2,9 +2,7 @@
 import { app, BrowserWindow } from "electron";
 import { createMainWindow, focusMainWindow } from "../window";
 import { processDeepLinkArgs } from "../modules/protocol";
-import { getSetting } from "../modules/store";
 import { markQuitting } from "../modules/core/lifecycle";
-import { platform } from "../platform";
 import { shutdownMain } from "./index";
 
 /** 必须在成功取得单实例锁之后注册，确保只有主实例接收唤醒事件。 */
@@ -21,9 +19,9 @@ export function registerAppLifecycle(): void {
     else focusMainWindow();
   });
 
-  // 非 macOS 且未启用关闭到托盘时，关闭最后一个窗口应退出应用。
+  // 所有平台统一：当所有窗口关闭时退出应用。
   app.on("window-all-closed", () => {
-    if (!platform.isMac && getSetting("closeToTray") !== true) app.quit();
+    app.quit();
   });
 
   // 窗口 close 事件依赖退出标记，须在真正退出时标识。

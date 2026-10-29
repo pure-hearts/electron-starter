@@ -17,6 +17,10 @@ export function requestQuit(): void {
 }
 /** 重启应用：app.relaunch 计划启动新进程，随后退出当前实例。 */
 export function requestRestart(): void {
-  app.relaunch();
+  const args = process.argv.slice(1);
+  if (process.env.VITE_DEV_SERVER_URL && !args.some((a) => a.startsWith("--dev-server-url="))) {
+    args.push(`--dev-server-url=${process.env.VITE_DEV_SERVER_URL}`);
+  }
+  app.relaunch({ args });
   requestQuit();
 }

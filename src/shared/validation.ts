@@ -35,11 +35,14 @@ export const allowedChannels = new Set<InvokeChannel>([
   "updater:check",
   "updater:install",
   "hot:check",
+  "hot:state",
+  "hot:restart",
   "hot:confirm",
   "log:write",
   "log:export",
   "protocol:scheme",
   "protocol:pending",
+  "clipboard:write",
 ]);
 export function safeUrl(input: string): URL {
   if (typeof input !== "string" || input.length > 4096) throw new Error("Invalid URL");
@@ -90,6 +93,8 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
     "updater:check",
     "updater:install",
     "hot:check",
+    "hot:state",
+    "hot:restart",
     "hot:confirm",
     "log:export",
     "protocol:scheme",
@@ -179,6 +184,7 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
     str(1, 2048)
   )
     return;
+  if (channel === "clipboard:write" && args.length === 1 && typeof args[0] === "string") return;
   // 未匹配任何合法参数组合时一律拒绝；默认失败而不是默认放行。
   throw new Error("Invalid IPC arguments: " + channel);
 }

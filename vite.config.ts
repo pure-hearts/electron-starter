@@ -2,6 +2,8 @@ import { defineConfig } from "vite-plus";
 import { loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 import electron from "vite-plugin-electron/simple";
+import Components from "unplugin-vue-components/vite";
+import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 import { fileURLToPath, URL } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
@@ -53,8 +55,17 @@ export default defineConfig({
   publicDir: "../../public",
   // 支持环境变量覆盖基础路由子路径
   base: process.env.VITE_ROUTER_BASE || (isWeb ? "/" : "./"),
+  define: {
+    // 注入跨端编译期静态常量，激活死代码消除 (DCE)
+    __IS_WEB__: JSON.stringify(isWeb),
+  },
   plugins: [
     vue(),
+    // Naive UI 模板组件按需自动引入
+    Components({
+      resolvers: [NaiveUiResolver()],
+      dts: path.resolve(rootDir, "src/renderer/components.d.ts"),
+    }),
     // 仅在桌面模式下挂载 electron 启动与打包插件；Web 模式下按需跳过
     !isWeb &&
       electron({
@@ -98,15 +109,47 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rolldownOptions: {
       output: {
+        // 规范化静态资源输出目录
+        entryFileNames: "assets/js/[name]-[hash].js",
+        chunkFileNames: "assets/js/[name]-[hash].js",
+        assetFileNames: (assetInfo) => {
+          const name = assetInfo.names?.[0] ?? "";
+          if (name.endsWith(".css")) return "assets/css/[name]-[hash][extname]";
+          if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(name))
+            return "assets/img/[name]-[hash][extname]";
+          if (/\.(woff2?|eot|ttf|otf)$/i.test(name)) return "assets/fonts/[name]-[hash][extname]";
+          return "assets/other/[name]-[hash][extname]";
+        },
+        // 四层缓存金字塔与双端双模态分包
         codeSplitting: {
           groups: [
+            // L1: 核心框架内核（极高缓存稳定性，priority: 40）
             {
-              name: "vue-vendor",
-              test: /[\\/]node_modules[\\/](vue|vue-router|pinia|vue-i18n|@vue|@vueuse)[\\/]/,
+              name: "vue-core",
+              test: /[\\/]node_modules[\\/](vue|vue-router|pinia|vue-i18n|@vue)[\\/]/,
+              priority: 40,
             },
+            // L2: 通用网络与基础工具库（priority: 30）
+            {
+              name: "infra-vendor",
+              test: /[\\/]node_modules[\\/](axios|@vueuse|lodash-es)[\\/]/,
+              priority: 30,
+            },
+            // L3: UI 组件库（按需入口感知，消除首屏连坐，priority: 20）
             {
               name: "naive-ui",
               test: /[\\/]node_modules[\\/](naive-ui|vueuc|evtd|vooks|css-render|seemly)[\\/]/,
+              priority: 20,
+              entriesAware: true,
+              entriesAwareMergeThreshold: isWeb ? 20_000 : 35_000,
+            },
+            // L4: 公共三方库兜底提取（仅多处共享且达到阈值时独立，priority: 10）
+            {
+              name: "vendor-shared",
+              test: /[\\/]node_modules[\\/]/,
+              priority: 10,
+              minShareCount: 2,
+              minSize: isWeb ? 15_000 : 30_000,
             },
           ],
         },
@@ -117,6 +160,16 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     open: isWeb, // 纯 Web 模式下自动唤起默认浏览器打开页面
+    watch: {
+      // 显式忽略输出目录、热更新目录与临时 PID 文件，彻底杜绝编译重启循环触发窗口闪烁
+      ignored: [
+        "**/dist-electron/**",
+        "**/dist/**",
+        "**/.dev-electron.pid",
+        "**/release/**",
+        "**/.trellis/**",
+      ],
+    },
     proxy: devProxyTarget
       ? {
           "/api": {

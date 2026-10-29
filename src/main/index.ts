@@ -16,6 +16,12 @@ if (process.env.ELECTRON_STARTER_TEST_USERDATA) {
   app.setPath("userData", process.env.ELECTRON_STARTER_TEST_USERDATA);
 }
 
+// 开发环境下若重启子进程，通过命令行参数恢复 dev-server 地址
+const devArg = process.argv.find((arg) => arg.startsWith("--dev-server-url="));
+if (devArg) {
+  process.env.VITE_DEV_SERVER_URL = devArg.slice("--dev-server-url=".length);
+}
+
 // 第二实例无需再次注册 IPC、托盘等系统资源。
 if (!app.requestSingleInstanceLock()) {
   app.quit();

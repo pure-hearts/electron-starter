@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-import { NButton, NCard, NTag } from "naive-ui";
 
 const { t } = useI18n();
 </script>
 <template>
   <section class="home">
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
-      <h1>{{ t("welcome") }}</h1>
-      <n-tag type="success" size="large" round>v0.1.3 升级版</n-tag>
+    <div class="home-hero">
+      <div class="home-title-row">
+        <h1>{{ t("welcome") }}</h1>
+        <n-tag type="success" size="large" round>v0.1.3 升级版</n-tag>
+      </div>
+      <p class="home-subtitle">{{ t("description") }}</p>
     </div>
-    <p>{{ t("description") }}</p>
 
     <n-card style="margin-bottom: 16px; border: 1px dashed var(--app-primary)">
       <template #header>

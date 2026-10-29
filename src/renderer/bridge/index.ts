@@ -15,6 +15,14 @@ let activeBridge: DesktopBridge;
  * 初始化全局 Bridge 并保证 window.$ipcBridge 安全可用
  */
 export function initBridge(): DesktopBridge {
+  // 桌面端编译期优化：若编译期已知为桌面客户端环境且已挂载原生 Bridge，直接返回
+  if (typeof __IS_WEB__ !== "undefined" && !__IS_WEB__) {
+    if (typeof window !== "undefined" && window.$ipcBridge && !window.$ipcBridge.__isWebShim) {
+      activeBridge = window.$ipcBridge;
+      return activeBridge;
+    }
+  }
+
   if (typeof window !== "undefined") {
     if (window.$ipcBridge && !window.$ipcBridge.__isWebShim) {
       activeBridge = window.$ipcBridge;

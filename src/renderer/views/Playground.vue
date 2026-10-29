@@ -1,27 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import {
-  NAlert,
-  NButton,
-  NButtonGroup,
-  NCard,
-  NDivider,
-  NEmpty,
-  NInput,
-  NInputGroup,
-  NInputGroupLabel,
-  NInputNumber,
-  NProgress,
-  NSelect,
-  NSlider,
-  NStep,
-  NSteps,
-  NSwitch,
-  NTabPane,
-  NTabs,
-  NTag,
-  type SelectOption,
-} from "naive-ui";
+import type { SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "../stores/app";
 import { usePlatform } from "../bridge";
 import { useAxios } from "../api/request";
@@ -88,8 +67,40 @@ function clearConsole() {
 async function copyConsole() {
   try {
     const text = JSON.stringify(consoleLogs.value, null, 2);
-    await navigator.clipboard.writeText(text);
-    feedback.message.success("日志内容已复制到剪贴板");
+    // 优先尝试原生剪贴板 API，失败或未授权时回退到主进程或 DOM 降级
+    let copied = false;
+    if (typeof desktop !== "undefined" && desktop.invoke) {
+      try {
+        await desktop.invoke("clipboard:write", text);
+        copied = true;
+      } catch {
+        // 继续回退
+      }
+    }
+    if (!copied && typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch {
+        // 继续回退
+      }
+    }
+    if (!copied && typeof document !== "undefined") {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      copied = document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    if (copied) {
+      feedback.message.success("日志内容已复制到剪贴板");
+    } else {
+      feedback.message.warning("复制失败，请手动选择复制");
+    }
   } catch {
     feedback.message.warning("复制失败，请手动选择复制");
   }
@@ -151,7 +162,15 @@ const themeSelectOptions: SelectOption[] = [
 ];
 
 // VueUse useAxios 响应式请求状态管理
-const apiTestURL = ref("https://api.github.com/repos/pure-hearts/electron-starter");
+const apiPresets = [
+  { label: "HttpBin (稳定回显)", url: "https://httpbin.org/get" },
+  { label: "JSONPlaceholder (Mock)", url: "https://jsonplaceholder.typicode.com/todos/1" },
+  {
+    label: "GitHub API (易限流)",
+    url: "https://api.github.com/repos/pure-hearts/electron-starter",
+  },
+];
+const apiTestURL = ref(apiPresets[0].url);
 const {
   data: axiosData,
   isLoading: axiosLoading,
@@ -168,9 +187,11 @@ const {
     resetOnExecute: true,
     onSuccess(payload) {
       const summary = {
-        full_name: payload?.full_name ?? "OK",
-        stargazers_count: payload?.stargazers_count,
-        default_branch: payload?.default_branch,
+        status: "OK",
+        origin: payload?.origin,
+        url: payload?.url,
+        title: payload?.title,
+        full_name: payload?.full_name,
       };
       appendLog("useAxios 响应成功", "success", summary);
       feedback.message.success("useAxios 请求成功");
@@ -575,6 +596,19 @@ onUnmounted(() => {
                 中止请求 (Abort)
               </n-button>
             </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center">
+              <span class="muted-text" style="font-size: 12px">快速填入预设接口:</span>
+              <n-button
+                v-for="preset in apiPresets"
+                :key="preset.url"
+                size="tiny"
+                secondary
+                round
+                @click="apiTestURL = preset.url"
+              >
+                {{ preset.label }}
+              </n-button>
+            </div>
             <div class="axios-status-bar">
               <n-tag
                 size="small"
@@ -605,8 +639,16 @@ onUnmounted(() => {
               </n-tag>
               <span v-if="axiosError" class="error-msg">异常摘要: {{ String(axiosError) }}</span>
               <span v-else-if="axiosData" class="muted-text font-mono">
-                Repo: {{ axiosData.full_name || "已接收 JSON 负载" }} (★
-                {{ axiosData.stargazers_count ?? 0 }})
+                响应成功:
+                {{
+                  axiosData.origin
+                    ? `Echo IP: ${axiosData.origin} (URL: ${axiosData.url})`
+                    : axiosData.title
+                      ? `Title: ${axiosData.title}`
+                      : axiosData.full_name
+                        ? `Repo: ${axiosData.full_name}`
+                        : "数据已接收"
+                }}
               </span>
             </div>
           </n-card>

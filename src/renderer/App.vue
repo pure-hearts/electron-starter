@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { NConfigProvider, NSelect, NTag, darkTheme, zhCN, enUS, type SelectOption } from "naive-ui";
+import { darkTheme, zhCN, enUS, type SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "./stores/app";
+import { isElectron } from "./bridge/platform";
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
@@ -23,8 +24,16 @@ const localeOptions: SelectOption[] = [
   { label: "English", value: "en-US" },
 ];
 
+const isMacApp = computed(() => {
+  if (typeof navigator === "undefined") return false;
+  return isElectron && /Mac|Macintosh/i.test(navigator.userAgent);
+});
+
 let unsubscribeDeepLink: (() => void) | undefined;
 onMounted(async () => {
+  if (isElectron && navigator.userAgent.includes("Mac")) {
+    document.body.classList.add("is-mac-electron");
+  }
   // Register listener first, then consume cold-start links so no link is lost.
   unsubscribeDeepLink = window.$ipcBridge.on("protocol:open", (url) =>
     appStore.receiveDeepLink(url),
@@ -63,29 +72,31 @@ async function changeTheme(value: string) {
 <template>
   <n-config-provider :theme="naiveTheme" :locale="naiveLocale">
     <div class="app">
-      <header class="header">
-        <div style="display: flex; align-items: center; gap: 8px">
-          <strong>Electron Starter</strong>
-          <n-tag size="small" type="success" round :bordered="true">v0.1.3</n-tag>
-        </div>
-        <nav>
+      <header class="header" :class="{ 'is-mac': isMacApp }">
+        <nav class="header-nav">
           <router-link to="/">{{ t("home") }}</router-link>
           <router-link to="/playground">{{ t("playground") }}</router-link>
         </nav>
-        <n-select
-          :value="currentTheme"
-          :options="themeOptions"
-          size="small"
-          style="width: 120px"
-          @update:value="changeTheme"
-        />
-        <n-select
-          :value="currentLocale"
-          :options="localeOptions"
-          size="small"
-          style="width: 120px"
-          @update:value="changeLocale"
-        />
+        <div class="header-title">
+          <strong>Electron Starter</strong>
+          <n-tag size="small" type="success" round :bordered="true">v0.1.3</n-tag>
+        </div>
+        <div class="header-actions">
+          <n-select
+            :value="currentTheme"
+            :options="themeOptions"
+            size="small"
+            style="width: 120px"
+            @update:value="changeTheme"
+          />
+          <n-select
+            :value="currentLocale"
+            :options="localeOptions"
+            size="small"
+            style="width: 120px"
+            @update:value="changeLocale"
+          />
+        </div>
       </header>
       <main class="app-main"><router-view /></main>
     </div>

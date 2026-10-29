@@ -1,5 +1,5 @@
 /** 通知、打印、诊断日志和 Deep Link 等桌面服务。 */
-import { Notification, dialog } from "electron";
+import { Notification, clipboard, dialog } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import type { NotificationOptions } from "../../../shared/notification";
@@ -32,4 +32,8 @@ export const serviceHandlers = {
   },
   "protocol:scheme": () => DEEP_LINK_SCHEME,
   "protocol:pending": () => consumePendingDeepLinks(),
+  "clipboard:write": async (_e, [text]) => {
+    await clipboard.writeText(text as string);
+    return true;
+  },
 } satisfies HandlerGroup;

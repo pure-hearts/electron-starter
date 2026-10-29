@@ -10,13 +10,21 @@ export const preloadPath = path.join(here, "preload.cjs");
 
 /** 统一的窗口安全配置：启用隔离和沙箱，禁止页面直接访问 Node.js。 */
 export function windowOptions(): Electron.BrowserWindowConstructorOptions {
+  const isMac = process.platform === "darwin";
   return {
+    title: "Electron Starter",
     width: 1140,
     height: 760,
     minWidth: 820,
     minHeight: 540,
     show: false,
     backgroundColor: "#101827",
+    ...(isMac
+      ? {
+          titleBarStyle: "hiddenInset" as const,
+          trafficLightPosition: { x: 18, y: 22 },
+        }
+      : {}),
     webPreferences: {
       // Preload 建立 IPC 桥梁；沙箱和上下文隔离降低页面访问系统资源的风险。
       preload: preloadPath,

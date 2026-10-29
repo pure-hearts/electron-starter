@@ -160,7 +160,11 @@ export function getHotUpdateInfo(): HotUpdateInfo {
  */
 export function applyHotRestart(): void {
   log.info("Relaunching application to activate staged hot update");
-  app.relaunch();
+  const args = process.argv.slice(1);
+  if (process.env.VITE_DEV_SERVER_URL && !args.some((a) => a.startsWith("--dev-server-url="))) {
+    args.push(`--dev-server-url=${process.env.VITE_DEV_SERVER_URL}`);
+  }
+  app.relaunch({ args });
   app.exit(0);
 }
 

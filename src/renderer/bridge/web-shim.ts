@@ -340,6 +340,14 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
           return [] as InvokeResult<C>;
         }
 
+        case "clipboard:write": {
+          const text = (args[0] as string) || "";
+          if (typeof navigator !== "undefined" && navigator.clipboard) {
+            void navigator.clipboard.writeText(text).catch(() => undefined);
+          }
+          return true as InvokeResult<C>;
+        }
+
         default: {
           console.warn(`[WebShim] 未知通道调用: ${String(channel)}`, args);
           return undefined as InvokeResult<C>;

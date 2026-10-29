@@ -51,6 +51,7 @@
     "electron": "44.5.1",
     "electron-builder": "^26.17.0",
     "typescript": "^6.0.0",
+    "unplugin-vue-components": "^32.1.0",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
     "vite-plugin-electron": "^1.0.0",
     "vite-plus": "1.3.0",

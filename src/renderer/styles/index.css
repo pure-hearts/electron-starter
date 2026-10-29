@@ -52,24 +52,59 @@ body {
 }
 
 .header {
+  position: relative;
   background: var(--app-bg-surface);
   display: flex;
   align-items: center;
-  gap: 18px;
+  justify-content: space-between;
   height: 60px;
   border-bottom: 1px solid var(--app-border);
   color: var(--app-text-primary);
   padding: 0 20px;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+body.is-mac-electron .header,
+.header.is-mac {
+  padding-left: 80px;
 }
 
 .header strong {
   white-space: nowrap;
 }
 
-.header nav {
+.header-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  -webkit-app-region: drag;
+}
+
+.header-nav,
+.header-actions,
+.header a,
+.header button,
+.header .n-select,
+.header-title .n-tag {
+  -webkit-app-region: no-drag;
+}
+
+.header-nav {
   display: flex;
   gap: 18px;
-  flex: 1;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .header a {
@@ -97,6 +132,24 @@ body {
 
 .home {
   padding-top: 24px;
+}
+
+.home-hero {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.home-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.home-subtitle {
+  color: var(--app-text-secondary);
+  margin: 0;
 }
 
 .home h1 {

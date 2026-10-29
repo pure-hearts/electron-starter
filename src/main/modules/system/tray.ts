@@ -8,18 +8,40 @@ import { requestQuit } from "../core/lifecycle";
 // 保持 Tray 对象的引用，否则可能被垃圾回收，导致系统托盘图标消失。
 let tray: Tray | null = null;
 
+function getIconPath(filename: string): string {
+  const base = app.isPackaged
+    ? path.join(process.resourcesPath, "resources", "icons")
+    : path.join(process.cwd(), "resources", "icons");
+  return path.join(base, filename);
+}
+
 export function createTray() {
   // 多次初始化时复用同一个托盘图标，避免重复出现。
   if (tray) return tray;
-  // Windows 通常使用 ICO 格式，其他平台使用 PNG。
-  const icon = platform.isWindows ? "icon.ico" : "icon.png";
-  const imagePath = path.join(process.resourcesPath, "resources", "icons", icon);
-  const fallbackPath = path.join(process.resourcesPath, "resources", "icons", "icon.png");
-  // nativeImage 将图片文件加载为 Electron 可用于系统托盘的图像。
-  const image = nativeImage.createFromPath(imagePath);
-  const trayImage = image.isEmpty() ? nativeImage.createFromPath(fallbackPath) : image;
-  // macOS 菜单栏图标较小，因此单独缩放为 18×18。
-  tray = new Tray(platform.isMac ? trayImage.resize({ width: 18, height: 18 }) : trayImage);
+
+  let trayImage: Electron.NativeImage;
+  if (platform.isMac) {
+    // macOS 优先使用 template 图标，自动适配系统深色/浅色菜单栏
+    const templatePath = getIconPath("trayTemplate.png");
+    const img = nativeImage.createFromPath(templatePath);
+    if (!img.isEmpty()) {
+      img.setTemplateImage(true);
+      trayImage = img;
+    } else {
+      const fallback = nativeImage.createFromPath(getIconPath("icon.png"));
+      trayImage = fallback.resize({ width: 18, height: 18 });
+    }
+  } else if (platform.isWindows) {
+    const icoPath = getIconPath("icon.ico");
+    const img = nativeImage.createFromPath(icoPath);
+    trayImage = img.isEmpty() ? nativeImage.createFromPath(getIconPath("tray.png")) : img;
+  } else {
+    const pngPath = getIconPath("tray.png");
+    const img = nativeImage.createFromPath(pngPath);
+    trayImage = img.isEmpty() ? nativeImage.createFromPath(getIconPath("icon.png")) : img;
+  }
+
+  tray = new Tray(trayImage);
   tray.setToolTip(app.getName());
   // Menu.buildFromTemplate 构建右键菜单，菜单事件调用主进程函数。
   tray.setContextMenu(

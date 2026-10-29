@@ -154,6 +154,12 @@ export function createMainWindow(): BrowserWindow {
     if (splash === splashWin) splash = null;
   };
 
+  const renderErrorFallback = (errText: string) => {
+    if (win.isDestroyed()) return;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Electron Starter</title><style>body{background:#101827;color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.card{background:#1f2937;padding:32px;border-radius:12px;border:1px solid #374151;text-align:center;max-width:480px;box-shadow:0 10px 25px rgba(0,0,0,0.5)}h2{margin:0 0 12px 0;color:#60a5fa;font-size:20px}p{color:#9ca3af;margin:0 0 20px 0;font-size:14px;line-height:1.6}button{background:#2563eb;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:14px}button:hover{background:#1d4ed8}</style></head><body><div class="card"><h2>页面加载重试中</h2><p>资源暂时无法加载 (${errText})。如果处于开发模式，请确认 Vite 开发服务正常。</p><button onclick="location.reload()">手动刷新</button></div><script>setTimeout(()=>location.reload(),2000);</script></body></html>`;
+    win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html)).catch(() => {});
+  };
+
   win.webContents.on("did-start-navigation", (_event, _url, _isInPlace, isMainFrame) => {
     if (isMainFrame) markDeepLinkRendererUnready();
   });
@@ -162,10 +168,12 @@ export function createMainWindow(): BrowserWindow {
   win.once("ready-to-show", showMain);
   win.webContents.once("did-fail-load", (_e, code, description) => {
     log.error("Window failed to load", code, description);
+    renderErrorFallback(`${description || "code " + code}`);
     showMain();
   });
   void win.loadURL(target).catch((err) => {
     log.error("Renderer load failed", err);
+    renderErrorFallback(String(err));
     showMain();
   });
 

@@ -24,7 +24,13 @@ export function normalizeRequestError(error: unknown): RequestError {
         cause: error,
       });
     }
-    return new RequestError("network", "Network request failed", undefined, { cause: error });
+    const details = error.code ? ` (${error.code})` : "";
+    return new RequestError(
+      "network",
+      (error.message || "Network request failed") + details,
+      undefined,
+      { cause: error },
+    );
   }
   return new RequestError(
     "unknown",

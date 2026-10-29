@@ -52,6 +52,7 @@ export interface DesktopInvoke {
   "log:export": { args: []; result: string | null };
   "protocol:scheme": { args: []; result: string };
   "protocol:pending": { args: []; result: string[] };
+  "clipboard:write": { args: [text: string]; result: boolean };
 }
 // 只允许存取这些明确列出的设置，不能把任意名称映射成文件系统操作。
 export type SettingKey = "theme" | "locale" | "closeToTray" | "windowBounds";
