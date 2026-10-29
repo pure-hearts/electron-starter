@@ -20,9 +20,10 @@ export const serviceHandlers = {
   "log:write": (_e, [level, text]) =>
     writeRendererLog(level as "info" | "warn" | "error", text as string),
   "log:export": async () => {
+    const defaultLogName = `${process.env.APP_NAME || "electron-starter"}.log`;
     const result = await dialog.showSaveDialog({
       title: "导出诊断日志",
-      defaultPath: "electron-starter.log",
+      defaultPath: defaultLogName,
     });
     if (result.canceled || !result.filePath) return null;
     const source = log.transports.file.getFile().path;

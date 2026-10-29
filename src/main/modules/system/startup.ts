@@ -8,7 +8,8 @@ import { platform } from "../../platform";
 function linuxAutostartPath(): string {
   const home = app.getPath("home");
   const config = process.env.XDG_CONFIG_HOME || path.join(home, ".config");
-  return path.join(config, "autostart", "electron-starter.desktop");
+  const desktopName = process.env.APP_NAME || "electron-starter";
+  return path.join(config, "autostart", `${desktopName}.desktop`);
 }
 
 /** 生成 Linux 系统识别的启动项描述文本。 */

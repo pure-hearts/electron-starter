@@ -114,9 +114,10 @@ function updateCloseToTray(enabled: boolean | string | number) {
 }
 
 // ----------------- Tab 2: 数据与传输 -----------------
-const downloadURL = ref(
-  "https://github.com/pure-hearts/electron-starter/releases/download/v0.1.0/latest.yml",
-);
+const defaultDownloadURL =
+  import.meta.env.VITE_APP_DOWNLOAD_TEST_URL ||
+  "https://github.com/pure-hearts/electron-starter/releases/download/v0.1.0/latest.yml";
+const downloadURL = ref(defaultDownloadURL);
 const downloads = ref<DownloadState[]>([]);
 const printList = ref<string[]>([]);
 const themeValue = ref<ThemeMode>("system");

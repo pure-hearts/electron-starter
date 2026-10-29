@@ -37,7 +37,7 @@ if (!app.requestSingleInstanceLock()) {
 
   // Windows 原生通知依赖固定的 AppUserModelId，未设置会被系统静默丢弃。
   if (process.platform === "win32") {
-    app.setAppUserModelId("com.electron.starter");
+    app.setAppUserModelId(process.env.APP_USER_MODEL_ID || "com.electron.starter");
   }
 
   // 先注册唤醒和退出事件，再启动 Electron 模块。

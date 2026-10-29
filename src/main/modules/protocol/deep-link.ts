@@ -2,10 +2,12 @@
 import { app } from "electron";
 import path from "node:path";
 import { log } from "../core/logger";
+import { runtimeConfig } from "../core/config";
 import { broadcast, focusMainWindow, getMainWindow } from "../../window";
 import { DeepLinkInbox } from "./deep-link-inbox";
-// 外部软件通过 electron-starter://... 唤起已安装应用。
-export const DEEP_LINK_SCHEME = "electron-starter";
+
+// 外部软件通过自定义协议 (如 electron-starter://...) 唤起已安装应用。
+export const DEEP_LINK_SCHEME = runtimeConfig().deepLinkScheme;
 const inbox = new DeepLinkInbox(DEEP_LINK_SCHEME);
 // 用于判断页面是否已开始接收实时 Deep Link 事件。
 let rendererSubscribed = false;
