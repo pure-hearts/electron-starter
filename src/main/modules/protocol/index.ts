@@ -1,5 +1,6 @@
 /** 应用自定义资源协议 app:// 注册入口。 */
 import { net, protocol } from "electron";
+import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { activeRendererRoot } from "../update/hot";
 import { resolveRendererAsset } from "../core/resource-path";
@@ -23,7 +24,11 @@ export function registerResourceProtocol() {
     // 拒绝不是 renderer 主机名的请求，避免把该协议当作通用文件读取入口。
     if (u.hostname !== "renderer") return new Response("Forbidden", { status: 403 });
     // resolveRendererAsset 负责验证规范化路径、遍历攻击和符号链接逃逸。
-    const resolved = resolveRendererAsset(activeRendererRoot(), u.pathname);
+    let resolved = resolveRendererAsset(activeRendererRoot(), u.pathname);
+    // SPA 路由回退：若路径不存在且无静态文件后缀，回退至 index.html 支持 HTML5 History 路由刷新
+    if (!resolved && !path.extname(u.pathname)) {
+      resolved = resolveRendererAsset(activeRendererRoot(), "/index.html");
+    }
     if (!resolved) return new Response("Not Found", { status: 404 });
     // 将通过校验的真实文件路径转为 file: URL，再交给 Electron 网络层读取。
     return net.fetch(pathToFileURL(resolved).toString());

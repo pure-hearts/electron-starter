@@ -7,13 +7,21 @@ import "./styles/index.css";
 import App from "./App.vue";
 import router from "./router";
 import { i18n } from "./i18n";
+import { initBridge } from "./bridge";
+import { registerElectronDirectives } from "./directives/electron";
+
+// 初始化跨端 Bridge，Web 模式下自动装载垫片，保证 window.$ipcBridge 安全就绪
+const bridge = initBridge();
+
 const app = createApp(App);
+registerElectronDirectives(app);
+
 app.config.errorHandler = (error, _instance, info) => {
   console.error("Vue error", info, error);
-  void window.$ipcBridge?.invoke("log:write", "error", String(error)).catch(() => undefined);
+  void bridge.invoke("log:write", "error", String(error)).catch(() => undefined);
 };
 window.addEventListener("unhandledrejection", (e) => {
-  void window.$ipcBridge?.invoke("log:write", "error", String(e.reason)).catch(() => undefined);
+  void bridge.invoke("log:write", "error", String(e.reason)).catch(() => undefined);
 });
 app.use(createPinia()).use(router).use(i18n).use(ElementPlus).mount("#app");
 // A healthy render includes a mounted app and a resolved route. Confirming after

@@ -2,10 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { useAppStore, type ThemeMode } from "../stores/app";
+import { usePlatform } from "../bridge";
 import type { DownloadState, UpdateState, HotUpdateResult, HotUpdateInfo } from "../../shared/ipc";
 
 const desktop = window.$ipcBridge;
 const appStore = useAppStore();
+const { isElectron, isWeb } = usePlatform();
 
 // 基础系统与环境状态
 const version = ref("");
@@ -283,6 +285,9 @@ onUnmounted(() => {
         <div class="hero-title-group">
           <h1 class="hero-title">系统功能控制台</h1>
           <el-tag type="primary" effect="dark" size="small" round>Playground Pro</el-tag>
+          <el-tag :type="isElectron ? 'success' : 'warning'" effect="plain" size="small" round>
+            {{ isElectron ? "🖥️ Electron 桌面客户端" : "🌐 Web 纯浏览器模式" }}
+          </el-tag>
         </div>
         <p class="hero-sub">22 项原生系统能力综合测试面板 · 严格运行在沙箱与类型安全 IPC 架构下</p>
       </div>
@@ -395,6 +400,7 @@ onUnmounted(() => {
               </div>
               <el-switch
                 v-model="closeToTray"
+                v-disabled-electron="'仅在 Electron 桌面客户端支持设置关闭到托盘'"
                 :loading="isLoading('closeToTray')"
                 @change="updateCloseToTray"
               />
@@ -407,6 +413,7 @@ onUnmounted(() => {
               </div>
               <el-switch
                 v-model="startupEnabled"
+                v-disabled-electron="'仅在 Electron 桌面客户端支持设置开机自启动'"
                 :loading="isLoading('startup')"
                 @change="toggleStartup"
               />
@@ -728,6 +735,7 @@ onUnmounted(() => {
             <div class="button-matrix">
               <el-button
                 type="primary"
+                v-disabled-electron="'整包安装更新仅在桌面客户端支持'"
                 :loading="isLoading('updater:check') || fullUpdateState?.status === 'checking'"
                 :disabled="isFullUpdateDownloading"
                 @click="run('updater:check', '检查整包更新', () => desktop.invoke('updater:check'))"
@@ -737,6 +745,7 @@ onUnmounted(() => {
 
               <el-button
                 type="success"
+                v-disabled-electron="'整包安装更新仅在桌面客户端支持'"
                 :disabled="fullUpdateState?.status !== 'ready'"
                 :loading="isLoading('updater:install')"
                 @click="

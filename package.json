@@ -11,7 +11,9 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vp dev",
+    "dev:web": "TARGET_PLATFORM=web vp dev",
     "build": "vp build",
+    "build:web": "TARGET_PLATFORM=web vp build",
     "check": "vp check",
     "test": "vp test --run",
     "fmt": "vp fmt",

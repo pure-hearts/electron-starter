@@ -37,6 +37,9 @@ function cleanupPreviousElectron(): void {
   }
 }
 
+// 判定当前运行目标平台：web (纯浏览器端) 或 electron (桌面客户端)
+const isWeb = process.env.TARGET_PLATFORM === "web";
+
 export default defineConfig({
   root: "src/renderer",
   // envDir 指向仓库根目录，允许各模式加载根目录下对应的 .env 文件。
@@ -45,37 +48,40 @@ export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
   test: { root: rootDir, include: ["tests/**/*.test.ts"] },
   publicDir: "../../public",
-  base: "./",
+  // 支持环境变量覆盖基础路由子路径
+  base: process.env.VITE_ROUTER_BASE || (isWeb ? "/" : "./"),
   plugins: [
     vue(),
-    electron({
-      main: {
-        entry: fileURLToPath(new URL("./src/main/index.ts", import.meta.url)),
-        vite: {
-          build: {
-            outDir: "../../dist-electron",
-            emptyOutDir: false,
-            rolldownOptions: { output: { entryFileNames: "main.js" } },
+    // 仅在桌面模式下挂载 electron 启动与打包插件；Web 模式下按需跳过
+    !isWeb &&
+      electron({
+        main: {
+          entry: fileURLToPath(new URL("./src/main/index.ts", import.meta.url)),
+          vite: {
+            build: {
+              outDir: "../../dist-electron",
+              emptyOutDir: false,
+              rolldownOptions: { output: { entryFileNames: "main.js" } },
+            },
+          },
+          async onstart({ startup }) {
+            cleanupPreviousElectron();
+            // 显式指定工作目录并关闭无沙箱开关
+            await startup(["."], { cwd: rootDir });
           },
         },
-        async onstart({ startup }) {
-          cleanupPreviousElectron();
-          // Explicitly avoid the plugin default '--no-sandbox' switch and resolve root cwd.
-          await startup(["."], { cwd: rootDir });
-        },
-      },
-      preload: {
-        input: fileURLToPath(new URL("./src/preload/index.ts", import.meta.url)),
-        vite: {
-          build: {
-            outDir: "../../dist-electron",
-            emptyOutDir: false,
-            rolldownOptions: { output: { format: "cjs", entryFileNames: "preload.cjs" } },
+        preload: {
+          input: fileURLToPath(new URL("./src/preload/index.ts", import.meta.url)),
+          vite: {
+            build: {
+              outDir: "../../dist-electron",
+              emptyOutDir: false,
+              rolldownOptions: { output: { format: "cjs", entryFileNames: "preload.cjs" } },
+            },
           },
         },
-      },
-    }),
-  ],
+      }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@renderer": fileURLToPath(new URL("./src/renderer", import.meta.url)),
@@ -83,8 +89,13 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "../../dist/renderer",
+    // 纯 Web 产物构建输出至 dist/web，Electron 前端构建输出至 dist/renderer
+    outDir: isWeb ? "../../dist/web" : "../../dist/renderer",
     emptyOutDir: true,
   },
-  server: { port: 5173, strictPort: true },
+  server: {
+    port: 5173,
+    strictPort: true,
+    open: isWeb, // 纯 Web 模式下自动唤起默认浏览器打开页面
+  },
 });
