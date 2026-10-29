@@ -1,4 +1,5 @@
 import { defineConfig } from "vite-plus";
+import { loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 import electron from "vite-plugin-electron/simple";
 import { fileURLToPath, URL } from "node:url";
@@ -39,6 +40,8 @@ function cleanupPreviousElectron(): void {
 
 // 判定当前运行目标平台：web (纯浏览器端) 或 electron (桌面客户端)
 const isWeb = process.env.TARGET_PLATFORM === "web";
+const loadedEnv = loadEnv(process.env.NODE_ENV || "development", rootDir, "");
+const devProxyTarget = process.env.VITE_DEV_PROXY_TARGET || loadedEnv.VITE_DEV_PROXY_TARGET;
 
 export default defineConfig({
   root: "src/renderer",
@@ -92,10 +95,35 @@ export default defineConfig({
     // 纯 Web 产物构建输出至 dist/web，Electron 前端构建输出至 dist/renderer
     outDir: isWeb ? "../../dist/web" : "../../dist/renderer",
     emptyOutDir: true,
+    chunkSizeWarningLimit: 600,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "vue-vendor",
+              test: /[\\/]node_modules[\\/](vue|vue-router|pinia|vue-i18n|@vue|@vueuse)[\\/]/,
+            },
+            {
+              name: "naive-ui",
+              test: /[\\/]node_modules[\\/](naive-ui|vueuc|evtd|vooks|css-render|seemly)[\\/]/,
+            },
+          ],
+        },
+      },
+    },
   },
   server: {
     port: 5173,
     strictPort: true,
     open: isWeb, // 纯 Web 模式下自动唤起默认浏览器打开页面
+    proxy: devProxyTarget
+      ? {
+          "/api": {
+            target: devProxyTarget,
+            changeOrigin: true,
+          },
+        }
+      : undefined,
   },
 });

@@ -26,7 +26,7 @@
 - [x] F02 多窗口、单实例及生命周期
 - [x] F03 electron-store 持久化
 - [x] F04 Vue Router
-- [x] F05 Element Plus
+- [x] F05 Naive UI（已从 Element Plus 迁移至纯 TS 按需引入的 Naive UI）
 - [x] F06 国际化中英文
 - [x] F07 系统托盘
 - [x] F08 原生菜单与快捷键
@@ -43,7 +43,7 @@
 - [x] F19 Electron 运行隔离与权限限制
 - [x] F20 electron-log 日志
 - [x] F21 进程异常捕获和有限恢复
-- [x] F22 Axios 网络请求封装
+- [x] F22 Axios 网络请求封装（含 `@vueuse/integrations/useAxios` 响应式状态集成）
 
 勾选表示功能有对应实现；其中 Windows/macOS 的原生交互和正式安装升级还必须在目标设备上验证。
 
@@ -60,6 +60,10 @@
   - 完善 `.env.example`、`.env.development`、`.env.production`、`.env.testing` 规范模板与完整注释。
 - [x] 真实 GitHub Releases 自动构建与发布（`v0.1.0` / `v0.1.1` 云端打包直传 Releases 已打通，本地实测完成新版本发现与更新包拉取）。
 - [x] 功能校验中心（Playground）商业化与生产级状态重构（Hero 状态栏、Tab 架构、精确菊花态字典、流水动效 Progress、结构化诊断终端已全部落地并归档）。
+- [x] **Naive UI 迁移与双端工程化进阶（2026-10-29 落地）**：
+  - 全面移除 `element-plus`，切换为纯 TS 按需 Tree-Shaking 的 `naive-ui`；
+  - 集成 `@vueuse/core` 与 `@vueuse/integrations`（`useAxios`），内置 `VITE_DEV_PROXY_TARGET` 代理支持；
+  - 收窄 `electron-builder.yml` 产物过滤为 `dist/renderer/**/*`，新增 `v-if-web` 指令、`.github/workflows/hot-release.yml` 热更发布流水线与 `check.yml` Web 构建门禁。
 - [ ] 对应生产平台执行最终业务回归并核对 Release 产物。
 
 ## 阶段结论

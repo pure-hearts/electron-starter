@@ -1,12 +1,64 @@
 import { describe, expect, it } from "vite-plus/test";
+import type { DirectiveBinding } from "vue";
 import { createWebShimBridge } from "../src/renderer/bridge/web-shim";
 import { isElectron, isWeb } from "../src/renderer/bridge/platform";
+import { vDisabledElectron, vIfElectron, vIfWeb } from "../src/renderer/directives/electron";
 
-describe("Web Bridge Shim 降级适配测试", () => {
-  it("在 node/纯环境测试中能够正确判定 isWeb", () => {
-    // 单元测试环境中没有真正的 Electron process.versions.electron
+function createMockElement() {
+  const attrs = new Map<string, string>();
+  const classes = new Set<string>();
+  const listeners = new Map<string, Array<(e: unknown) => void>>();
+  return {
+    style: { display: "", pointerEvents: "", cursor: "", opacity: "" },
+    setAttribute(k: string, v: string) {
+      attrs.set(k, v);
+    },
+    getAttribute(k: string) {
+      return attrs.get(k) ?? null;
+    },
+    classList: {
+      add(c: string) {
+        classes.add(c);
+      },
+      contains(c: string) {
+        return classes.has(c);
+      },
+    },
+    addEventListener(type: string, cb: (e: unknown) => void) {
+      const list = listeners.get(type) ?? [];
+      list.push(cb);
+      listeners.set(type, list);
+    },
+  } as unknown as HTMLElement;
+}
+
+describe("Web Bridge Shim 降级适配与跨端指令测试", () => {
+  it("在 node/纯环境测试中能够正确判定 isWeb 与 isElectron 互斥", () => {
     expect(typeof isWeb).toBe("boolean");
     expect(typeof isElectron).toBe("boolean");
+    expect(isWeb).toBe(!isElectron);
+  });
+
+  it("跨端指令 v-if-electron / v-if-web / v-disabled-electron 在 Web 环境下行为符合预期", () => {
+    const elElectron = createMockElement();
+    const elWeb = createMockElement();
+    const elDisabled = createMockElement();
+
+    vIfElectron.mounted(elElectron);
+    vIfWeb.mounted(elWeb);
+    vDisabledElectron.mounted(elDisabled, { value: "仅桌面可用" } as DirectiveBinding<
+      string | undefined
+    >);
+
+    if (isWeb) {
+      expect(elElectron.style.display).toBe("none");
+      expect(elWeb.style.display).toBe("");
+      expect(elDisabled.getAttribute("disabled")).toBe("true");
+      expect(elDisabled.getAttribute("title")).toBe("仅桌面可用");
+    } else {
+      expect(elElectron.style.display).toBe("");
+      expect(elWeb.style.display).toBe("none");
+    }
   });
 
   it("支持 store 命名空间本地存储与数据恢复", async () => {

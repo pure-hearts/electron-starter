@@ -5,7 +5,7 @@
  * 避免视图层与业务逻辑出现 `undefined` 错误，实现零改动平滑运行。
  */
 
-import { ElNotification, ElMessage } from "element-plus";
+import { feedback } from "../utils/feedback";
 import type {
   DesktopBridge,
   DesktopEvents,
@@ -52,7 +52,7 @@ function removeStorageItem(key: string): void {
 /** 具备 DOM 安全检查的提示工具 */
 function notifyMessage(type: "info" | "success" | "warning" | "error", message: string): void {
   if (typeof document !== "undefined") {
-    ElMessage[type](message);
+    feedback.message[type](message);
   } else {
     console.log(`[WebShim:${type}] ${message}`);
   }
@@ -85,7 +85,7 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
       switch (channel) {
         // ----------------- 1. 应用与生命周期 -----------------
         case "app:version": {
-          return "0.1.2 (Web)" as InvokeResult<C>;
+          return "0.1.3 (Web)" as InvokeResult<C>;
         }
 
         case "app:restart": {
@@ -191,15 +191,15 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
                   if (permission === "granted") {
                     new Notification(title, { body });
                   } else if (typeof document !== "undefined") {
-                    ElNotification({ title, message: body, type: "info" });
+                    feedback.notification.info(title, body);
                   }
                 })
                 .catch(() => undefined);
             } else if (typeof document !== "undefined") {
-              ElNotification({ title, message: body, type: "info" });
+              feedback.notification.info(title, body);
             }
           } else if (typeof document !== "undefined") {
-            ElNotification({ title, message: body, type: "info" });
+            feedback.notification.info(title, body);
           }
 
           return { id: `web-notify-${Date.now()}` } as InvokeResult<C>;
@@ -286,7 +286,7 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
         case "hot:state": {
           const info: HotUpdateInfo = {
             currentRevision: 20261029180000,
-            currentVersionTag: "0.1.2_web",
+            currentVersionTag: "0.1.3_web",
             currentCommit: "web-live",
             phase: "active",
             previousDirectory: null,

@@ -1,37 +1,42 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { NButton, NCard, NTag } from "naive-ui";
+
 const { t } = useI18n();
 </script>
 <template>
   <section class="home">
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px">
       <h1>{{ t("welcome") }}</h1>
-      <el-tag type="success" size="large" effect="dark">v0.1.1 升级版</el-tag>
+      <n-tag type="success" size="large" round>v0.1.3 升级版</n-tag>
     </div>
     <p>{{ t("description") }}</p>
 
-    <el-card shadow="never" style="margin-bottom: 16px; border: 1px dashed var(--el-color-primary)">
+    <n-card style="margin-bottom: 16px; border: 1px dashed var(--app-primary)">
       <template #header>
-        <span style="font-weight: 600; color: var(--el-color-primary)"
-          >🎉 v0.1.1 新版本特性展示</span
-        >
+        <span style="font-weight: 600; color: var(--app-primary)">🎉 v0.1.3 新版本特性展示</span>
       </template>
-      <ul
-        style="margin: 0; padding-left: 20px; line-height: 1.8; color: var(--el-text-color-regular)"
-      >
+      <ul style="margin: 0; padding-left: 20px; line-height: 1.8; color: var(--app-text-regular)">
         <li>
-          ✨ <strong>全自动整包更新</strong>：支持通过 GitHub Releases 自动检测与下载全量更新包
+          ✨ <strong>双端同构与热更新闭环</strong>：支持 Electron 桌面端与纯 Web 端独立启动，内置
+          Ed25519 增量资源热更新与崩溃自愈回滚
         </li>
-        <li>🎨 <strong>主题系统完善</strong>：完美适配深色模式、浅色模式与系统跟随</li>
-        <li>🛡️ <strong>系统自愈加固</strong>：PID 孤儿进程守护与 macOS 通知签名增强</li>
+        <li>
+          🎨 <strong>Naive UI 全面升级</strong>：纯 TypeScript
+          按需引入、完美适配深色模式、浅色模式与系统跟随
+        </li>
+        <li>
+          ⚡ <strong>VueUse 响应式请求层</strong>：内置 <code>useAxios</code>
+          与脱敏错误拦截器，告别繁琐样板代码
+        </li>
       </ul>
-    </el-card>
+    </n-card>
 
-    <el-card shadow="never">
-      <p>src/main · src/preload · src/renderer · src/shared</p>
-      <el-button type="primary" @click="$router.push('/playground')">{{
+    <n-card>
+      <p style="margin-top: 0">src/main · src/preload · src/renderer · src/shared</p>
+      <n-button type="primary" @click="$router.push('/playground')">{{
         t("openPlayground")
-      }}</el-button>
-    </el-card>
+      }}</n-button>
+    </n-card>
   </section>
 </template>

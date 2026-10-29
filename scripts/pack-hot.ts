@@ -41,24 +41,40 @@ function generateVersionInfo(): { revision: number; commit: string; versionTag: 
 
 const { revision, commit, versionTag } = generateVersionInfo();
 
+/**
+ * 规范化私钥字符串：兼容标准多行 PEM、单行 `\n` 转义字符串以及 Base64 编码字符串
+ */
+function normalizePemContent(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.includes("-----BEGIN")) {
+    return trimmed.replace(/\\n/g, "\n");
+  }
+  const decoded = Buffer.from(trimmed, "base64").toString("utf8").trim();
+  if (decoded.includes("-----BEGIN")) {
+    return decoded.replace(/\\n/g, "\n");
+  }
+  return trimmed;
+}
+
 // 3. 安全获取 Ed25519 签名私钥（绝不允许私钥硬编码或打入安装包）
 function resolvePrivateKeyPem(): string {
-  // 3.1 优先读取 CI/CD 环境变量直接传入的私钥文本内容
-  if (process.env.HOT_UPDATE_PRIVATE_KEY) {
-    return process.env.HOT_UPDATE_PRIVATE_KEY.trim();
+  // 3.1 优先读取 CI/CD 环境变量直接传入的私钥文本或 Base64 内容
+  const envKey = process.env.HOT_UPDATE_PRIVATE_KEY || process.env.HOT_UPDATE_PRIVATE_KEY_PEM;
+  if (envKey && envKey.trim()) {
+    return normalizePemContent(envKey);
   }
   // 3.2 次选读取环境变量指定的文件路径
   if (process.env.HOT_UPDATE_PRIVATE_KEY_PEM_PATH) {
     const customPath = process.env.HOT_UPDATE_PRIVATE_KEY_PEM_PATH;
     if (existsSync(customPath)) {
-      return readFileSync(customPath, "utf8").trim();
+      return normalizePemContent(readFileSync(customPath, "utf8"));
     }
     throw new Error(`指定的私钥文件不存在: ${customPath}`);
   }
   // 3.3 本地开发默认从根目录 hot-update-private-key.pem 读取
   const defaultLocalPath = join(process.cwd(), "hot-update-private-key.pem");
   if (existsSync(defaultLocalPath)) {
-    return readFileSync(defaultLocalPath, "utf8").trim();
+    return normalizePemContent(readFileSync(defaultLocalPath, "utf8"));
   }
   throw new Error(
     "未找到增量更新签名私钥！请运行 `pnpm hot:keygen` 生成本地密钥，或配置 HOT_UPDATE_PRIVATE_KEY 环境变量。",

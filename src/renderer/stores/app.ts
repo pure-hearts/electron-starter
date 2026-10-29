@@ -6,6 +6,7 @@ export type ThemeMode = "light" | "dark" | "system";
 export const useAppStore = defineStore("app", () => {
   const locale = ref(localStorage.getItem("locale") || "zh-CN");
   const theme = ref<ThemeMode>((localStorage.getItem("theme") as ThemeMode) || "system");
+  const isDark = ref(false);
   const lastDeepLink = ref("");
 
   let mediaQuery: MediaQueryList | null = null;
@@ -18,16 +19,18 @@ export const useAppStore = defineStore("app", () => {
       mediaListener = null;
     }
 
-    const isDark =
+    const darkActive =
       mode === "dark" ||
       (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-    document.documentElement.classList.toggle("dark", isDark);
+    isDark.value = darkActive;
+    document.documentElement.classList.toggle("dark", darkActive);
 
     if (mode === "system") {
       mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       mediaListener = (e: MediaQueryListEvent) => {
         if (theme.value === "system") {
+          isDark.value = e.matches;
           document.documentElement.classList.toggle("dark", e.matches);
         }
       };
@@ -83,5 +86,15 @@ export const useAppStore = defineStore("app", () => {
     return locale.value;
   }
 
-  return { locale, theme, lastDeepLink, receiveDeepLink, setLocale, setTheme, hydrate, applyTheme };
+  return {
+    locale,
+    theme,
+    isDark,
+    lastDeepLink,
+    receiveDeepLink,
+    setLocale,
+    setTheme,
+    hydrate,
+    applyTheme,
+  };
 });
