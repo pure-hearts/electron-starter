@@ -41,6 +41,8 @@ export function broadcast<E extends EventChannel>(name: E, payload: DesktopEvent
   });
 }
 
+export const broadcastToAllWindows = broadcast;
+
 /** 激活或创建主窗口并聚焦。 */
 export function focusMainWindow(): void {
   const w = createMainWindow();

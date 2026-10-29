@@ -7,20 +7,17 @@ import { ipcMain } from "electron";
 import type { IpcMainInvokeEvent } from "electron";
 import type { InvokeChannel } from "../../shared/ipc";
 import { allowedChannels, validate } from "../../shared/validation";
-import { systemHandlers } from "./handlers/system";
-import { transferHandlers } from "./handlers/transfer";
-import { serviceHandlers } from "./handlers/services";
+import { allHandlers } from "./handlers";
 import { isTrustedIpcOrigin } from "./origin";
 import { withTimeoutAndMetrics } from "./timeout";
 import { log } from "../modules/core/logger";
 
 // 把每个通道映射到具体主进程功能；Record 确保通道与处理函数对应。
 /** 汇总业务域 Handler；satisfies 保证每个约定通道均有处理器。 */
-const handlers = {
-  ...systemHandlers,
-  ...transferHandlers,
-  ...serviceHandlers,
-} as Record<InvokeChannel, (event: IpcMainInvokeEvent, args: unknown[]) => unknown>;
+const handlers = allHandlers as Record<
+  InvokeChannel,
+  (event: IpcMainInvokeEvent, args: unknown[]) => unknown
+>;
 
 /** 校验消息来源，防御恶意注入或伪造消息。 */
 function assertSender(e: IpcMainInvokeEvent) {

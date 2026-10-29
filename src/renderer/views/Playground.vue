@@ -146,6 +146,14 @@ function updateCloseToTray(enabled: boolean) {
   });
 }
 
+// ----------------- 系统原生 Shell 与外观体验 -----------------
+const externalTestUrl = ref("https://github.com/pure-hearts/electron-starter");
+const folderTestPath = ref("");
+
+onMounted(async () => {
+  folderTestPath.value = isElectron ? "package.json" : "/tmp";
+});
+
 // ----------------- Tab 2: 数据与传输 + VueUse useAxios -----------------
 const defaultDownloadURL =
   import.meta.env.VITE_APP_DOWNLOAD_TEST_URL ||
@@ -511,6 +519,99 @@ onUnmounted(() => {
                 :loading="isLoading('startup')"
                 @update:value="toggleStartup"
               />
+            </div>
+          </n-card>
+
+          <!-- 系统原生 Shell 与外观体验 -->
+          <n-card class="feature-card full-width" size="small">
+            <template #header>
+              <div class="card-header-bar">
+                <span class="card-title">🐚 系统原生 Shell 与外观体验</span>
+                <div class="badge-group">
+                  <span class="card-badge">Shell API</span>
+                  <span class="card-badge">Native Theme</span>
+                </div>
+              </div>
+            </template>
+            <p class="card-desc">
+              体验 Electron 底层 Shell
+              与操作系统外观协同能力，包含系统级文件定位、受信任外链跳转、暗黑模式与系统强调色（Accent
+              Color）动态提取。
+            </p>
+
+            <div class="shell-info-grid">
+              <div class="info-item">
+                <span class="info-label">系统强调色 (Accent Color):</span>
+                <div class="color-preview-row">
+                  <span
+                    class="color-dot"
+                    :style="{ backgroundColor: appStore.accentColor || 'var(--app-primary)' }"
+                  />
+                  <code>{{ appStore.accentColor || "未检测到 / 默认主题色" }}</code>
+                </div>
+              </div>
+              <div class="info-item">
+                <span class="info-label">系统外观感知:</span>
+                <n-tag size="small" :type="appStore.isDark ? 'info' : 'success'">
+                  {{ appStore.isDark ? "🌙 深色模式 (Dark)" : "☀️ 浅色模式 (Light)" }}
+                </n-tag>
+              </div>
+              <div class="info-item">
+                <span class="info-label">窗口最大化状态:</span>
+                <n-tag size="small" :type="appStore.isMaximized ? 'warning' : 'default'">
+                  {{ appStore.isMaximized ? "已最大化 (Maximized)" : "常规尺寸 (Normal)" }}
+                </n-tag>
+              </div>
+            </div>
+
+            <n-divider style="margin: 12px 0" />
+
+            <div class="form-row" style="margin-bottom: 8px">
+              <n-input
+                v-model:value="externalTestUrl"
+                placeholder="请输入需要安全打开的外部链接 (https://...)"
+                style="flex: 1"
+              />
+              <n-button
+                type="primary"
+                secondary
+                :loading="isLoading('shell:openExternal')"
+                @click="
+                  run('shell:openExternal', '在默认浏览器中安全打开外链', () =>
+                    desktop.invoke('shell:openExternal', externalTestUrl),
+                  )
+                "
+              >
+                安全打开外链
+              </n-button>
+            </div>
+
+            <div class="form-row">
+              <n-input
+                v-model:value="folderTestPath"
+                placeholder="请输入文件或目录路径进行系统定位"
+                style="flex: 1"
+              />
+              <n-button
+                :loading="isLoading('shell:showItemInFolder')"
+                @click="
+                  run('shell:showItemInFolder', '在文件管理器中定位', () =>
+                    desktop.invoke('shell:showItemInFolder', folderTestPath),
+                  )
+                "
+              >
+                在文件管理器中定位
+              </n-button>
+              <n-button
+                :loading="isLoading('shell:openPath')"
+                @click="
+                  run('shell:openPath', '打开系统路径', () =>
+                    desktop.invoke('shell:openPath', folderTestPath),
+                  )
+                "
+              >
+                打开路径
+              </n-button>
             </div>
           </n-card>
 

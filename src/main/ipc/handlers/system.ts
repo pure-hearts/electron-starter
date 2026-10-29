@@ -1,5 +1,5 @@
 /** 应用、窗口、持久化配置与自启动功能。 */
-import { app } from "electron";
+import { app, BrowserWindow } from "electron";
 import type { SettingKey } from "../../../shared/ipc";
 import { windowAction, openChild } from "../../window";
 import { getSetting, setSetting, deleteSetting } from "../../modules/store";
@@ -14,6 +14,7 @@ export const systemHandlers = {
   // 必须使用发起消息的 e.sender，操作调用者所属的窗口而非随意指定窗口。
   "window:action": (e, [action]) => windowAction(e.sender, action as string),
   "window:open": (_e, [route]) => openChild(route as string),
+  "window:isMaximized": (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false,
   "store:get": (_e, [key]) => getSetting(key as SettingKey),
   "store:set": (_e, [key, value]) => setSetting(key as SettingKey, value as string | boolean),
   "store:delete": (_e, [key]) => deleteSetting(key as SettingKey),

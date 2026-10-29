@@ -8,6 +8,7 @@ import { log } from "../modules/core/logger";
 import { isQuitting } from "../modules/core/lifecycle";
 import { safeWindowBounds } from "../modules/system/window-bounds-policy";
 import { windowOptions, isInternalURL } from "./options";
+import { broadcast } from "./broadcast";
 
 let mainWindow: BrowserWindow | null = null;
 let splash: BrowserWindow | null = null;
@@ -68,6 +69,12 @@ export function createMainWindow(): BrowserWindow {
 
   win.on("move", persistBounds);
   win.on("resize", persistBounds);
+  win.on("maximize", () => {
+    broadcast("window:maximize-change", true);
+  });
+  win.on("unmaximize", () => {
+    broadcast("window:maximize-change", false);
+  });
 
   // 恢复上次窗口位置；同时读取 maximized 标志。
   const bounds = getSetting("windowBounds");

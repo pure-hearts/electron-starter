@@ -53,6 +53,18 @@ export interface DesktopInvoke {
   "protocol:scheme": { args: []; result: string };
   "protocol:pending": { args: []; result: string[] };
   "clipboard:write": { args: [text: string]; result: boolean };
+  "window:isMaximized": { args: []; result: boolean };
+  "theme:system:get": {
+    args: [];
+    result: {
+      shouldUseDarkColors: boolean;
+      accentColor: string | null;
+    };
+  };
+  "shell:showItemInFolder": { args: [path: string]; result: boolean };
+  "shell:openPath": { args: [path: string]; result: string };
+  "shell:openExternal": { args: [url: string]; result: boolean };
+  "shell:trashItem": { args: [path: string]; result: boolean };
 }
 // 只允许存取这些明确列出的设置，不能把任意名称映射成文件系统操作。
 export type SettingKey = "theme" | "locale" | "closeToTray" | "windowBounds";
@@ -97,6 +109,11 @@ export interface DesktopEvents {
   "notification:clicked": string;
   "notification:activated": NotificationActivation;
   "notification:settled": NotificationSettled;
+  "window:maximize-change": boolean;
+  "theme:system:changed": {
+    shouldUseDarkColors: boolean;
+    accentColor: string | null;
+  };
 }
 export type EventChannel = keyof DesktopEvents;
 // Preload 中的 bridge 必须满足此接口，因此页面调用时拥有类型提示。

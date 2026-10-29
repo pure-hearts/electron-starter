@@ -43,7 +43,32 @@ export const allowedChannels = new Set<InvokeChannel>([
   "protocol:scheme",
   "protocol:pending",
   "clipboard:write",
+  "window:isMaximized",
+  "theme:system:get",
+  "shell:showItemInFolder",
+  "shell:openPath",
+  "shell:openExternal",
+  "shell:trashItem",
 ]);
+export function safeExternalUrl(input: string): URL {
+  if (typeof input !== "string" || input.length > 4096) throw new Error("Invalid URL");
+  const url = new URL(input);
+  if (!["http:", "https:", "mailto:"].includes(url.protocol)) {
+    throw new Error("Protocol not permitted: " + url.protocol);
+  }
+  return url;
+}
+
+export function safeLocalPath(input: string): string {
+  if (typeof input !== "string" || input.trim().length === 0 || input.length > 4096) {
+    throw new Error("Invalid path string");
+  }
+  if (input.includes("\0")) {
+    throw new Error("Null bytes are not permitted in path");
+  }
+  return input.trim();
+}
+
 export function safeUrl(input: string): URL {
   if (typeof input !== "string" || input.length > 4096) throw new Error("Invalid URL");
   // 解析失败会抛异常，从而拒绝不合法的字符串地址。
@@ -185,6 +210,18 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
   )
     return;
   if (channel === "clipboard:write" && args.length === 1 && typeof args[0] === "string") return;
+  if (["window:isMaximized", "theme:system:get"].includes(channel) && args.length === 0) return;
+  if (
+    ["shell:showItemInFolder", "shell:openPath", "shell:trashItem"].includes(channel) &&
+    args.length === 1
+  ) {
+    safeLocalPath(args[0] as string);
+    return;
+  }
+  if (channel === "shell:openExternal" && args.length === 1) {
+    safeExternalUrl(args[0] as string);
+    return;
+  }
   // 未匹配任何合法参数组合时一律拒绝；默认失败而不是默认放行。
   throw new Error("Invalid IPC arguments: " + channel);
 }

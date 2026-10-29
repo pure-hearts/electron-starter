@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { darkTheme, zhCN, enUS, type SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "./stores/app";
-import { isElectron } from "./bridge/platform";
+import TitleBar from "./components/TitleBar.vue";
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
@@ -24,16 +24,8 @@ const localeOptions: SelectOption[] = [
   { label: "English", value: "en-US" },
 ];
 
-const isMacApp = computed(() => {
-  if (typeof navigator === "undefined") return false;
-  return isElectron && /Mac|Macintosh/i.test(navigator.userAgent);
-});
-
 let unsubscribeDeepLink: (() => void) | undefined;
 onMounted(async () => {
-  if (isElectron && navigator.userAgent.includes("Mac")) {
-    document.body.classList.add("is-mac-electron");
-  }
   // Register listener first, then consume cold-start links so no link is lost.
   unsubscribeDeepLink = window.$ipcBridge.on("protocol:open", (url) =>
     appStore.receiveDeepLink(url),
@@ -69,10 +61,16 @@ async function changeTheme(value: string) {
   }
 }
 </script>
+
 <template>
-  <n-config-provider :theme="naiveTheme" :locale="naiveLocale">
+  <n-config-provider
+    :theme="naiveTheme"
+    :locale="naiveLocale"
+    :theme-overrides="appStore.themeOverrides"
+  >
     <div class="app">
-      <header class="header" :class="{ 'is-mac': isMacApp }">
+      <TitleBar />
+      <header class="header">
         <nav class="header-nav">
           <router-link to="/">{{ t("home") }}</router-link>
           <router-link to="/playground">{{ t("playground") }}</router-link>

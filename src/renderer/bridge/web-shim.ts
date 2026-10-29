@@ -348,6 +348,46 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
           return true as InvokeResult<C>;
         }
 
+        // ----------------- 10. 窗口状态与系统外观 -----------------
+        case "window:isMaximized": {
+          const isMax = typeof document !== "undefined" && Boolean(document.fullscreenElement);
+          return isMax as InvokeResult<C>;
+        }
+
+        case "theme:system:get": {
+          const dark =
+            typeof window !== "undefined" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          return { shouldUseDarkColors: dark, accentColor: null } as InvokeResult<C>;
+        }
+
+        // ----------------- 11. 原生 Shell 操作模拟 -----------------
+        case "shell:showItemInFolder": {
+          const targetPath = typeof args[0] === "string" ? args[0] : "";
+          notifyMessage("info", `Web 模式：浏览器无法定位本地文件 (${targetPath})`);
+          return true as InvokeResult<C>;
+        }
+
+        case "shell:openPath": {
+          const targetPath = typeof args[0] === "string" ? args[0] : "";
+          notifyMessage("info", `Web 模式：浏览器无法打开本地路径 (${targetPath})`);
+          return "" as InvokeResult<C>;
+        }
+
+        case "shell:openExternal": {
+          const url = typeof args[0] === "string" ? args[0] : "";
+          if (typeof window !== "undefined") {
+            window.open(url, "_blank", "noopener,noreferrer");
+          }
+          return true as InvokeResult<C>;
+        }
+
+        case "shell:trashItem": {
+          const targetPath = typeof args[0] === "string" ? args[0] : "";
+          notifyMessage("info", `Web 模式：浏览器无法移至回收站 (${targetPath})`);
+          return true as InvokeResult<C>;
+        }
+
         default: {
           console.warn(`[WebShim] 未知通道调用: ${String(channel)}`, args);
           return undefined as InvokeResult<C>;

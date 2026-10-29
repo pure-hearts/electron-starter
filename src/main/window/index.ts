@@ -6,7 +6,7 @@ import { disposeChildWindows } from "./child-window";
 
 export { createMainWindow, getMainWindow } from "./main-window";
 export { openChild } from "./child-window";
-export { windowAction, broadcast, focusMainWindow } from "./broadcast";
+export { windowAction, broadcast, broadcastToAllWindows, focusMainWindow } from "./broadcast";
 
 /**
  * 销毁所有窗口并释放屏幕监听器；幂等，可重复调用。

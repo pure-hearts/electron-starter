@@ -57,17 +57,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 60px;
+  height: 52px;
   border-bottom: 1px solid var(--app-border);
   color: var(--app-text-primary);
   padding: 0 20px;
-  -webkit-app-region: drag;
   user-select: none;
 }
 
 body.is-mac-electron .header,
 .header.is-mac {
-  padding-left: 80px;
+  padding-left: 20px;
 }
 
 .header strong {
@@ -160,4 +159,40 @@ body.is-mac-electron .header,
 
 .home p {
   color: var(--app-text-secondary);
+}
+
+.shell-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  background: var(--app-bg-subtle);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.color-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--app-border);
+  display: inline-block;
+  flex-shrink: 0;
 }

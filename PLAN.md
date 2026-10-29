@@ -64,6 +64,12 @@
   - 全面移除 `element-plus`，切换为纯 TS 按需 Tree-Shaking 的 `naive-ui`；
   - 集成 `@vueuse/core` 与 `@vueuse/integrations`（`useAxios`），内置 `VITE_DEV_PROXY_TARGET` 代理支持；
   - 收窄 `electron-builder.yml` 产物过滤为 `dist/renderer/**/*`，新增 `v-if-web` 指令、`.github/workflows/hot-release.yml` 热更发布流水线与 `check.yml` Web 构建门禁。
+- [x] **跨平台自绘标题栏、系统主题强调色与 Shell 安全集成（2026-10-29 落地）**：
+  - 实现无边框自绘标题栏 `TitleBar.vue`（macOS 交通灯安全区自适应、Windows/Linux 控制按钮组、拖拽与双击最大化）；
+  - 主进程接入 `nativeTheme` 与 `systemPreferences.getAccentColor`，动态计算 Naive UI 调色板并通过 IPC 实时广播；
+  - 封装安全的 Shell 原生操作（`showItemInFolder`、`trashItem`、`openPath`、`openExternal`），支持协议白名单与路径穿越防御；
+  - 新增 `tests/shell-integration.test.ts` 与 `tests/theme-system-integration.test.ts` 2 个 Vitest 集成测试套件，全量 39 套件 149 测试全部通过；
+  - 完善 `web-shim.ts`，Web 模式与桌面端构建双端平滑兼容。
 - [ ] 对应生产平台执行最终业务回归并核对 Release 产物。
 
 ## 阶段结论

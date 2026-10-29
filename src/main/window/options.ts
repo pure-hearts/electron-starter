@@ -22,9 +22,11 @@ export function windowOptions(): Electron.BrowserWindowConstructorOptions {
     ...(isMac
       ? {
           titleBarStyle: "hiddenInset" as const,
-          trafficLightPosition: { x: 18, y: 22 },
+          trafficLightPosition: { x: 14, y: 12 },
         }
-      : {}),
+      : {
+          titleBarStyle: "hidden" as const,
+        }),
     webPreferences: {
       // Preload 建立 IPC 桥梁；沙箱和上下文隔离降低页面访问系统资源的风险。
       preload: preloadPath,
