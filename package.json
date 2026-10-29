@@ -1,6 +1,6 @@
 {
   "name": "electron-starter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Lean Electron + Vue 3 + TypeScript + Vite+ starter",
   "author": {
@@ -21,7 +21,8 @@
     "dist:win": "vp build && electron-builder --win nsis --publish never",
     "dist:mac": "vp build && electron-builder --mac dmg zip --publish never",
     "dist:linux": "vp build && electron-builder --linux AppImage deb --publish never",
-    "hot:pack": "node --experimental-strip-types scripts/pack-hot.ts",
+    "hot:keygen": "node scripts/generate-hot-keys.mjs",
+    "hot:pack": "vp build && node --experimental-strip-types scripts/pack-hot.ts",
     "typecheck:vue": "vue-tsc --noEmit",
     "dev:testing": "vp dev --mode testing",
     "build:testing": "vp build --mode testing",

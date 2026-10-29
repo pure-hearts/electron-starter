@@ -4,17 +4,18 @@ import {
   verifyHotManifest,
   manifestBody,
   validateHotArchiveUrl,
+  type ManifestBody,
 } from "../src/main/modules/update/hot/manifest";
 
 const keys = generateKeyPairSync("ed25519");
 const publicKey = keys.publicKey.export({ type: "spki", format: "pem" }).toString();
-const body = {
+const body: ManifestBody = {
   revision: 7,
   compatibleApp: "0.1.0",
   url: "https://example.com/renderer-7.zip",
   sha256: "f".repeat(64),
 };
-function signed(input = body) {
+function signed(input: ManifestBody = body) {
   return {
     ...input,
     signature: sign(
@@ -48,6 +49,19 @@ describe("signed renderer hot update manifest", () => {
     ]) {
       expect(() => verifyHotManifest(signed({ ...body, url }), "0.1.0", publicKey)).toThrow();
     }
+  });
+  it("accepts a valid signed manifest with versionTag and commit", () => {
+    const timestampTag = "20261029173000_be18d80";
+    const m = signed({
+      ...body,
+      revision: 20261029173000,
+      versionTag: timestampTag,
+      commit: "be18d80",
+    });
+    const verified = verifyHotManifest(m, "0.1.0", publicKey);
+    expect(verified.revision).toBe(20261029173000);
+    expect(verified.versionTag).toBe(timestampTag);
+    expect(verified.commit).toBe("be18d80");
   });
   it("rejects missing signature and malformed objects", () => {
     expect(() => verifyHotManifest({ ...body }, "0.1.0", publicKey)).toThrow();

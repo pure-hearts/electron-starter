@@ -22,4 +22,13 @@ describe("热更新恢复指针", () => {
     ])
       expect(parseHotPointer(input, "1.0.0")).toBeNull();
   });
+
+  it("保留并正确解析 versionTag 和 commit 字段", () => {
+    const extended = {
+      ...valid,
+      versionTag: "20261029173000_be18d80",
+      commit: "be18d80",
+    };
+    expect(parseHotPointer(extended, "1.0.0")).toEqual(extended);
+  });
 });

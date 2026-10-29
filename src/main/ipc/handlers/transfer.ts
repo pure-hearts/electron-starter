@@ -7,7 +7,12 @@ import {
   setDownloadConcurrency,
 } from "../../modules/download";
 import { checkUpdate, installUpdate } from "../../modules/update/full";
-import { checkHotUpdate, markRendererHealthy } from "../../modules/update/hot";
+import {
+  checkHotUpdate,
+  markRendererHealthy,
+  getHotUpdateInfo,
+  applyHotRestart,
+} from "../../modules/update/hot";
 import { getMainWindow } from "../../window";
 import type { HandlerGroup } from "./types";
 
@@ -22,6 +27,8 @@ export const transferHandlers = {
   "updater:check": () => checkUpdate(),
   "updater:install": () => installUpdate(),
   "hot:check": () => checkHotUpdate(),
+  "hot:state": () => getHotUpdateInfo(),
+  "hot:restart": () => applyHotRestart(),
   // 热更新确认只能由主窗口发送，避免子窗口或未就绪页面错误确认新资源已健康；非主窗口静默忽略，不引发 IPC 假告警。
   "hot:confirm": (e) => {
     const main = getMainWindow();

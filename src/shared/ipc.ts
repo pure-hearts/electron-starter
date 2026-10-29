@@ -43,7 +43,10 @@ export interface DesktopInvoke {
   // 整包更新的操作通道，实际下载和安装行为都在主进程实现。
   "updater:check": { args: []; result: void };
   "updater:install": { args: []; result: void };
+  // 增量热更新（Hot Update）通道
   "hot:check": { args: []; result: HotUpdateResult };
+  "hot:state": { args: []; result: HotUpdateInfo };
+  "hot:restart": { args: []; result: void };
   "hot:confirm": { args: []; result: void };
   "log:write": { args: [level: "info" | "warn" | "error", message: string]; result: void };
   "log:export": { args: []; result: string | null };
@@ -76,6 +79,15 @@ export interface UpdateState {
 export interface HotUpdateResult {
   status: "disabled" | "up-to-date" | "ready" | "error";
   message?: string;
+}
+/** 增量热更新当前生效状态与指针信息 */
+export interface HotUpdateInfo {
+  currentRevision: number;
+  currentVersionTag: string;
+  currentCommit: string;
+  phase: "none" | "staged" | "trying" | "active";
+  previousDirectory: string | null;
+  activeDirectory: string;
 }
 export interface DesktopEvents {
   "download:state": DownloadState;

@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { useAppStore, type ThemeMode } from "../stores/app";
-import type { DownloadState, UpdateState, HotUpdateResult } from "../../shared/ipc";
+import type { DownloadState, UpdateState, HotUpdateResult, HotUpdateInfo } from "../../shared/ipc";
 
 const desktop = window.$ipcBridge;
 const appStore = useAppStore();
@@ -182,8 +182,33 @@ async function loadPrinters() {
 // ----------------- Tab 3: 更新与日志诊断 -----------------
 const fullUpdateState = ref<UpdateState | null>(null);
 const hotUpdateResult = ref<HotUpdateResult | null>(null);
+const hotInfo = ref<HotUpdateInfo | null>(null);
 const testLogLevel = ref<"info" | "warn" | "error">("info");
 const testLogMessage = ref("Playground 诊断测试日志");
+
+/** 刷新增量热更新运行时指针状态 */
+async function refreshHotState() {
+  await run("hot:state", "查询增量热更状态", async () => {
+    hotInfo.value = await desktop.invoke("hot:state");
+    return hotInfo.value;
+  });
+}
+
+/** 检查并下载增量热更新包 */
+async function checkHotUpdateAction() {
+  await run("hot:check", "检查 ZIP 增量热更新", async () => {
+    hotUpdateResult.value = await desktop.invoke("hot:check");
+    await refreshHotState();
+    return hotUpdateResult.value;
+  });
+}
+
+/** 立即重启应用以激活就绪的增量热更 */
+async function restartForHotUpdate() {
+  await run("hot:restart", "重启激活增量更新", async () => {
+    await desktop.invoke("hot:restart");
+  });
+}
 
 const updateStep = computed(() => {
   if (!fullUpdateState.value) return 0;
@@ -209,7 +234,12 @@ onMounted(async () => {
   );
   unsubscribers.push(
     desktop.on("update:state", (state: UpdateState) => {
-      fullUpdateState.value = state;
+      if (state.kind === "full") {
+        fullUpdateState.value = state;
+      }
+      if (state.kind === "hot" && state.status === "ready") {
+        refreshHotState();
+      }
       appendLog("更新状态推送", state.error ? "error" : "info", state);
     }),
   );
@@ -234,6 +264,7 @@ onMounted(async () => {
     startupEnabled.value = await desktop.invoke("startup:get");
     const savedTheme = (await desktop.invoke("store:get", "theme")) as ThemeMode;
     if (savedTheme) themeValue.value = savedTheme;
+    await refreshHotState();
   } catch (err) {
     appendLog("系统初始化", "error", String(err));
   }
@@ -712,21 +743,7 @@ onUnmounted(() => {
                   run('updater:install', '退出并安装更新', () => desktop.invoke('updater:install'))
                 "
               >
-                安装更新并重启
-              </el-button>
-
-              <el-button
-                type="warning"
-                plain
-                :loading="isLoading('hot:check')"
-                @click="
-                  run('hot:check', '检查 ZIP 资源热更新', async () => {
-                    hotUpdateResult = await desktop.invoke('hot:check');
-                    return hotUpdateResult;
-                  })
-                "
-              >
-                检查 ZIP 热更新
+                安装整包并重启
               </el-button>
 
               <el-button
@@ -734,6 +751,100 @@ onUnmounted(() => {
                 @click="run('app:restart', '重启应用进程', () => desktop.invoke('app:restart'))"
               >
                 重启应用
+              </el-button>
+            </div>
+          </el-card>
+
+          <!-- 增量热更新卡片 (独立卡片) -->
+          <el-card class="feature-card full-width" shadow="never">
+            <template #header>
+              <div class="card-header-bar">
+                <span class="card-title">⚡ 增量热更新 (ZIP Hot Update)</span>
+                <div class="badge-group">
+                  <span class="card-badge">Ed25519 签名校验</span>
+                  <span class="card-badge">崩溃自愈回滚</span>
+                </div>
+              </div>
+            </template>
+            <p class="card-desc">
+              仅下载并热替换渲染层静态资源（2~5MB），跳过主进程与安装向导，支持多源分发与异常自动回退。
+            </p>
+
+            <!-- 热更状态信息面板 -->
+            <div class="hot-status-panel">
+              <div class="status-metric">
+                <span class="metric-label">生效版本标签</span>
+                <el-tag size="small" type="primary" effect="plain" class="metric-tag">
+                  {{ hotInfo?.currentVersionTag || "内置版本" }}
+                </el-tag>
+              </div>
+
+              <div class="status-metric">
+                <span class="metric-label">Git 提交 Hash</span>
+                <el-tag size="small" type="info" effect="plain" class="metric-tag font-mono">
+                  {{ hotInfo?.currentCommit || "base" }}
+                </el-tag>
+              </div>
+
+              <div class="status-metric">
+                <span class="metric-label">生命周期阶段</span>
+                <el-tag
+                  size="small"
+                  :type="
+                    hotInfo?.phase === 'active'
+                      ? 'success'
+                      : hotInfo?.phase === 'staged'
+                        ? 'warning'
+                        : hotInfo?.phase === 'trying'
+                          ? 'danger'
+                          : 'info'
+                  "
+                  effect="dark"
+                >
+                  {{
+                    hotInfo?.phase === "active"
+                      ? "Active (稳定生效)"
+                      : hotInfo?.phase === "staged"
+                        ? "Staged (已就绪待重启)"
+                        : hotInfo?.phase === "trying"
+                          ? "Trying (试跑验证中)"
+                          : "内置初始"
+                  }}
+                </el-tag>
+              </div>
+            </div>
+
+            <!-- 待重启生效警告条 -->
+            <el-alert
+              v-if="hotInfo?.phase === 'staged'"
+              title="增量补丁已安全解压就绪，点击下方按钮立即重启应用即可生效"
+              type="warning"
+              show-icon
+              :closable="false"
+              style="margin-bottom: 16px"
+            />
+
+            <div class="button-matrix">
+              <el-button
+                type="warning"
+                plain
+                :loading="isLoading('hot:check')"
+                @click="checkHotUpdateAction"
+              >
+                检查增量更新
+              </el-button>
+
+              <el-button
+                type="success"
+                :disabled="hotInfo?.phase !== 'staged'"
+                :loading="isLoading('hot:restart')"
+                @click="restartForHotUpdate"
+              >
+                立即重启生效
+              </el-button>
+
+              <el-button plain :loading="isLoading('hot:state')" @click="refreshHotState">
+                刷新热更状态
               </el-button>
             </div>
           </el-card>
@@ -929,6 +1040,36 @@ onUnmounted(() => {
   background: var(--el-fill-color-light, #f1f5f9);
   padding: 2px 8px;
   border-radius: 4px;
+}
+
+.badge-group {
+  display: flex;
+  gap: 6px;
+}
+
+.hot-status-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  background: var(--el-fill-color-light, #f8fafc);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.status-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary, #64748b);
+}
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .card-desc {
