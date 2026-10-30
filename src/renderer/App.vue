@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { darkTheme, zhCN, enUS, type SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "./stores/app";
 import TitleBar from "./components/TitleBar.vue";
+import NetworkBanner from "./components/NetworkBanner.vue";
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
@@ -70,10 +71,12 @@ async function changeTheme(value: string) {
   >
     <div class="app">
       <TitleBar />
+      <NetworkBanner />
       <header class="header">
         <nav class="header-nav">
           <router-link to="/">{{ t("home") }}</router-link>
           <router-link to="/playground">{{ t("playground") }}</router-link>
+          <router-link to="/settings">{{ t("settings") }}</router-link>
         </nav>
         <div class="header-title">
           <strong>Electron Starter</strong>

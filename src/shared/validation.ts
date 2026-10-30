@@ -6,7 +6,21 @@
 import type { InvokeChannel, SettingKey } from "./ipc";
 /** Runtime validation is required even if TS types compile. */
 // 设置键也使用白名单，避免 IPC 可以操作任意配置项。
-export const SETTINGS = new Set<SettingKey>(["theme", "locale", "closeToTray", "windowBounds"]);
+export const SETTINGS = new Set<SettingKey>([
+  "theme",
+  "locale",
+  "closeToTray",
+  "windowBounds",
+  "autoStart",
+  "defaultDownloadDir",
+  "downloadConcurrency",
+  "autoResumeDownloads",
+  "notificationsEnabled",
+  "notificationSound",
+  "notifyOnDownload",
+  "notifyOnUpdate",
+  "globalShortcutToggle",
+]);
 // Preload 和 Main 共同使用此集合；只有列出的通道才允许被调用。
 export const allowedChannels = new Set<InvokeChannel>([
   "app:version",
@@ -49,6 +63,14 @@ export const allowedChannels = new Set<InvokeChannel>([
   "shell:openPath",
   "shell:openExternal",
   "shell:trashItem",
+  "settings:all:get",
+  "settings:all:set",
+  "dialog:selectDirectory",
+  "shortcut:register",
+  "shortcut:get",
+  "diagnostics:system:get",
+  "diagnostics:exportLogs",
+  "app:networkStatus",
 ]);
 export function safeExternalUrl(input: string): URL {
   if (typeof input !== "string" || input.length > 4096) throw new Error("Invalid URL");
@@ -222,6 +244,31 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
     safeExternalUrl(args[0] as string);
     return;
   }
+  if (
+    [
+      "settings:all:get",
+      "shortcut:get",
+      "diagnostics:system:get",
+      "diagnostics:exportLogs",
+      "app:networkStatus",
+    ].includes(channel) &&
+    args.length === 0
+  )
+    return;
+  if (
+    channel === "settings:all:set" &&
+    args.length === 1 &&
+    typeof args[0] === "object" &&
+    args[0] !== null &&
+    !Array.isArray(args[0])
+  )
+    return;
+  if (
+    channel === "dialog:selectDirectory" &&
+    (args.length === 0 || (args.length === 1 && typeof args[0] === "string"))
+  )
+    return;
+  if (channel === "shortcut:register" && args.length === 1 && str(0, 100)) return;
   // 未匹配任何合法参数组合时一律拒绝；默认失败而不是默认放行。
   throw new Error("Invalid IPC arguments: " + channel);
 }

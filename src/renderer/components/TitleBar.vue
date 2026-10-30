@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/app";
 import { isElectron } from "../bridge/platform";
 
 const appStore = useAppStore();
+const router = useRouter();
+
+function openSettings() {
+  router.push("/settings");
+}
 
 const isMac = computed(() => {
   if (typeof navigator === "undefined") return false;
@@ -55,82 +61,106 @@ function handleDblClick(e: MouseEvent) {
       <span v-if="isMac" class="titlebar-title-mac">Electron Starter</span>
     </div>
 
-    <!-- Windows / Linux: 自绘窗口控制按钮组 (最小化、最大化/还原、关闭) -->
-    <div v-if="!isMac" class="window-controls no-drag">
+    <!-- 右侧动作与设置 -->
+    <div class="titlebar-actions no-drag flex items-center">
       <button
-        class="window-btn minimize"
-        title="最小化"
-        aria-label="最小化"
-        @click="handleMinimize"
+        class="window-btn settings-btn"
+        title="设置中心"
+        aria-label="设置中心"
+        @click="openSettings"
       >
-        <svg viewBox="0 0 12 12" width="10" height="10">
-          <line
-            x1="1"
-            y1="6"
-            x2="11"
-            y2="6"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
+        <svg
+          viewBox="0 0 24 24"
+          width="13"
+          height="13"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
           />
         </svg>
       </button>
 
-      <button
-        class="window-btn maximize"
-        :title="appStore.isMaximized ? '还原' : '最大化'"
-        :aria-label="appStore.isMaximized ? '还原' : '最大化'"
-        @click="handleToggleMaximize"
-      >
-        <!-- 还原图标 (双层矩形) -->
-        <svg v-if="appStore.isMaximized" viewBox="0 0 12 12" width="10" height="10" fill="none">
-          <path d="M3.5 1.5h6a1 1 0 0 1 1 1v6" stroke="currentColor" stroke-width="1.1" />
-          <rect
-            x="1.5"
-            y="3.5"
-            width="7"
-            height="7"
-            rx="0.5"
-            stroke="currentColor"
-            stroke-width="1.1"
-          />
-        </svg>
-        <!-- 最大化图标 (单层矩形) -->
-        <svg v-else viewBox="0 0 12 12" width="10" height="10" fill="none">
-          <rect
-            x="1.5"
-            y="1.5"
-            width="9"
-            height="9"
-            rx="0.5"
-            stroke="currentColor"
-            stroke-width="1.1"
-          />
-        </svg>
-      </button>
+      <!-- Windows / Linux: 自绘窗口控制按钮组 (最小化、最大化/还原、关闭) -->
+      <div v-if="!isMac" class="window-controls flex items-center">
+        <button
+          class="window-btn minimize"
+          title="最小化"
+          aria-label="最小化"
+          @click="handleMinimize"
+        >
+          <svg viewBox="0 0 12 12" width="10" height="10">
+            <line
+              x1="1"
+              y1="6"
+              x2="11"
+              y2="6"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
 
-      <button class="window-btn close" title="关闭" aria-label="关闭" @click="handleClose">
-        <svg viewBox="0 0 12 12" width="10" height="10">
-          <line
-            x1="2"
-            y1="2"
-            x2="10"
-            y2="10"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
-          />
-          <line
-            x1="10"
-            y1="2"
-            x2="2"
-            y2="10"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
+        <button
+          class="window-btn maximize"
+          :title="appStore.isMaximized ? '还原' : '最大化'"
+          :aria-label="appStore.isMaximized ? '还原' : '最大化'"
+          @click="handleToggleMaximize"
+        >
+          <!-- 还原图标 (双层矩形) -->
+          <svg v-if="appStore.isMaximized" viewBox="0 0 12 12" width="10" height="10" fill="none">
+            <path d="M3.5 1.5h6a1 1 0 0 1 1 1v6" stroke="currentColor" stroke-width="1.1" />
+            <rect
+              x="1.5"
+              y="3.5"
+              width="7"
+              height="7"
+              rx="0.5"
+              stroke="currentColor"
+              stroke-width="1.1"
+            />
+          </svg>
+          <!-- 最大化图标 (单层矩形) -->
+          <svg v-else viewBox="0 0 12 12" width="10" height="10" fill="none">
+            <rect
+              x="1.5"
+              y="1.5"
+              width="9"
+              height="9"
+              rx="0.5"
+              stroke="currentColor"
+              stroke-width="1.1"
+            />
+          </svg>
+        </button>
+
+        <button class="window-btn close" title="关闭" aria-label="关闭" @click="handleClose">
+          <svg viewBox="0 0 12 12" width="10" height="10">
+            <line
+              x1="2"
+              y1="2"
+              x2="10"
+              y2="10"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
+            <line
+              x1="10"
+              y1="2"
+              x2="2"
+              y2="10"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 </template>
@@ -201,6 +231,28 @@ function handleDblClick(e: MouseEvent) {
   height: 100%;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
+}
+
+.settings-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--app-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  margin-right: 4px;
+  border-radius: 4px;
+}
+
+.settings-btn:hover {
+  background-color: var(--app-bg-hover, rgba(125, 125, 125, 0.15));
+  color: var(--app-text-primary);
 }
 
 .no-drag {

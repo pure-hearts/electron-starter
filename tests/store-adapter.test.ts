@@ -26,7 +26,7 @@ describe("配置适配器边界", () => {
     const { getSetting } = await import("../src/main/modules/store");
     expect(getSetting("theme")).toBe("dark");
     expect(getSetting("closeToTray")).toBe(false);
-    expect(fake.state.schemaVersion).toBe(1);
+    expect(fake.state.schemaVersion).toBe(2);
   });
   it("内部调用也拒绝非法值，不能仅依赖IPC校验", async () => {
     const { setSetting } = await import("../src/main/modules/store");

@@ -19,6 +19,8 @@ import { recoverPendingUpdate, disposeHotUpdate } from "../modules/update/hot";
 import { configureSessionSecurity, disposeSessionSecurity } from "../session-security";
 import { registerSmokeChecks } from "./smoke";
 import { StartupLifecycle } from "../modules/system/startup-lifecycle";
+import { initGlobalShortcuts, disposeGlobalShortcuts } from "../modules/system/shortcut-module";
+import { initNetworkMonitor, disposeNetworkMonitor } from "../modules/system/network-module";
 
 const lifecycle = new StartupLifecycle((error) => {
   log.error("Bootstrap rollback error", error);
@@ -39,6 +41,8 @@ export function bootstrapMain(): void {
     { start: () => initCrashRecovery(), stop: () => disposeCrashRecovery() },
     { start: () => createMenu(), stop: () => destroyMenu() },
     { start: () => createTray(), stop: () => destroyTray() },
+    { start: () => initGlobalShortcuts(), stop: () => disposeGlobalShortcuts() },
+    { start: () => initNetworkMonitor(), stop: () => disposeNetworkMonitor() },
     {
       start: () => {
         // 功能处理器均已准备好后，才创建加载 Vue 页面内容的主窗口。

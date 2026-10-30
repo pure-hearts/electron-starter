@@ -65,9 +65,75 @@ export interface DesktopInvoke {
   "shell:openPath": { args: [path: string]; result: string };
   "shell:openExternal": { args: [url: string]; result: boolean };
   "shell:trashItem": { args: [path: string]; result: boolean };
+  // 设置中心批量与多字段读取/保存
+  "settings:all:get": { args: []; result: UserSettings };
+  "settings:all:set": { args: [settings: Partial<UserSettings>]; result: UserSettings };
+  // 原生系统目录选择对话框
+  "dialog:selectDirectory": { args: [defaultPath?: string]; result: string | null };
+  // 全局快捷键注册与状态获取
+  "shortcut:register": {
+    args: [accelerator: string];
+    result: { success: boolean; error?: string };
+  };
+  "shortcut:get": { args: []; result: string };
+  // 系统环境参数与脱敏排障日志导出
+  "diagnostics:system:get": { args: []; result: SystemDiagnostics };
+  "diagnostics:exportLogs": {
+    args: [];
+    result: { success: boolean; filePath?: string; error?: string };
+  };
+  // 网络连通状态
+  "app:networkStatus": { args: []; result: { isOnline: boolean } };
 }
 // 只允许存取这些明确列出的设置，不能把任意名称映射成文件系统操作。
-export type SettingKey = "theme" | "locale" | "closeToTray" | "windowBounds";
+export type SettingKey =
+  | "theme"
+  | "locale"
+  | "closeToTray"
+  | "windowBounds"
+  | "autoStart"
+  | "defaultDownloadDir"
+  | "downloadConcurrency"
+  | "autoResumeDownloads"
+  | "notificationsEnabled"
+  | "notificationSound"
+  | "notifyOnDownload"
+  | "notifyOnUpdate"
+  | "globalShortcutToggle";
+
+/** 商业化通用设置中心结构 */
+export interface UserSettings {
+  theme: "light" | "dark" | "system";
+  locale: "zh-CN" | "en-US";
+  closeToTray: boolean;
+  autoStart: boolean;
+  defaultDownloadDir: string;
+  downloadConcurrency: number;
+  autoResumeDownloads: boolean;
+  notificationsEnabled: boolean;
+  notificationSound: boolean;
+  notifyOnDownload: boolean;
+  notifyOnUpdate: boolean;
+  globalShortcutToggle: string;
+}
+
+/** 系统诊断环境信息 */
+export interface SystemDiagnostics {
+  appVersion: string;
+  electronVersion: string;
+  chromeVersion: string;
+  nodeVersion: string;
+  v8Version: string;
+  osPlatform: string;
+  osRelease: string;
+  osArch: string;
+  cpuModel: string;
+  totalMemoryMb: number;
+  freeMemoryMb: number;
+  uptimeSeconds: number;
+  isPackaged: boolean;
+  logPath: string;
+}
 // keyof 自动从协议接口推导全部合法调用通道，避免维护第二份字符串联合类型。
 export type InvokeChannel = keyof DesktopInvoke;
 // 泛型类型根据通道 C 提取参数，例如 app:version 的参数是空元组 []。
@@ -114,6 +180,10 @@ export interface DesktopEvents {
     shouldUseDarkColors: boolean;
     accentColor: string | null;
   };
+  "network:change": {
+    isOnline: boolean;
+  };
+  "settings:changed": UserSettings;
 }
 export type EventChannel = keyof DesktopEvents;
 // Preload 中的 bridge 必须满足此接口，因此页面调用时拥有类型提示。

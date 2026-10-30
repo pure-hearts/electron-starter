@@ -17,6 +17,7 @@ vi.mock("../src/main/ipc/handlers/services", () => ({ serviceHandlers: {} }));
 vi.mock("../src/main/ipc/handlers/transfer", () => ({ transferHandlers: {} }));
 vi.mock("../src/main/ipc/handlers/shell", () => ({ shellHandlers: {} }));
 vi.mock("../src/main/ipc/handlers/theme", () => ({ themeHandlers: {} }));
+vi.mock("../src/main/ipc/handlers/settings", () => ({ settingsHandlers: {} }));
 vi.mock("../src/main/modules/core/logger", () => ({ log: { error: mocks.error } }));
 import { registerIPC, unregisterIPC } from "../src/main/ipc";
 import { allowedChannels } from "../src/shared/validation";

@@ -76,6 +76,14 @@
   - 产出 Web 端与启动页图标 `public/favicon.ico`、`public/favicon.png`，并在 `src/renderer/index.html` 和 `public/splash.html` 中完成引入；
   - 编写跨平台自动化生成脚本 `scripts/generate-icons.py`，配置 npm 脚本 `pnpm icons:generate`；
   - 更新 `electron-builder.yml` 打包配置与 `resources/icons/README.md` 图标资产规格说明。
+- [x] **商业级设置中心与高级桌面特性集成（2026-10-30 落地）**：
+  - 基于 Naive UI 搭建科技感设置中心页面 `Settings.vue`（常规、下载、通知、全局快捷键、系统诊断与关于），并在 `TitleBar.vue` 与主导航完整接入路由；
+  - 扩展 `src/shared/ipc.ts` 契约与 `store/schema.ts`（升级至 schemaVersion=2），实现常规外观、自启动、下载目录与并发、通知开关的结构化持久化与广播；
+  - 实现下载完成/失败系统桌面通知联动，点击通知直接在系统文件管理器高亮定位目标文件（`shell.showItemInFolder`）；
+  - 封装主进程全局快捷键模块 `shortcut-module.ts`，支持后台全局呼出/隐藏主窗口与冲突防护；
+  - 封装系统诊断与排障模块 `diagnostics.ts`，支持一键导出脱敏日志与系统参数的 ZIP 压缩包；
+  - 封装全局网络监听与 `NetworkBanner.vue` 离线提示组件，WebShim 全量对齐新增通道；
+  - 新增 `tests/diagnostics-archive.test.ts` 与 `tests/shortcut-policy.test.ts` 测试套件，全量 41 套件 154 项测试用例全部通过，`vp check` 0 错误。
 - [ ] 对应生产平台执行最终业务回归并核对 Release 产物。
 
 ## 阶段结论
@@ -107,3 +115,17 @@ P7：上述尚未完成的正式签名/跨平台安装与真实更新测试需�
 
 - [x] 最新源码触发 Windows/macOS/Linux 三平台无签名安装包构建，三平台 CI 全部通过。
 - [ ] 三平台打包成功不等于签名、安装升级或原生交互验证成功；仍须取得实际系统测试证据。
+
+## 商业级设置中心与全局快捷键组件化（2026-10-30）
+
+- [x] **商业级设置中心 (Settings Center)**：完整落地 `/settings` 路由，包含常规、下载、通知、全局快捷键、系统诊断与关于共 6 大分栏，并在顶部导航与系统托盘中打通入口。
+- [x] **全局快捷键独立组件化 (`GlobalShortcutManager` & `ShortcutRecorder`)**：
+  - 封装原子按键录制器，支持点击聚焦激活、键盘实体按键监听捕获、呼吸灯与过渡修饰键展示、Escape 取消与清空；
+  - 拦截单字符等非法按键，统一标准化为跨平台 Accelerator；
+  - 集成主进程热注册与冲突检测，被占用时提供醒目冲突警告并自动回退原值；
+  - 内置交互式快捷键排障与帮助指引面板（键位映射表、冲突原理、高频冲突软件案例、低冲突推荐预设）。
+- [x] **自动化质量门禁验证**：
+  - `pnpm check`: 262 个文件 0 错误；
+  - `pnpm typecheck:vue`: 0 TS 错误；
+  - `pnpm test`: 42 个测试套件，165 项单测 100% 通过；
+  - `pnpm build`: 生产构建成功，无超大 chunk 告警。

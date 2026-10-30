@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   crash: { init: vi.fn(), dispose: vi.fn() },
   menu: { create: vi.fn(), destroy: vi.fn() },
   tray: { create: vi.fn(), destroy: vi.fn() },
+  shortcut: { init: vi.fn(), dispose: vi.fn() },
+  network: { init: vi.fn(), dispose: vi.fn() },
   window: {
     create: vi.fn(() => ({
       webContents: { on: vi.fn() },
@@ -62,6 +64,14 @@ vi.mock("../src/main/modules/system/tray", () => ({
   createTray: mocks.tray.create,
   destroyTray: mocks.tray.destroy,
 }));
+vi.mock("../src/main/modules/system/shortcut-module", () => ({
+  initGlobalShortcuts: mocks.shortcut.init,
+  disposeGlobalShortcuts: mocks.shortcut.dispose,
+}));
+vi.mock("../src/main/modules/system/network-module", () => ({
+  initNetworkMonitor: mocks.network.init,
+  disposeNetworkMonitor: mocks.network.dispose,
+}));
 vi.mock("../src/main/window", () => ({
   createMainWindow: mocks.window.create,
   disposeWindows: mocks.window.dispose,
@@ -92,11 +102,15 @@ describe("主进程启动门面集成测试", () => {
     expect(mocks.crash.init).toHaveBeenCalledOnce();
     expect(mocks.menu.create).toHaveBeenCalledOnce();
     expect(mocks.tray.create).toHaveBeenCalledOnce();
+    expect(mocks.shortcut.init).toHaveBeenCalledOnce();
+    expect(mocks.network.init).toHaveBeenCalledOnce();
     expect(mocks.window.create).toHaveBeenCalledOnce();
 
     shutdownMain();
 
     expect(mocks.window.dispose).toHaveBeenCalledOnce();
+    expect(mocks.network.dispose).toHaveBeenCalledOnce();
+    expect(mocks.shortcut.dispose).toHaveBeenCalledOnce();
     expect(mocks.tray.destroy).toHaveBeenCalledOnce();
     expect(mocks.menu.destroy).toHaveBeenCalledOnce();
     expect(mocks.crash.dispose).toHaveBeenCalledOnce();

@@ -1,6 +1,7 @@
 /** Electron 下载适配器：会话、系统路径与持久化留在此处，业务状态由 DownloadManager 管理。 */
 import { app, session } from "electron";
 import path from "node:path";
+import fs from "node:fs";
 import crypto from "node:crypto";
 import Store from "electron-store";
 import type { DownloadItem, WebContents } from "electron";
@@ -8,6 +9,7 @@ import type { DownloadState } from "../../../shared/ipc";
 import { DownloadManager } from "./manager";
 import { log } from "../core/logger";
 import { notifyBusiness } from "../notification";
+import { getSetting } from "../store";
 
 let downloadSettings: Store<{ concurrency: number }> | null = null;
 function currentDownloadSettings(): Store<{ concurrency: number }> {
@@ -48,18 +50,30 @@ export function initDownloads(onState: (state: DownloadState) => void = () => {}
     destination: (id, filename) => {
       // basename 同时剥离两个平台的路径分隔符；下载文件名不能控制保存目录。
       const name = path.posix.basename(path.win32.basename(filename)) || "download";
-      return path.join(app.getPath("downloads"), id + "-" + name);
+      const customDir = getSetting("defaultDownloadDir");
+      const baseDir =
+        typeof customDir === "string" && customDir.trim() && fs.existsSync(customDir.trim())
+          ? customDir.trim()
+          : app.getPath("downloads");
+      return path.join(baseDir, id + "-" + name);
     },
     emit: (state) => {
       onState(state);
-      if (state.state === "completed" || state.state === "failed")
-        notifyBusiness({
-          title: state.state === "completed" ? "下载完成" : "下载失败",
-          body:
-            state.state === "completed" ? "文件已保存到下载文件夹" : "请在下载列表查看状态并重试",
-          kind: state.state === "completed" ? "success" : "error",
-          dedupeKey: "download:" + state.id,
-        });
+      if (state.state === "completed" || state.state === "failed") {
+        const notifyPref = getSetting("notifyOnDownload");
+        if (notifyPref !== false) {
+          notifyBusiness({
+            title: state.state === "completed" ? "下载完成" : "下载失败",
+            body:
+              state.state === "completed"
+                ? `文件已保存: ${state.path ? path.basename(state.path) : "已完成"}`
+                : "请在下载列表查看状态并重试",
+            kind: state.state === "completed" ? "success" : "error",
+            action: state.path,
+            dedupeKey: "download:" + state.id,
+          });
+        }
+      }
     },
     report: (error) => log.warn("Download operation failed", error),
   });

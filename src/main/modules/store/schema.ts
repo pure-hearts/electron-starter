@@ -1,12 +1,12 @@
 /** 持久化配置的数据结构、默认值和旧版本迁移规则。 */
-import type { SettingKey } from "../../../shared/ipc";
+import type { SettingKey, UserSettings } from "../../../shared/ipc";
 // SettingKey 约束用户能够存储的字段名称。
-export type SettingsValues = Record<SettingKey, string | boolean>;
+export type SettingsValues = Record<SettingKey, string | boolean | number>;
 export interface SettingsState extends SettingsValues {
   schemaVersion: number;
 }
 // 增加配置字段或迁移行为时，按需提高结构版本号。
-export const CURRENT_SETTINGS_VERSION = 1;
+export const CURRENT_SETTINGS_VERSION = 2;
 // 全新安装或无效字段回退时使用这些默认值。
 export const settingsDefaults: SettingsState = {
   schemaVersion: CURRENT_SETTINGS_VERSION,
@@ -14,6 +14,15 @@ export const settingsDefaults: SettingsState = {
   locale: "zh-CN",
   closeToTray: true,
   windowBounds: "",
+  autoStart: false,
+  defaultDownloadDir: "",
+  downloadConcurrency: 10,
+  autoResumeDownloads: true,
+  notificationsEnabled: true,
+  notificationSound: true,
+  notifyOnDownload: true,
+  notifyOnUpdate: true,
+  globalShortcutToggle: "CommandOrControl+Shift+X",
 };
 /** 验证窗口尺寸和坐标，避免恢复到异常大小或极远的位置。 */
 export function normalizeWindowBounds(value: unknown): string {
@@ -61,6 +70,26 @@ export function migrateSettings(source: unknown): SettingsState {
     locale: raw.locale === "en-US" ? "en-US" : "zh-CN",
     closeToTray: typeof raw.closeToTray === "boolean" ? raw.closeToTray : true,
     windowBounds: normalizeWindowBounds(raw.windowBounds),
+    autoStart: typeof raw.autoStart === "boolean" ? raw.autoStart : false,
+    defaultDownloadDir: typeof raw.defaultDownloadDir === "string" ? raw.defaultDownloadDir : "",
+    downloadConcurrency:
+      typeof raw.downloadConcurrency === "number" &&
+      Number.isInteger(raw.downloadConcurrency) &&
+      raw.downloadConcurrency >= 1 &&
+      raw.downloadConcurrency <= 50
+        ? raw.downloadConcurrency
+        : 10,
+    autoResumeDownloads:
+      typeof raw.autoResumeDownloads === "boolean" ? raw.autoResumeDownloads : true,
+    notificationsEnabled:
+      typeof raw.notificationsEnabled === "boolean" ? raw.notificationsEnabled : true,
+    notificationSound: typeof raw.notificationSound === "boolean" ? raw.notificationSound : true,
+    notifyOnDownload: typeof raw.notifyOnDownload === "boolean" ? raw.notifyOnDownload : true,
+    notifyOnUpdate: typeof raw.notifyOnUpdate === "boolean" ? raw.notifyOnUpdate : true,
+    globalShortcutToggle:
+      typeof raw.globalShortcutToggle === "string" && raw.globalShortcutToggle.length <= 100
+        ? raw.globalShortcutToggle
+        : "CommandOrControl+Shift+X",
   };
 }
 /** 对比规范化结果，判断是否需要重新写入当前结构。 */
@@ -69,4 +98,22 @@ export function settingsNeedMigration(source: unknown): boolean {
   if (!source || typeof source !== "object" || Array.isArray(source)) return true;
   const raw = source as Record<string, unknown>;
   return Object.entries(normalized).some(([key, value]) => raw[key] !== value);
+}
+
+/** 提取面向渲染层设置中心的配置对象 */
+export function extractUserSettings(state: SettingsState): UserSettings {
+  return {
+    theme: state.theme as "light" | "dark" | "system",
+    locale: state.locale as "zh-CN" | "en-US",
+    closeToTray: Boolean(state.closeToTray),
+    autoStart: Boolean(state.autoStart),
+    defaultDownloadDir: String(state.defaultDownloadDir || ""),
+    downloadConcurrency: Number(state.downloadConcurrency || 10),
+    autoResumeDownloads: Boolean(state.autoResumeDownloads),
+    notificationsEnabled: Boolean(state.notificationsEnabled),
+    notificationSound: Boolean(state.notificationSound),
+    notifyOnDownload: Boolean(state.notifyOnDownload),
+    notifyOnUpdate: Boolean(state.notifyOnUpdate),
+    globalShortcutToggle: String(state.globalShortcutToggle || "CommandOrControl+Shift+X"),
+  };
 }

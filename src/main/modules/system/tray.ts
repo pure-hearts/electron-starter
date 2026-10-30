@@ -47,6 +47,12 @@ export function createTray() {
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: "打开主窗口", click: focusMainWindow },
+      {
+        label: "偏好设置",
+        click: () => {
+          focusMainWindow();
+        },
+      },
       { type: "separator" },
       { label: "退出", click: requestQuit },
     ]),

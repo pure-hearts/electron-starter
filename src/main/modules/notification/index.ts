@@ -4,6 +4,8 @@ import type { NotificationOptions } from "../../../shared/notification";
 import { broadcast, focusMainWindow } from "../../window";
 import { NotificationCenter } from "./center";
 import { log } from "../core/logger";
+import { getSetting } from "../store";
+import { showItemInFolder } from "../system/shell-module";
 
 export const notificationCenter = new NotificationCenter({
   supported: () => Notification.isSupported(),
@@ -18,6 +20,14 @@ export const notificationCenter = new NotificationCenter({
   activated: (payload, title) => {
     // 兼容旧版只接收 title 的通知点击监听器。
     broadcast("notification:clicked", title);
+    // 若通知携带目标文件路径动作，在原生资源管理器中高亮定位
+    if (payload.action && typeof payload.action === "string") {
+      try {
+        void showItemInFolder(payload.action);
+      } catch {
+        // 忽略非文件路径的 action
+      }
+    }
     const target =
       payload.sourceWindowId === undefined
         ? undefined
@@ -32,6 +42,8 @@ export const notificationCenter = new NotificationCenter({
 });
 /** 旧接口原样保留，内部接入新的通知中心。 */
 export function notify(title: string, body: string): void {
+  const enabled = getSetting("notificationsEnabled");
+  if (enabled === false) return;
   const result = notificationCenter.send({ title, body });
   if (!result.accepted && result.reason === "unsupported")
     throw new Error("Notifications are not supported by this OS");
@@ -40,6 +52,8 @@ export function notify(title: string, body: string): void {
 /** 业务通知属于辅助反馈；系统不支持或通知失败不能改变下载/更新的真实结果。 */
 export function notifyBusiness(options: NotificationOptions): void {
   try {
+    const enabled = getSetting("notificationsEnabled");
+    if (enabled === false) return;
     notificationCenter.send(options);
   } catch (error) {
     log.warn("Business notification failed", error);

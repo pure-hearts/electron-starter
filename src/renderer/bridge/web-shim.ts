@@ -388,6 +388,89 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
           return true as InvokeResult<C>;
         }
 
+        // ----------------- 12. 设置中心与系统诊断 -----------------
+        case "settings:all:get": {
+          const raw = getStorageItem(STORAGE_PREFIX + "user_settings");
+          if (raw) {
+            try {
+              return JSON.parse(raw) as InvokeResult<C>;
+            } catch {
+              // 回退默认
+            }
+          }
+          const defaultSettings = {
+            theme: "light",
+            locale: "zh-CN",
+            closeToTray: true,
+            autoStart: false,
+            defaultDownloadDir: "/Downloads",
+            downloadConcurrency: 10,
+            autoResumeDownloads: true,
+            notificationsEnabled: true,
+            notificationSound: true,
+            notifyOnDownload: true,
+            notifyOnUpdate: true,
+            globalShortcutToggle: "CommandOrControl+Shift+X",
+          };
+          return defaultSettings as InvokeResult<C>;
+        }
+
+        case "settings:all:set": {
+          const partial = (args[0] || {}) as Record<string, unknown>;
+          const current = (await this.invoke("settings:all:get")) as unknown as Record<
+            string,
+            unknown
+          >;
+          const merged = { ...current, ...partial };
+          setStorageItem(STORAGE_PREFIX + "user_settings", JSON.stringify(merged));
+          emitEvent("settings:changed", merged as any);
+          return merged as InvokeResult<C>;
+        }
+
+        case "dialog:selectDirectory": {
+          notifyMessage("info", "Web 模式：使用模拟文件夹路径 /WebDownloads");
+          return "/WebDownloads" as InvokeResult<C>;
+        }
+
+        case "shortcut:register": {
+          const acc = typeof args[0] === "string" ? args[0] : "";
+          notifyMessage("success", `Web 模式：已更新快捷键绑定 ${acc}`);
+          return { success: true } as InvokeResult<C>;
+        }
+
+        case "shortcut:get": {
+          return "CommandOrControl+Shift+X" as InvokeResult<C>;
+        }
+
+        case "diagnostics:system:get": {
+          return {
+            appVersion: "0.1.3 (Web)",
+            electronVersion: "N/A (Browser)",
+            chromeVersion: navigator.userAgent,
+            nodeVersion: "N/A",
+            v8Version: "N/A",
+            osPlatform: navigator.platform || "Web",
+            osRelease: "Web Standard",
+            osArch: "x64",
+            cpuModel: "Web Browser Virtual Core",
+            totalMemoryMb: 8192,
+            freeMemoryMb: 4096,
+            uptimeSeconds: Math.round(performance.now() / 1000),
+            isPackaged: false,
+            logPath: "IndexedDB / LocalStorage",
+          } as InvokeResult<C>;
+        }
+
+        case "diagnostics:exportLogs": {
+          notifyMessage("success", "Web 模式：排障诊断包已在浏览器端生成 (模拟)");
+          return { success: true, filePath: "web-diagnostics.zip" } as InvokeResult<C>;
+        }
+
+        case "app:networkStatus": {
+          const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+          return { isOnline } as InvokeResult<C>;
+        }
+
         default: {
           console.warn(`[WebShim] 未知通道调用: ${String(channel)}`, args);
           return undefined as InvokeResult<C>;

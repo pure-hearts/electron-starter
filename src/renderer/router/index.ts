@@ -8,6 +8,7 @@ export default createRouter({
   routes: [
     { path: "/", component: Home },
     { path: "/playground", component: () => import("../views/Playground.vue") },
+    { path: "/settings", component: () => import("../views/Settings.vue") },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });

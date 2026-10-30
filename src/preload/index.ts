@@ -24,6 +24,10 @@ const eventNames = new Set<EventChannel>([
   "notification:clicked",
   "notification:activated",
   "notification:settled",
+  "window:maximize-change",
+  "theme:system:changed",
+  "network:change",
+  "settings:changed",
 ]);
 
 // bridge 是唯一提供给页面的桌面 API，而不是暴露整个 ipcRenderer。

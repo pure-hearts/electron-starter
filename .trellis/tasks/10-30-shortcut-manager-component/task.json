@@ -1,0 +1,60 @@
+{
+  "id": "shortcut-manager-component",
+  "name": "shortcut-manager-component",
+  "title": "Global Shortcut Manager Component & Interactive Helper",
+  "description": "Encapsulate global shortcut recording, management, conflict handling, and interactive user guidance into a standalone reusable component.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "vyron",
+  "assignee": "vyron",
+  "createdAt": "2026-10-30",
+  "completedAt": "2026-10-30",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    {
+      "id": "subtask-1",
+      "title": "Shortcut Utilities (Key Event Parser & Platform Symbol Formatter)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-2",
+      "title": "Shortcut Recorder Core Component (Key capture, active listening, validation)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-3",
+      "title": "Global Shortcut Manager Component (Recording, Reset, Conflict Feedback, Help Panel)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-4",
+      "title": "Integrate into Settings.vue & Internationalization (zh-CN & en-US)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-5",
+      "title": "Unit Tests & Full Quality Gate Verification",
+      "status": "completed"
+    }
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/renderer/components/ShortcutRecorder.vue",
+    "src/renderer/components/GlobalShortcutManager.vue",
+    "src/renderer/utils/shortcut.ts",
+    "src/renderer/views/Settings.vue",
+    "src/renderer/i18n/locales/zh-CN.ts",
+    "src/renderer/i18n/locales/en-US.ts",
+    "tests/shortcut-recorder.test.ts"
+  ],
+  "notes": "",
+  "meta": {}
+}

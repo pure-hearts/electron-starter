@@ -2,11 +2,23 @@
 import Store from "electron-store";
 import { validate } from "../../../shared/validation";
 import type { SettingKey } from "../../../shared/ipc";
-import { migrateSettings, settingsDefaults, settingsNeedMigration } from "./schema";
+import {
+  migrateSettings,
+  settingsDefaults,
+  settingsNeedMigration,
+  extractUserSettings,
+} from "./schema";
 import type { SettingsState } from "./schema";
+import type { UserSettings } from "../../../shared/ipc";
 
 // 延迟初始化，避免模块导入阶段过早访问 Electron 的用户数据路径。
 let store: Store<SettingsState> | null = null;
+let changeCallback: ((settings: UserSettings) => void) | null = null;
+
+export function onSettingsChange(cb: (settings: UserSettings) => void): void {
+  changeCallback = cb;
+}
+
 /** 获取唯一 Store 实例：懒加载并进行必要的数据迁移。 */
 function currentStore(): Store<SettingsState> {
   // 已初始化时直接复用，避免多个实例分别写同一配置文件。
@@ -37,4 +49,26 @@ export function setSetting(key: SettingKey, value: string | boolean): void {
 /** 删除指定配置项，随后读取时恢复到 Store 预设默认值。 */
 export function deleteSetting(key: SettingKey): void {
   currentStore().delete(key);
+}
+
+/** 一次性读取全量结构化用户设置 */
+export function getAllSettings(): UserSettings {
+  return extractUserSettings(currentStore().store);
+}
+
+/** 批量更新用户设置，并向所有窗口广播变更 */
+export function updateAllSettings(partial: Partial<UserSettings>): UserSettings {
+  const s = currentStore();
+  const current = extractUserSettings(s.store);
+  const merged: UserSettings = {
+    ...current,
+    ...partial,
+  };
+  // 逐项写回
+  for (const [key, value] of Object.entries(merged)) {
+    s.set(key as SettingKey, value as never);
+  }
+  const updated = extractUserSettings(s.store);
+  changeCallback?.(updated);
+  return updated;
 }
