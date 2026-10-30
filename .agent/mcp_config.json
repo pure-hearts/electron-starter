@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "electron-stagewright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package",
+        "@electron-stagewright/core",
+        "--package",
+        "playwright",
+        "electron-stagewright",
+        "--app-root",
+        "."
+      ],
+      "env": {
+        "NODE_PATH": "./node_modules"
+      }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    },
+    "vitest": {
+      "command": "npx",
+      "args": ["-y", "@djankies/vitest-mcp"]
+    }
+  }
+}
