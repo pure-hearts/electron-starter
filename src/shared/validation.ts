@@ -44,6 +44,10 @@ export const allowedChannels = new Set<InvokeChannel>([
   "download:retry",
   "download:concurrency:get",
   "download:concurrency:set",
+  "download:history:get",
+  "download:history:remove",
+  "download:history:clear",
+  "download:file:exists",
   "print:printers",
   "print:execute",
   "updater:check",
@@ -135,6 +139,7 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
     "startup:get",
     "notification:capabilities",
     "download:concurrency:get",
+    "download:history:clear",
     "print:printers",
     "print:execute",
     "updater:check",
@@ -231,7 +236,27 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
     return;
   }
   if (
-    ["download:cancel", "download:pause", "download:resume", "download:retry"].includes(channel) &&
+    channel === "download:history:get" &&
+    (args.length === 0 ||
+      (args.length === 1 &&
+        typeof args[0] === "number" &&
+        Number.isInteger(args[0]) &&
+        args[0] >= 1 &&
+        args[0] <= 1000))
+  )
+    return;
+  if (channel === "download:file:exists" && args.length === 1) {
+    safeLocalPath(args[0] as string);
+    return;
+  }
+  if (
+    [
+      "download:cancel",
+      "download:pause",
+      "download:resume",
+      "download:retry",
+      "download:history:remove",
+    ].includes(channel) &&
     args.length === 1 &&
     str(0, 64)
   )

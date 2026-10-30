@@ -187,52 +187,76 @@ export const useDownloadStore = defineStore("download", () => {
   }
 
   async function removeHistory(id: string): Promise<boolean> {
-    const bridge = getBridge();
-    const ok = await bridge.invoke("download:history:remove", id);
-    if (ok) {
-      historyTasks.value = historyTasks.value.filter((t) => t.id !== id);
+    try {
+      const bridge = getBridge();
+      const ok = await bridge.invoke("download:history:remove", id);
+      if (ok) {
+        historyTasks.value = historyTasks.value.filter((t) => t.id !== id);
+      }
+      return ok;
+    } catch (e) {
+      console.warn("Failed to remove history record", e);
+      return false;
     }
-    return ok;
   }
 
   async function clearCompleted(): Promise<void> {
-    const bridge = getBridge();
-    await bridge.invoke("download:history:clear");
-    historyTasks.value = historyTasks.value.filter(
-      (t) => !["completed", "failed", "cancelled"].includes(t.state),
-    );
+    try {
+      const bridge = getBridge();
+      await bridge.invoke("download:history:clear");
+      historyTasks.value = historyTasks.value.filter(
+        (t) => !["completed", "failed", "cancelled"].includes(t.state),
+      );
+    } catch (e) {
+      console.warn("Failed to clear completed history", e);
+    }
   }
 
   async function checkFileExists(idOrPath: string, maybePath?: string): Promise<boolean> {
     const filePath = maybePath ? maybePath : idOrPath;
     const id = maybePath ? idOrPath : "";
     if (!filePath) return false;
-    const bridge = getBridge();
-    const exists = await bridge.invoke("download:file:exists", filePath);
-    const target = historyTasks.value.find((t) => (id ? t.id === id : t.path === filePath));
-    if (target) {
-      target.fileExists = exists;
+    try {
+      const bridge = getBridge();
+      const exists = await bridge.invoke("download:file:exists", filePath);
+      const target = historyTasks.value.find((t) => (id ? t.id === id : t.path === filePath));
+      if (target) {
+        target.fileExists = exists;
+      }
+      return exists;
+    } catch (e) {
+      console.warn("Failed to check file existence", e);
+      return false;
     }
-    return exists;
   }
 
-  async function showInFolder(filePath: string): Promise<void> {
-    if (!filePath) return;
-    const bridge = getBridge();
-    await bridge.invoke("shell:showItemInFolder", filePath);
+  async function showInFolder(filePath: string): Promise<boolean> {
+    if (!filePath) return false;
+    try {
+      const bridge = getBridge();
+      return await bridge.invoke("shell:showItemInFolder", filePath);
+    } catch (e) {
+      console.warn("Failed to show item in folder", e);
+      return false;
+    }
   }
 
   async function openFile(idOrPath: string, maybePath?: string): Promise<boolean> {
     const filePath = maybePath ? maybePath : idOrPath;
     const id = maybePath ? idOrPath : "";
     if (!filePath) return false;
-    const exists = await checkFileExists(id, filePath);
-    if (!exists) {
+    try {
+      const exists = await checkFileExists(id, filePath);
+      if (!exists) {
+        return false;
+      }
+      const bridge = getBridge();
+      const err = await bridge.invoke("shell:openPath", filePath);
+      return !err;
+    } catch (e) {
+      console.warn("Failed to open file", e);
       return false;
     }
-    const bridge = getBridge();
-    const err = await bridge.invoke("shell:openPath", filePath);
-    return !err;
   }
 
   function toggleDrawer(visible?: boolean): void {

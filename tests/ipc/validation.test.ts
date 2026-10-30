@@ -78,4 +78,29 @@ describe("download hardening and retry payload", () => {
     expect(() => validate("download:retry", ["abc-123"])).not.toThrow();
     expect(() => validate("download:retry", [])).toThrow();
   });
+
+  it("validates download history and file operations", () => {
+    // download:history:get
+    expect(() => validate("download:history:get", [])).not.toThrow();
+    expect(() => validate("download:history:get", [50])).not.toThrow();
+    expect(() => validate("download:history:get", [-1])).toThrow();
+    expect(() => validate("download:history:get", [0])).toThrow();
+    expect(() => validate("download:history:get", [2000])).toThrow();
+    expect(() => validate("download:history:get", ["50" as any])).toThrow();
+
+    // download:history:clear
+    expect(() => validate("download:history:clear", [])).not.toThrow();
+    expect(() => validate("download:history:clear", ["unexpected"])).toThrow();
+
+    // download:history:remove
+    expect(() => validate("download:history:remove", ["task-uuid-123"])).not.toThrow();
+    expect(() => validate("download:history:remove", [])).toThrow();
+    expect(() => validate("download:history:remove", [""])).toThrow();
+
+    // download:file:exists
+    expect(() => validate("download:file:exists", ["/path/to/downloaded.zip"])).not.toThrow();
+    expect(() => validate("download:file:exists", [])).toThrow();
+    expect(() => validate("download:file:exists", [""])).toThrow();
+    expect(() => validate("download:file:exists", ["/path/\0/bad"])).toThrow();
+  });
 });

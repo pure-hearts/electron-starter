@@ -134,7 +134,7 @@
               size="tiny"
               quaternary
               type="error"
-              @click="downloadStore.clearCompleted()"
+              @click="handleClearHistory"
             >
               清空记录
             </n-button>
@@ -242,7 +242,7 @@
                   </n-button>
                 </template>
 
-                <n-button size="tiny" quaternary @click="downloadStore.removeHistory(item.id)">
+                <n-button size="tiny" quaternary @click="handleRemoveHistory(item.id)">
                   删除记录
                 </n-button>
               </div>
@@ -267,26 +267,55 @@ const activeTab = ref<"active" | "history">("active");
 const checkingFileId = ref<string | null>(null);
 
 async function handleOpenFile(item: DownloadState): Promise<void> {
-  if (!item.path) return;
+  if (!item.path) {
+    feedback.message.warning("文件路径未记录", 2000);
+    return;
+  }
   checkingFileId.value = item.id;
   try {
     const success = await downloadStore.openFile(item.id, item.path);
     if (!success) {
       feedback.message.error("文件不存在或已被移动/删除", 3000);
     }
+  } catch {
+    feedback.message.error("打开文件失败", 3000);
   } finally {
     checkingFileId.value = null;
   }
 }
 
 async function handleShowInFolder(item: DownloadState): Promise<void> {
-  if (!item.path) return;
-  const exists = await downloadStore.checkFileExists(item.id, item.path);
-  if (!exists) {
-    feedback.message.error("文件不存在或已被移动/删除", 3000);
+  if (!item.path) {
+    feedback.message.warning("文件路径未记录", 2000);
     return;
   }
-  await downloadStore.showInFolder(item.path);
+  try {
+    const exists = await downloadStore.checkFileExists(item.id, item.path);
+    if (!exists) {
+      feedback.message.error("文件不存在或已被移动/删除", 3000);
+      return;
+    }
+    const success = await downloadStore.showInFolder(item.path);
+    if (success === false) {
+      feedback.message.error("无法打开文件所在目录", 3000);
+    }
+  } catch {
+    feedback.message.error("定位文件失败", 3000);
+  }
+}
+
+async function handleRemoveHistory(id: string): Promise<void> {
+  const ok = await downloadStore.removeHistory(id);
+  if (ok) {
+    feedback.message.success("已删除该记录", 2000);
+  } else {
+    feedback.message.error("删除记录失败", 2000);
+  }
+}
+
+async function handleClearHistory(): Promise<void> {
+  await downloadStore.clearCompleted();
+  feedback.message.success("已清空已完成的下载记录", 2000);
 }
 
 function getFilenameFromUrl(url: string): string {

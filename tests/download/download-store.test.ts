@@ -163,5 +163,46 @@ describe("useDownloadStore & 格式化工具函数", () => {
       expect(failed).toBe(false);
       expect(store.historyTasks[1].fileExists).toBe(false);
     });
+
+    it("removeHistory 与 clearCompleted 正确更新历史列表", async () => {
+      const mockBridge: DesktopBridge = {
+        invoke: vi.fn().mockImplementation((channel: string, arg1?: string) => {
+          if (channel === "download:history:remove") {
+            return Promise.resolve(arg1 === "task-1");
+          }
+          if (channel === "download:history:clear") {
+            return Promise.resolve(1);
+          }
+          if (channel === "shell:showItemInFolder") {
+            return Promise.resolve(true);
+          }
+          return Promise.resolve(undefined);
+        }),
+        on: vi.fn().mockReturnValue(() => {}),
+      };
+      (window as any).$ipcBridge = mockBridge;
+      initBridge();
+
+      const store = useDownloadStore();
+      store.historyTasks = [
+        { id: "task-1", url: "https://example.com/1", state: "completed", path: "/path/1.zip" },
+        { id: "task-2", url: "https://example.com/2", state: "failed" },
+      ];
+
+      // 测试 showInFolder
+      const showed = await store.showInFolder("/path/1.zip");
+      expect(showed).toBe(true);
+      expect(mockBridge.invoke).toHaveBeenCalledWith("shell:showItemInFolder", "/path/1.zip");
+
+      // 删除单条记录
+      const removed = await store.removeHistory("task-1");
+      expect(removed).toBe(true);
+      expect(store.historyTasks).toHaveLength(1);
+      expect(store.historyTasks[0].id).toBe("task-2");
+
+      // 清空记录
+      await store.clearCompleted();
+      expect(store.historyTasks).toHaveLength(0);
+    });
   });
 });
