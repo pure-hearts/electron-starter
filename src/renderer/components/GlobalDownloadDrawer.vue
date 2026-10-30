@@ -10,7 +10,7 @@
       <template #header>
         <div class="drawer-header">
           <div class="header-title-box">
-            <span class="header-title">下载中心</span>
+            <span class="header-title">{{ t("downloadDrawer.title") }}</span>
             <n-badge
               v-if="downloadStore.activeCount > 0"
               :value="downloadStore.activeCount"
@@ -27,9 +27,12 @@
 
       <n-tabs v-model:value="activeTab" type="segment" animated>
         <!-- 1. 进行中任务 -->
-        <n-tab-pane name="active" :tab="`进行中 (${downloadStore.activeList.length})`">
+        <n-tab-pane
+          name="active"
+          :tab="t('downloadDrawer.tabActive', { count: downloadStore.activeList.length })"
+        >
           <div v-if="downloadStore.activeList.length === 0" class="empty-box">
-            <n-empty description="当前暂无进行中的下载任务" />
+            <n-empty :description="t('downloadDrawer.emptyActive')" />
           </div>
 
           <div v-else class="task-list">
@@ -120,7 +123,10 @@
         </n-tab-pane>
 
         <!-- 2. 历史记录 -->
-        <n-tab-pane name="history" :tab="`历史记录 (${downloadStore.historyTasks.length})`">
+        <n-tab-pane
+          name="history"
+          :tab="t('downloadDrawer.tabHistory', { count: downloadStore.historyTasks.length })"
+        >
           <div class="history-toolbar">
             <span class="history-count">共 {{ downloadStore.historyTasks.length }} 条记录</span>
             <n-button
@@ -135,7 +141,7 @@
           </div>
 
           <div v-if="downloadStore.historyTasks.length === 0" class="empty-box">
-            <n-empty description="暂无下载历史记录" />
+            <n-empty :description="t('downloadDrawer.emptyHistory')" />
           </div>
 
           <div v-else class="task-list">
@@ -250,10 +256,12 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useDownloadStore, formatBytes, formatSpeed, formatEta } from "../stores/download";
 import { feedback } from "../utils/feedback";
 import type { DownloadState } from "@shared/ipc";
 
+const { t } = useI18n();
 const downloadStore = useDownloadStore();
 const activeTab = ref<"active" | "history">("active");
 const checkingFileId = ref<string | null>(null);
@@ -322,21 +330,21 @@ function getStatusTagType(
 function getStatusText(state: DownloadState["state"]): string {
   switch (state) {
     case "queued":
-      return "排队中";
+      return t("downloadDrawer.states.progressing");
     case "started":
-      return "连接中";
+      return t("downloadDrawer.states.progressing");
     case "progress":
-      return "下载中";
+      return t("downloadDrawer.states.progressing");
     case "paused":
-      return "已暂停";
+      return t("downloadDrawer.states.paused");
     case "interrupted":
-      return "已中断";
+      return t("downloadDrawer.states.interrupted");
     case "completed":
-      return "已完成";
+      return t("downloadDrawer.states.completed");
     case "cancelled":
-      return "已取消";
+      return t("downloadDrawer.states.cancelled");
     case "failed":
-      return "下载失败";
+      return t("downloadDrawer.states.error");
   }
 }
 

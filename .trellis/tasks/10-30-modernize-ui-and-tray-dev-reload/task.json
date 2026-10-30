@@ -1,0 +1,83 @@
+{
+  "id": "10-30-modernize-ui-and-tray-dev-reload",
+  "name": "10-30-modernize-ui-and-tray-dev-reload",
+  "title": "Modernize UI & Auto-reload Tray Icon in Development",
+  "description": "解决 UI 双层导航栏冲突、重构为一体化现代 WindowBar 与 Bento Grid 首页仪表盘；区分 Mac/Win/Linux 红绿灯窗口控制 (Web端免红绿灯)；重塑现代化两栏式设置中心；重构 Electron+Vue 现代融合创意图标套件及托盘热重载；实现全页面 100% 深度多语言国际化覆盖并通过 MCP 验证达到验收标准。",
+  "status": "completed",
+  "dev_type": "feature",
+  "scope": "frontend,main,icons,i18n",
+  "package": null,
+  "priority": "P1",
+  "creator": "vyron",
+  "assignee": "Antigravity",
+  "createdAt": "2026-10-30",
+  "completedAt": "2026-10-30",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    {
+      "id": "subtask-1",
+      "title": "创建 Trellis 任务规范与验收标准文档 (task.json, prd.md, design.md, implement.md)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-2",
+      "title": "开发态托盘图标热重载 (tray.ts fs.watch + reloadTrayIcon) 与 macOS Dock 同步",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-3",
+      "title": "融合一体化现代 WindowBar (重构 TitleBar.vue，消除 App.vue 二级 Header 冲突)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-4",
+      "title": "重构首页 Home.vue 为现代科技感 Bento Grid 仪表盘并升级全局视觉样式",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-5",
+      "title": "区分 Mac/Win/Linux 平台红绿灯与窗口控制规范 (Mac 原生交通灯、Win Fluent贴边、Linux GNOME 圆形徽章，Web 纯净模式免红绿灯)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-6",
+      "title": "重构设置中心 Settings.vue 为现代桌面两栏式卡片架构 (Sidebar 6大分类导航 + Grouped Bento 卡片)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-7",
+      "title": "设计 Electron + Vue 现代融合创意图标 (Vue 翡翠晶核 + 倾斜量子流光轨道) 并全规格生成",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-8",
+      "title": "全页面 100% 接入 vue-i18n 深度多语言国际化覆盖 (Header, Home, Settings, Download)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-9",
+      "title": "通过 MCP (vitest 与 DevTools) 进行全流程交互与控制台验证，达到验收标准",
+      "status": "completed"
+    }
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/renderer/i18n/locales/zh-CN.ts",
+    "src/renderer/i18n/locales/en-US.ts",
+    "scripts/generate-icons.py",
+    "src/main/modules/system/tray.ts",
+    "src/renderer/App.vue",
+    "src/renderer/components/TitleBar.vue",
+    "src/renderer/views/Home.vue",
+    "src/renderer/views/Settings.vue",
+    "src/renderer/components/GlobalDownloadDrawer.vue",
+    "tests/system/tray-management.test.ts"
+  ],
+  "notes": "所有功能已通过全套单元测试与 Chrome DevTools MCP 双向交互全链路验收，中英双语 100% 覆盖。",
+  "meta": {}
+}

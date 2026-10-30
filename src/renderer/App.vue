@@ -2,41 +2,30 @@
 import { computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { darkTheme, zhCN, enUS, type SelectOption } from "naive-ui";
-import { useAppStore, type ThemeMode } from "./stores/app";
+import { darkTheme, zhCN, enUS } from "naive-ui";
+import { useAppStore } from "./stores/app";
 import TitleBar from "./components/TitleBar.vue";
 import NetworkBanner from "./components/NetworkBanner.vue";
 import GlobalDownloadDrawer from "./components/GlobalDownloadDrawer.vue";
 import { useDownloadStore } from "./stores/download";
 
 const router = useRouter();
-const { t, locale } = useI18n();
+const { locale } = useI18n();
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
-const currentLocale = computed(() => locale.value);
-const currentTheme = computed(() => appStore.theme);
 
 const naiveTheme = computed(() => (appStore.isDark ? darkTheme : null));
-const naiveLocale = computed(() => (currentLocale.value === "zh-CN" ? zhCN : enUS));
-
-const themeOptions = computed<SelectOption[]>(() => [
-  { label: t("theme.system"), value: "system" },
-  { label: t("theme.light"), value: "light" },
-  { label: t("theme.dark"), value: "dark" },
-]);
-
-const localeOptions: SelectOption[] = [
-  { label: "简体中文", value: "zh-CN" },
-  { label: "English", value: "en-US" },
-];
+const naiveLocale = computed(() => (locale.value === "zh-CN" ? zhCN : enUS));
 
 let unsubscribeDeepLink: (() => void) | undefined;
 let unsubscribeNotification: (() => void) | undefined;
+
 onMounted(async () => {
   // Register listener first, then consume cold-start links so no link is lost.
   unsubscribeDeepLink = window.$ipcBridge.on("protocol:open", (url) =>
     appStore.receiveDeepLink(url),
   );
+
   // 统一响应通知点击事件：根据 action 参数在前端进行业务路由或文件定位调度
   unsubscribeNotification = window.$ipcBridge.on("notification:activated", (payload) => {
     if (!payload.action || typeof payload.action !== "string") return;
@@ -57,40 +46,27 @@ onMounted(async () => {
         .catch(() => undefined);
     }
   });
+
   try {
     const pending = await window.$ipcBridge.invoke("protocol:pending");
     for (const url of pending) appStore.receiveDeepLink(url);
   } catch (error) {
     console.warn("Could not load pending Deep Links", error);
   }
+
   try {
     locale.value = await appStore.hydrate();
   } catch (error) {
     console.warn("Could not load preferences", error);
   }
+
   void downloadStore.init();
 });
+
 onUnmounted(() => {
   unsubscribeDeepLink?.();
   unsubscribeNotification?.();
 });
-
-async function changeLocale(value: string) {
-  try {
-    await appStore.setLocale(value);
-    locale.value = appStore.locale;
-  } catch (error) {
-    console.warn("Language preference could not be saved", error);
-  }
-}
-
-async function changeTheme(value: string) {
-  try {
-    await appStore.setTheme(value as ThemeMode);
-  } catch (error) {
-    console.warn("Theme preference could not be saved", error);
-  }
-}
 </script>
 
 <template>
@@ -103,34 +79,9 @@ async function changeTheme(value: string) {
       <TitleBar />
       <NetworkBanner />
       <GlobalDownloadDrawer />
-      <header class="header">
-        <nav class="header-nav">
-          <router-link to="/">{{ t("home") }}</router-link>
-          <router-link to="/playground">{{ t("playground") }}</router-link>
-          <router-link to="/settings">{{ t("settings") }}</router-link>
-        </nav>
-        <div class="header-title">
-          <strong>Electron Starter</strong>
-          <n-tag size="small" type="success" round :bordered="true">v0.1.3</n-tag>
-        </div>
-        <div class="header-actions">
-          <n-select
-            :value="currentTheme"
-            :options="themeOptions"
-            size="small"
-            style="width: 120px"
-            @update:value="changeTheme"
-          />
-          <n-select
-            :value="currentLocale"
-            :options="localeOptions"
-            size="small"
-            style="width: 120px"
-            @update:value="changeLocale"
-          />
-        </div>
-      </header>
-      <main class="app-main"><router-view /></main>
+      <main class="app-main">
+        <router-view />
+      </main>
     </div>
   </n-config-provider>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "../stores/app";
 import { usePlatform } from "../bridge";
@@ -8,6 +9,7 @@ import { feedback } from "../utils/feedback";
 import { useDownloadStore, formatBytes, formatSpeed, formatEta } from "../stores/download";
 import type { DownloadState, UpdateState, HotUpdateResult, HotUpdateInfo } from "../../shared/ipc";
 
+const { t } = useI18n();
 const desktop = window.$ipcBridge;
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
@@ -151,10 +153,56 @@ function updateCloseToTray(enabled: boolean) {
 // ----------------- 系统原生 Shell 与外观体验 -----------------
 const externalTestUrl = ref("https://github.com/pure-hearts/electron-starter");
 const folderTestPath = ref("");
+const trashTestPath = ref("");
 
 onMounted(async () => {
   folderTestPath.value = isElectron ? "package.json" : "/tmp";
 });
+
+function copyAccentColorHex() {
+  const hex = appStore.accentColor || "#10b981";
+  if (typeof navigator !== "undefined" && navigator.clipboard) {
+    navigator.clipboard.writeText(hex);
+  }
+  feedback.message.success(`${t("playgroundView.shell.copyHexSuccess")}: ${hex}`);
+}
+
+async function handleSelectDirectoryForShell() {
+  if (typeof window !== "undefined" && window.$ipcBridge) {
+    try {
+      const selected = await window.$ipcBridge.invoke(
+        "dialog:selectDirectory",
+        folderTestPath.value || undefined,
+      );
+      if (selected) {
+        folderTestPath.value = selected;
+        feedback.message.success(`已选定目录: ${selected}`);
+      }
+    } catch (e) {
+      feedback.message.error(String(e));
+    }
+  } else {
+    feedback.message.info("Web 模式下不支持唤起系统目录选择框");
+  }
+}
+
+async function handleConfirmTrash() {
+  const p = trashTestPath.value.trim();
+  if (!p) {
+    feedback.message.warning("请输入有效的文件或目录路径");
+    return;
+  }
+  await run("shell:trashItem", t("playgroundView.shell.trashTitle"), async () => {
+    const ok = await desktop.invoke("shell:trashItem", p);
+    if (ok) {
+      feedback.message.success(`${t("playgroundView.shell.trashBtn")} 成功: ${p}`);
+      trashTestPath.value = "";
+    } else {
+      feedback.message.warning(`移入废纸篓失败或路径不存在: ${p}`);
+    }
+    return ok;
+  });
+}
 
 // ----------------- Tab 2: 数据与传输 + VueUse useAxios -----------------
 const defaultDownloadURL =
@@ -508,96 +556,247 @@ onUnmounted(() => {
             </div>
           </n-card>
 
-          <!-- 系统原生 Shell 与外观体验 -->
-          <n-card class="feature-card full-width" size="small">
+          <!-- 系统原生 Shell 与外观体验 (现代化 Bento 深度重构) -->
+          <n-card class="feature-card full-width shell-bento-card" size="small">
             <template #header>
               <div class="card-header-bar">
-                <span class="card-title">🐚 系统原生 Shell 与外观体验</span>
+                <div class="card-title-group">
+                  <span class="card-title">🐚 {{ t("playgroundView.shell.cardTitle") }}</span>
+                  <span class="platform-indicator-pill">
+                    {{ isElectron ? "Desktop Native" : "Web Environment" }}
+                  </span>
+                </div>
                 <div class="badge-group">
-                  <span class="card-badge">Shell API</span>
-                  <span class="card-badge">Native Theme</span>
+                  <span class="card-badge">{{ t("playgroundView.shell.cardBadgeShell") }}</span>
+                  <span class="card-badge">{{ t("playgroundView.shell.cardBadgeTheme") }}</span>
                 </div>
               </div>
             </template>
             <p class="card-desc">
-              体验 Electron 底层 Shell
-              与操作系统外观协同能力，包含系统级文件定位、受信任外链跳转、暗黑模式与系统强调色（Accent
-              Color）动态提取。
+              {{ t("playgroundView.shell.cardDesc") }}
             </p>
 
-            <div class="shell-info-grid">
-              <div class="info-item">
-                <span class="info-label">系统强调色 (Accent Color):</span>
-                <div class="color-preview-row">
-                  <span
-                    class="color-dot"
+            <div class="shell-bento-grid">
+              <!-- 左侧: 系统外观感知与主题联动 -->
+              <div class="bento-subcard appearance-subcard">
+                <div class="subcard-header">
+                  <div class="subcard-title-box">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="5" />
+                      <line x1="12" y1="1" x2="12" y2="3" />
+                      <line x1="12" y1="21" x2="12" y2="23" />
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                      <line x1="1" y1="12" x2="3" y2="12" />
+                      <line x1="21" y1="12" x2="23" y2="12" />
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                    <h4>{{ t("settingsView.general.themeLabel") }}</h4>
+                  </div>
+                  <n-tag size="small" round :type="appStore.isDark ? 'info' : 'success'">
+                    {{
+                      appStore.isDark
+                        ? t("playgroundView.shell.themeDark")
+                        : t("playgroundView.shell.themeLight")
+                    }}
+                  </n-tag>
+                </div>
+
+                <!-- 强调色展示区 -->
+                <div class="accent-showcase-box">
+                  <div
+                    class="accent-color-chip"
                     :style="{ backgroundColor: appStore.accentColor || 'var(--app-primary)' }"
                   />
-                  <code>{{ appStore.accentColor || "未检测到 / 默认主题色" }}</code>
+                  <div class="accent-meta-info">
+                    <span class="accent-label">{{ t("playgroundView.shell.accentLabel") }}</span>
+                    <div class="accent-code-row">
+                      <code class="accent-hex-text">{{
+                        appStore.accentColor || t("playgroundView.shell.accentUndetected")
+                      }}</code>
+                      <n-button
+                        v-if="appStore.accentColor"
+                        size="tiny"
+                        tertiary
+                        @click="copyAccentColorHex"
+                      >
+                        复制
+                      </n-button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 窗口状态与即时主题控制器 -->
+                <div class="theme-quick-switch-row">
+                  <div class="switch-meta">
+                    <span class="meta-small-label">{{
+                      t("playgroundView.shell.appearanceControlLabel")
+                    }}</span>
+                    <span class="meta-small-desc">
+                      {{ t("playgroundView.shell.windowMaxLabel") }}:
+                      {{
+                        appStore.isMaximized
+                          ? t("playgroundView.shell.windowMaximized")
+                          : t("playgroundView.shell.windowNormal")
+                      }}
+                    </span>
+                  </div>
+                  <n-radio-group
+                    :value="appStore.theme"
+                    size="small"
+                    @update:value="(val) => appStore.setTheme(val)"
+                  >
+                    <n-radio-button value="system">{{ t("theme.system") }}</n-radio-button>
+                    <n-radio-button value="light">{{ t("theme.light") }}</n-radio-button>
+                    <n-radio-button value="dark">{{ t("theme.dark") }}</n-radio-button>
+                  </n-radio-group>
                 </div>
               </div>
-              <div class="info-item">
-                <span class="info-label">系统外观感知:</span>
-                <n-tag size="small" :type="appStore.isDark ? 'info' : 'success'">
-                  {{ appStore.isDark ? "🌙 深色模式 (Dark)" : "☀️ 浅色模式 (Light)" }}
-                </n-tag>
+
+              <!-- 右侧: 原生 Shell 安全能力三剑客 -->
+              <div class="bento-subcard shell-ops-subcard">
+                <!-- 1. 受信任外部链接 -->
+                <div class="shell-op-group">
+                  <div class="op-header">
+                    <span class="op-title">{{ t("playgroundView.shell.externalTitle") }}</span>
+                    <div class="preset-pill-group">
+                      <button
+                        type="button"
+                        class="preset-chip"
+                        @click="externalTestUrl = 'https://github.com/pure-hearts/electron-starter'"
+                      >
+                        {{ t("playgroundView.shell.externalPresetGithub") }}
+                      </button>
+                      <button
+                        type="button"
+                        class="preset-chip"
+                        @click="externalTestUrl = 'https://www.electronjs.org/docs/latest'"
+                      >
+                        {{ t("playgroundView.shell.externalPresetElectron") }}
+                      </button>
+                      <button
+                        type="button"
+                        class="preset-chip"
+                        @click="externalTestUrl = 'https://vuejs.org'"
+                      >
+                        {{ t("playgroundView.shell.externalPresetVue") }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <n-input
+                      v-model:value="externalTestUrl"
+                      :placeholder="t('playgroundView.shell.externalPlaceholder')"
+                      style="flex: 1"
+                    />
+                    <n-button
+                      type="primary"
+                      secondary
+                      :loading="isLoading('shell:openExternal')"
+                      @click="
+                        run('shell:openExternal', t('playgroundView.shell.externalBtn'), () =>
+                          desktop.invoke('shell:openExternal', externalTestUrl),
+                        )
+                      "
+                    >
+                      {{ t("playgroundView.shell.externalBtn") }}
+                    </n-button>
+                  </div>
+                </div>
+
+                <n-divider style="margin: 10px 0" />
+
+                <!-- 2. 本地文件与目录定位 -->
+                <div class="shell-op-group">
+                  <div class="op-header">
+                    <span class="op-title">{{ t("playgroundView.shell.pathTitle") }}</span>
+                    <div class="preset-pill-group">
+                      <button
+                        type="button"
+                        class="preset-chip"
+                        @click="folderTestPath = 'package.json'"
+                      >
+                        {{ t("playgroundView.shell.presetPackageJson") }}
+                      </button>
+                      <button type="button" class="preset-chip" @click="folderTestPath = '/tmp'">
+                        {{ t("playgroundView.shell.presetTmpDir") }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <n-input
+                      v-model:value="folderTestPath"
+                      :placeholder="t('playgroundView.shell.pathPlaceholder')"
+                      style="flex: 1"
+                    />
+                    <n-button secondary @click="handleSelectDirectoryForShell">
+                      {{ t("playgroundView.shell.selectDirBtn") }}
+                    </n-button>
+                    <n-button
+                      :loading="isLoading('shell:showItemInFolder')"
+                      @click="
+                        run('shell:showItemInFolder', t('playgroundView.shell.locateBtn'), () =>
+                          desktop.invoke('shell:showItemInFolder', folderTestPath),
+                        )
+                      "
+                    >
+                      {{ t("playgroundView.shell.locateBtn") }}
+                    </n-button>
+                    <n-button
+                      :loading="isLoading('shell:openPath')"
+                      @click="
+                        run('shell:openPath', t('playgroundView.shell.openPathBtn'), () =>
+                          desktop.invoke('shell:openPath', folderTestPath),
+                        )
+                      "
+                    >
+                      {{ t("playgroundView.shell.openPathBtn") }}
+                    </n-button>
+                  </div>
+                </div>
+
+                <n-divider style="margin: 10px 0" />
+
+                <!-- 3. 安全移入系统废纸篓 (shell:trashItem) -->
+                <div class="shell-op-group">
+                  <div class="op-header">
+                    <span class="op-title">{{ t("playgroundView.shell.trashTitle") }}</span>
+                    <span class="op-security-tip">{{ t("playgroundView.shell.trashDesc") }}</span>
+                  </div>
+                  <div class="form-row">
+                    <n-input
+                      v-model:value="trashTestPath"
+                      :placeholder="t('playgroundView.shell.trashPlaceholder')"
+                      style="flex: 1"
+                    />
+                    <n-popconfirm
+                      :positive-text="t('playgroundView.shell.trashConfirmPositive')"
+                      :negative-text="t('playgroundView.shell.trashConfirmNegative')"
+                      @positive-click="handleConfirmTrash"
+                    >
+                      <template #trigger>
+                        <n-button
+                          type="warning"
+                          secondary
+                          :disabled="!trashTestPath.trim()"
+                          :loading="isLoading('shell:trashItem')"
+                        >
+                          {{ t("playgroundView.shell.trashBtn") }}
+                        </n-button>
+                      </template>
+                      {{ t("playgroundView.shell.trashConfirmTitle") }}
+                    </n-popconfirm>
+                  </div>
+                </div>
               </div>
-              <div class="info-item">
-                <span class="info-label">窗口最大化状态:</span>
-                <n-tag size="small" :type="appStore.isMaximized ? 'warning' : 'default'">
-                  {{ appStore.isMaximized ? "已最大化 (Maximized)" : "常规尺寸 (Normal)" }}
-                </n-tag>
-              </div>
-            </div>
-
-            <n-divider style="margin: 12px 0" />
-
-            <div class="form-row" style="margin-bottom: 8px">
-              <n-input
-                v-model:value="externalTestUrl"
-                placeholder="请输入需要安全打开的外部链接 (https://...)"
-                style="flex: 1"
-              />
-              <n-button
-                type="primary"
-                secondary
-                :loading="isLoading('shell:openExternal')"
-                @click="
-                  run('shell:openExternal', '在默认浏览器中安全打开外链', () =>
-                    desktop.invoke('shell:openExternal', externalTestUrl),
-                  )
-                "
-              >
-                安全打开外链
-              </n-button>
-            </div>
-
-            <div class="form-row">
-              <n-input
-                v-model:value="folderTestPath"
-                placeholder="请输入文件或目录路径进行系统定位"
-                style="flex: 1"
-              />
-              <n-button
-                :loading="isLoading('shell:showItemInFolder')"
-                @click="
-                  run('shell:showItemInFolder', '在文件管理器中定位', () =>
-                    desktop.invoke('shell:showItemInFolder', folderTestPath),
-                  )
-                "
-              >
-                在文件管理器中定位
-              </n-button>
-              <n-button
-                :loading="isLoading('shell:openPath')"
-                @click="
-                  run('shell:openPath', '打开系统路径', () =>
-                    desktop.invoke('shell:openPath', folderTestPath),
-                  )
-                "
-              >
-                打开路径
-              </n-button>
             </div>
           </n-card>
 
@@ -1643,5 +1842,193 @@ onUnmounted(() => {
 
 .log-payload code {
   color: #cbd5e1;
+}
+
+/* 系统原生 Shell 与外观体验 Bento 升级 */
+.shell-bento-card {
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  transition: all 0.25s ease;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.platform-indicator-pill {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--app-bg-subtle);
+  border: 1px solid var(--app-border-subtle);
+  color: var(--app-text-muted);
+}
+
+.shell-bento-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.bento-subcard {
+  background: var(--app-bg-subtle);
+  border: 1px solid var(--app-border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.appearance-subcard {
+  justify-content: space-between;
+}
+
+.subcard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subcard-title-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-text-primary);
+}
+
+.subcard-title-box h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.accent-showcase-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+}
+
+.accent-color-chip {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  border: 2px solid #ffffff;
+}
+
+.accent-meta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.accent-label {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.accent-code-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.accent-hex-text {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  color: var(--app-text-primary);
+}
+
+.theme-quick-switch-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.switch-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meta-small-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--app-text-primary);
+}
+
+.meta-small-desc {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.shell-ops-subcard {
+  gap: 12px;
+}
+
+.shell-op-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.op-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.op-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.op-security-tip {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.preset-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preset-chip {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border);
+  color: var(--app-text-secondary);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-chip:hover {
+  background: var(--app-bg-hover);
+  color: var(--app-primary);
+  border-color: var(--app-primary);
+}
+
+@media (max-width: 900px) {
+  .shell-bento-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

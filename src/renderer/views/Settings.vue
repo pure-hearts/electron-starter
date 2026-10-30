@@ -1,452 +1,134 @@
-<template>
-  <div class="settings-page">
-    <div class="settings-container">
-      <!-- 页面头部 -->
-      <div class="settings-header">
-        <div class="header-left">
-          <h2 class="title">设置中心</h2>
-          <p class="subtitle">统一管理客户端常规偏好、下载配置、桌面通知、快捷键与系统诊断</p>
-        </div>
-        <div class="header-right">
-          <n-button secondary size="small" :loading="settingsStore.saving" @click="handleSaveAll">
-            保存配置
-          </n-button>
-        </div>
-      </div>
-
-      <n-card :bordered="false" class="settings-card" content-style="padding: 0;">
-        <n-tabs type="line" size="large" animated class="settings-tabs" pane-class="settings-pane">
-          <!-- 1. 常规设置 -->
-          <n-tab-pane name="general" tab="常规设置">
-            <div class="pane-content">
-              <h3 class="section-title">界面与多语言</h3>
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">语言偏好 (Language)</div>
-                  <div class="item-desc">选择应用界面的首选语言，切换后立即生效并持久化</div>
-                </div>
-                <div class="item-control">
-                  <n-select
-                    v-model:value="form.locale"
-                    :options="localeOptions"
-                    style="width: 160px"
-                    @update:value="onLocaleChange"
-                  />
-                </div>
-              </div>
-
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">外观主题 (Theme)</div>
-                  <div class="item-desc">支持跟随系统偏好或固定选择浅色/深色主题模式</div>
-                </div>
-                <div class="item-control">
-                  <n-radio-group
-                    v-model:value="form.theme"
-                    size="medium"
-                    @update:value="onThemeChange"
-                  >
-                    <n-radio-button value="system">跟随系统</n-radio-button>
-                    <n-radio-button value="light">浅色</n-radio-button>
-                    <n-radio-button value="dark">深色</n-radio-button>
-                  </n-radio-group>
-                </div>
-              </div>
-
-              <n-divider />
-
-              <h3 class="section-title">窗口与桌面启动行为</h3>
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">关闭窗口时最小化到系统托盘</div>
-                  <div class="item-desc">
-                    关闭主窗口时不退出进程，常驻后台并通过托盘图标继续提供服务
-                  </div>
-                </div>
-                <div class="item-control">
-                  <n-switch v-model:value="form.closeToTray" @update:value="saveForm" />
-                </div>
-              </div>
-
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">开机自动启动 (Auto Launch)</div>
-                  <div class="item-desc">登录操作系统桌面时自动拉起主程序后台静默运行</div>
-                </div>
-                <div class="item-control">
-                  <n-switch v-model:value="form.autoStart" @update:value="saveForm" />
-                </div>
-              </div>
-            </div>
-          </n-tab-pane>
-
-          <!-- 2. 下载管理 -->
-          <n-tab-pane name="download" tab="下载管理">
-            <div class="pane-content">
-              <h3 class="section-title">传输与存储路径</h3>
-              <div class="setting-item column-layout">
-                <div class="item-info">
-                  <div class="item-title">默认下载保存目录</div>
-                  <div class="item-desc">
-                    未指定位置的新任务将自动存放至此文件夹；留空表示使用系统 Downloads 目录
-                  </div>
-                </div>
-                <div class="item-control full-width flex items-center space-x-2 mt-2">
-                  <n-input
-                    v-model:value="form.defaultDownloadDir"
-                    placeholder="系统默认 Downloads 文件夹"
-                    readonly
-                    class="flex-1"
-                  />
-                  <n-button secondary @click="handleSelectDownloadDir"> 更改目录 </n-button>
-                  <n-button v-if="form.defaultDownloadDir" quaternary @click="resetDownloadDir">
-                    重置
-                  </n-button>
-                </div>
-              </div>
-
-              <div class="setting-item column-layout">
-                <div class="item-info flex justify-between items-center">
-                  <div>
-                    <div class="item-title">最大并发下载数</div>
-                    <div class="item-desc">允许同时进行的最大网络下载传输连接数（1 ~ 50 任务）</div>
-                  </div>
-                  <n-tag type="info" size="small" round
-                    >{{ form.downloadConcurrency }} 路并发</n-tag
-                  >
-                </div>
-                <div class="item-control mt-3">
-                  <n-slider
-                    v-model:value="form.downloadConcurrency"
-                    :min="1"
-                    :max="50"
-                    :step="1"
-                    :marks="{ 1: '1', 10: '10 (推荐)', 25: '25', 50: '50' }"
-                    @update:value="saveForm"
-                  />
-                </div>
-              </div>
-
-              <n-divider />
-
-              <h3 class="section-title">任务恢复与自动化</h3>
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">启动时自动恢复未完成任务</div>
-                  <div class="item-desc">
-                    应用意外中断或重启后，保留排队和未下载完成的文件任务状态
-                  </div>
-                </div>
-                <div class="item-control">
-                  <n-switch v-model:value="form.autoResumeDownloads" @update:value="saveForm" />
-                </div>
-              </div>
-            </div>
-          </n-tab-pane>
-
-          <!-- 3. 通知偏好 -->
-          <n-tab-pane name="notification" tab="通知中心">
-            <div class="pane-content">
-              <h3 class="section-title">系统桌面通知</h3>
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">启用桌面通知</div>
-                  <div class="item-desc">全局控制是否向系统通知中心推送横幅消息与提醒</div>
-                </div>
-                <div class="item-control">
-                  <n-switch v-model:value="form.notificationsEnabled" @update:value="saveForm" />
-                </div>
-              </div>
-
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">通知提示音</div>
-                  <div class="item-desc">弹出系统桌面通知时伴随系统默认提示音效</div>
-                </div>
-                <div class="item-control">
-                  <n-switch
-                    v-model:value="form.notificationSound"
-                    :disabled="!form.notificationsEnabled"
-                    @update:value="saveForm"
-                  />
-                </div>
-              </div>
-
-              <n-divider />
-
-              <h3 class="section-title">事件联动通知</h3>
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">下载完成或失败时弹窗通知</div>
-                  <div class="item-desc">
-                    文件下载完毕后自动推送横幅，点击通知可直接在系统文件管理器中定位该文件
-                  </div>
-                </div>
-                <div class="item-control">
-                  <n-switch
-                    v-model:value="form.notifyOnDownload"
-                    :disabled="!form.notificationsEnabled"
-                    @update:value="saveForm"
-                  />
-                </div>
-              </div>
-
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">版本更新就绪提醒</div>
-                  <div class="item-desc">
-                    整包更新或热更新补丁准备就绪时弹窗引导用户重启，防止静默重启
-                  </div>
-                </div>
-                <div class="item-control">
-                  <n-switch
-                    v-model:value="form.notifyOnUpdate"
-                    :disabled="!form.notificationsEnabled"
-                    @update:value="saveForm"
-                  />
-                </div>
-              </div>
-
-              <div class="mt-4 pt-2">
-                <n-button secondary type="info" size="small" @click="handleTestNotification">
-                  测试发送一条系统通知
-                </n-button>
-              </div>
-            </div>
-          </n-tab-pane>
-
-          <!-- 4. 全局快捷键 -->
-          <n-tab-pane name="shortcut" tab="全局快捷键">
-            <div class="pane-content">
-              <h3 class="section-title">窗口显隐与老板键</h3>
-              <div class="setting-item column-layout">
-                <div class="item-info">
-                  <div class="item-title">呼出 / 隐藏主窗口全局快捷键</div>
-                  <div class="item-desc">
-                    在任意应用程序中按下该快捷键，即可立即将主窗口调出并置顶；再次按下则隐藏至后台。
-                  </div>
-                </div>
-                <div class="item-control mt-3">
-                  <GlobalShortcutManager v-model="form.globalShortcutToggle" @change="saveForm" />
-                </div>
-              </div>
-            </div>
-          </n-tab-pane>
-
-          <!-- 5. 系统诊断与日志 -->
-          <n-tab-pane name="diagnostics" tab="系统诊断">
-            <div class="pane-content">
-              <div class="flex justify-between items-center mb-3">
-                <h3 class="section-title mb-0">运行环境与硬件指标</h3>
-                <n-button
-                  secondary
-                  size="small"
-                  :loading="loadingDiagnostics"
-                  @click="loadDiagnostics"
-                >
-                  刷新参数
-                </n-button>
-              </div>
-
-              <div v-if="diagnostics" class="diagnostics-grid">
-                <n-descriptions bordered size="small" :column="2">
-                  <n-descriptions-item label="应用版本">
-                    <n-tag size="small" type="success" round>{{ diagnostics.appVersion }}</n-tag>
-                  </n-descriptions-item>
-                  <n-descriptions-item label="打包状态">
-                    <n-tag size="small" :type="diagnostics.isPackaged ? 'info' : 'warning'" round>
-                      {{ diagnostics.isPackaged ? "已打包发布" : "开发/调试模式" }}
-                    </n-tag>
-                  </n-descriptions-item>
-                  <n-descriptions-item label="Electron 核心">
-                    {{ diagnostics.electronVersion || "N/A" }}
-                  </n-descriptions-item>
-                  <n-descriptions-item label="Chrome 引擎">
-                    {{
-                      diagnostics.chromeVersion ? diagnostics.chromeVersion.split(" ")[0] : "N/A"
-                    }}
-                  </n-descriptions-item>
-                  <n-descriptions-item label="操作系统">
-                    {{ diagnostics.osPlatform }} ({{ diagnostics.osRelease }},
-                    {{ diagnostics.osArch }})
-                  </n-descriptions-item>
-                  <n-descriptions-item label="CPU 型号">
-                    {{ diagnostics.cpuModel }}
-                  </n-descriptions-item>
-                  <n-descriptions-item label="系统内存">
-                    空闲 {{ diagnostics.freeMemoryMb }} MB / 总计 {{ diagnostics.totalMemoryMb }} MB
-                  </n-descriptions-item>
-                  <n-descriptions-item label="进程运行时间">
-                    {{ formatUptime(diagnostics.uptimeSeconds) }}
-                  </n-descriptions-item>
-                </n-descriptions>
-              </div>
-
-              <n-divider />
-
-              <h3 class="section-title">故障排障与日志诊断包</h3>
-              <div class="setting-item">
-                <div class="item-info">
-                  <div class="item-title">导出排障诊断包 (.zip)</div>
-                  <div class="item-desc">
-                    收集脱敏日志（密码、密钥与 Token 已自动屏蔽）与系统环境报告，压缩为标准 ZIP
-                    文件以供技术支持定位问题。
-                  </div>
-                </div>
-                <div class="item-control">
-                  <n-button
-                    type="primary"
-                    secondary
-                    :loading="exportingLogs"
-                    @click="handleExportLogs"
-                  >
-                    打包并导出诊断日志
-                  </n-button>
-                </div>
-              </div>
-            </div>
-          </n-tab-pane>
-
-          <!-- 6. 关于 -->
-          <n-tab-pane name="about" tab="关于模板">
-            <div class="pane-content about-pane flex flex-col items-center py-6">
-              <div class="about-logo mb-3">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="64"
-                  height="64"
-                  class="text-blue-500"
-                  fill="currentColor"
-                >
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <h2 class="text-xl font-bold mb-1">Electron Starter</h2>
-              <div class="flex items-center space-x-2 mb-4">
-                <n-tag type="info" size="small" round>v0.1.3</n-tag>
-                <n-tag type="success" size="small" round>Commercial Ready</n-tag>
-              </div>
-              <p class="text-xs opacity-75 max-w-md text-center mb-6">
-                轻量、严苛隔离、高可测性的现代化 Electron + Vue 3 + TypeScript
-                商业脚手架模板。具备完整的双向类型化 IPC、安装与增量热更新、系统托盘、Shell
-                安全集成与全套自动化测试门禁。
-              </p>
-
-              <div class="flex space-x-3">
-                <n-button secondary size="small" @click="openRepo"> GitHub 仓库 </n-button>
-                <n-button secondary size="small" @click="handleCheckUpdate">
-                  检查版本更新
-                </n-button>
-              </div>
-            </div>
-          </n-tab-pane>
-        </n-tabs>
-      </n-card>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from "vue";
-import { useSettingsStore } from "../stores/settings";
+import { useI18n } from "vue-i18n";
+import { type SelectOption } from "naive-ui";
+import { useSettingsStore, type SettingsState } from "../stores/settings";
 import { useAppStore } from "../stores/app";
 import { feedback } from "../utils/feedback";
 import GlobalShortcutManager from "../components/GlobalShortcutManager.vue";
-import type { SystemDiagnostics, UserSettings } from "@shared/ipc";
+import type { SystemDiagnostics } from "../../shared/ipc";
 
+const { t, locale } = useI18n();
 const settingsStore = useSettingsStore();
 const appStore = useAppStore();
 
-const localeOptions = [
-  { label: "简体中文 (zh-CN)", value: "zh-CN" },
-  { label: "English (en-US)", value: "en-US" },
-];
+// 侧边栏当前激活 Tab
+type SettingsTabKey =
+  | "general"
+  | "system"
+  | "download"
+  | "notification"
+  | "shortcut"
+  | "diagnostics";
+const activeTab = ref<SettingsTabKey>("general");
 
-const form = reactive<UserSettings>({
-  theme: "light",
+// 侧边栏导航配置（使用 computed 实现语言响应式切换）
+const sidebarItems = computed(() => [
+  {
+    key: "general" as SettingsTabKey,
+    label: t("settingsView.sidebar.general"),
+    desc: t("settingsView.sidebar.generalDesc"),
+    icon: "palette",
+  },
+  {
+    key: "system" as SettingsTabKey,
+    label: t("settingsView.sidebar.system"),
+    desc: t("settingsView.sidebar.systemDesc"),
+    icon: "desktop",
+  },
+  {
+    key: "download" as SettingsTabKey,
+    label: t("settingsView.sidebar.download"),
+    desc: t("settingsView.sidebar.downloadDesc"),
+    icon: "download",
+  },
+  {
+    key: "notification" as SettingsTabKey,
+    label: t("settingsView.sidebar.notification"),
+    desc: t("settingsView.sidebar.notificationDesc"),
+    icon: "bell",
+  },
+  {
+    key: "shortcut" as SettingsTabKey,
+    label: t("settingsView.sidebar.shortcut"),
+    desc: t("settingsView.sidebar.shortcutDesc"),
+    icon: "keyboard",
+  },
+  {
+    key: "diagnostics" as SettingsTabKey,
+    label: t("settingsView.sidebar.diagnostics"),
+    desc: t("settingsView.sidebar.diagnosticsDesc"),
+    icon: "info",
+  },
+]);
+
+// 响应式表单
+const form = reactive<SettingsState>({
   locale: "zh-CN",
-  closeToTray: true,
+  theme: "system",
+  closeToTray: false,
   autoStart: false,
   defaultDownloadDir: "",
   downloadConcurrency: 10,
   autoResumeDownloads: true,
   notificationsEnabled: true,
-  notificationSound: true,
-  notifyOnDownload: true,
-  notifyOnUpdate: true,
-  globalShortcutToggle: "CommandOrControl+Shift+X",
+  silentNotifications: false,
+  hardwareAcceleration: true,
 });
+
+const localeOptions: SelectOption[] = [
+  { label: "简体中文 (zh-CN)", value: "zh-CN" },
+  { label: "English (en-US)", value: "en-US" },
+];
 
 const diagnostics = ref<SystemDiagnostics | null>(null);
 const loadingDiagnostics = ref(false);
 const exportingLogs = ref(false);
 
-async function syncFromStore() {
+onMounted(async () => {
   await settingsStore.loadSettings();
   Object.assign(form, settingsStore.settings);
-}
-
-onMounted(async () => {
-  await syncFromStore();
   await loadDiagnostics();
 });
 
 async function saveForm() {
-  await settingsStore.updateSettings({ ...form });
+  await settingsStore.updateSettings(form);
 }
 
-async function handleSaveAll() {
+async function onLocaleChange(val: string) {
+  locale.value = val;
+  await appStore.setLocale(val);
   await saveForm();
-  feedback.message.success("设置已更新并持久化");
 }
 
-function onLocaleChange(val: string) {
-  form.locale = val as "zh-CN" | "en-US";
-  saveForm();
-}
-
-function onThemeChange(val: string) {
-  form.theme = val as "light" | "dark" | "system";
-  saveForm();
+async function onThemeChange(val: "system" | "light" | "dark") {
+  await appStore.setTheme(val);
+  await saveForm();
 }
 
 async function handleSelectDownloadDir() {
   if (typeof window !== "undefined" && window.$ipcBridge) {
-    try {
-      const selected = await window.$ipcBridge.invoke(
-        "dialog:selectDirectory",
-        form.defaultDownloadDir || undefined,
-      );
-      if (selected) {
-        form.defaultDownloadDir = selected;
-        await saveForm();
-        feedback.message.success(`默认下载目录已更新为: ${selected}`);
-      }
-    } catch (e) {
-      feedback.message.error("选择文件夹失败");
+    const res = await window.$ipcBridge.invoke("dialog:selectDirectory", {
+      title: t("settingsView.download.cardTitle"),
+      defaultPath: form.defaultDownloadDir || undefined,
+    });
+    if (res.success && res.filePath) {
+      form.defaultDownloadDir = res.filePath;
+      await saveForm();
     }
+  } else {
+    feedback.message.warning("仅在桌面客户端环境下支持选取本地目录");
   }
 }
 
-function resetDownloadDir() {
+async function resetDownloadDir() {
   form.defaultDownloadDir = "";
-  saveForm();
-  feedback.message.info("已重置为系统默认下载目录");
+  await saveForm();
 }
 
-async function handleTestNotification() {
-  if (typeof window !== "undefined" && window.$ipcBridge) {
-    try {
-      await window.$ipcBridge.invoke(
-        "notification:show",
-        "设置中心测试",
-        "这是一条来自设置中心的测试桌面通知。",
-      );
-      feedback.message.success("已请求发送系统测试通知");
-    } catch (e) {
-      feedback.message.error("发送测试通知失败");
-    }
-  }
+async function handleSaveAll() {
+  await saveForm();
+  feedback.message.success(t("settingsView.saveSuccess"));
 }
 
 async function loadDiagnostics() {
@@ -473,18 +155,21 @@ async function handleExportLogs() {
         feedback.message.error(res.error || "导出失败");
       }
     }
-  } catch (e) {
+  } catch {
     feedback.message.error("导出过程发生异常");
   } finally {
     exportingLogs.value = false;
   }
 }
 
-function formatUptime(seconds: number): string {
+function formatUptime(seconds?: number): string {
+  if (!seconds || isNaN(seconds)) return "0s";
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  return `${h} 小时 ${m} 分 ${s} 秒`;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 function openRepo() {
@@ -493,99 +178,766 @@ function openRepo() {
       "shell:openExternal",
       "https://github.com/pure-hearts/electron-starter",
     );
+  } else if (typeof window !== "undefined") {
+    window.open("https://github.com/pure-hearts/electron-starter", "_blank");
   }
 }
 
 function handleCheckUpdate() {
   if (typeof window !== "undefined" && window.$ipcBridge) {
     window.$ipcBridge.invoke("updater:check");
-    feedback.message.info("已触发检查版本更新，请查看状态提示");
+  } else {
+    feedback.message.info("Web 预览模式：当前已是最新网页版本");
   }
 }
 </script>
 
+<template>
+  <div class="settings-workspace">
+    <!-- 页面顶栏简介 -->
+    <div class="settings-header-banner">
+      <div class="header-intro">
+        <h2 class="workspace-title">{{ t("settingsView.bannerTitle") }}</h2>
+        <p class="workspace-subtitle">
+          {{ t("settingsView.bannerSubtitle") }}
+        </p>
+      </div>
+      <div class="header-actions">
+        <n-button
+          type="primary"
+          secondary
+          size="medium"
+          :loading="settingsStore.saving"
+          @click="handleSaveAll"
+        >
+          {{ t("settingsView.saveAllBtn") }}
+        </n-button>
+      </div>
+    </div>
+
+    <!-- 现代两栏式主体架构 (Sidebar + Content Cards) -->
+    <div class="settings-layout">
+      <!-- 1. 左侧固定侧边分类导航栏 -->
+      <aside class="settings-sidebar">
+        <nav class="sidebar-nav-list">
+          <button
+            v-for="item in sidebarItems"
+            :key="item.key"
+            class="sidebar-nav-btn"
+            :class="{ 'is-active': activeTab === item.key }"
+            @click="activeTab = item.key"
+          >
+            <div class="sidebar-icon-box">
+              <svg
+                v-if="item.icon === 'palette'"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                <path
+                  d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"
+                />
+              </svg>
+              <svg
+                v-else-if="item.icon === 'desktop'"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+              <svg
+                v-else-if="item.icon === 'download'"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <svg
+                v-else-if="item.icon === 'bell'"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <svg
+                v-else-if="item.icon === 'keyboard'"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <line x1="6" y1="8" x2="6" y2="8" />
+                <line x1="10" y1="8" x2="10" y2="8" />
+                <line x1="14" y1="8" x2="14" y2="8" />
+                <line x1="18" y1="8" x2="18" y2="8" />
+                <line x1="6" y1="12" x2="6" y2="12" />
+                <line x1="10" y1="12" x2="10" y2="12" />
+                <line x1="14" y1="12" x2="14" y2="12" />
+                <line x1="18" y1="12" x2="18" y2="12" />
+                <line x1="7" y1="16" x2="17" y2="16" />
+              </svg>
+              <svg
+                v-else
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </div>
+            <div class="sidebar-text-box">
+              <span class="nav-title">{{ item.label }}</span>
+              <span class="nav-desc">{{ item.desc }}</span>
+            </div>
+          </button>
+        </nav>
+      </aside>
+
+      <!-- 2. 右侧卡片化内容区 (Grouped Bento Cards) -->
+      <main class="settings-content">
+        <!-- 1. 常规与外观 -->
+        <section v-if="activeTab === 'general'" class="settings-section">
+          <div class="section-card">
+            <div class="card-header">
+              <h3 class="card-title">{{ t("settingsView.general.cardTitle") }}</h3>
+              <p class="card-desc">{{ t("settingsView.general.cardDesc") }}</p>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.general.localeLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.general.localeHint") }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-select
+                  v-model:value="form.locale"
+                  :options="localeOptions"
+                  style="width: 180px"
+                  @update:value="onLocaleChange"
+                />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.general.themeLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.general.themeHint") }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-radio-group
+                  v-model:value="form.theme"
+                  size="medium"
+                  @update:value="onThemeChange"
+                >
+                  <n-radio-button value="system">{{ t("theme.system") }}</n-radio-button>
+                  <n-radio-button value="light">{{ t("theme.light") }}</n-radio-button>
+                  <n-radio-button value="dark">{{ t("theme.dark") }}</n-radio-button>
+                </n-radio-group>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. 桌面与启动 -->
+        <section v-else-if="activeTab === 'system'" class="settings-section">
+          <div class="section-card">
+            <div class="card-header">
+              <h3 class="card-title">{{ t("settingsView.system.cardTitle") }}</h3>
+              <p class="card-desc">{{ t("settingsView.system.cardDesc") }}</p>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.system.closeToTrayLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.system.closeToTrayHint") }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-switch v-model:value="form.closeToTray" @update:value="saveForm" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.system.autoStartLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.system.autoStartHint") }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-switch v-model:value="form.autoStart" @update:value="saveForm" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{
+                  t("settingsView.system.hardwareAccelerationLabel")
+                }}</span>
+                <span class="meta-hint">{{
+                  t("settingsView.system.hardwareAccelerationHint")
+                }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-switch v-model:value="form.hardwareAcceleration" @update:value="saveForm" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. 存储与传输 -->
+        <section v-else-if="activeTab === 'download'" class="settings-section">
+          <div class="section-card">
+            <div class="card-header">
+              <h3 class="card-title">{{ t("settingsView.download.cardTitle") }}</h3>
+              <p class="card-desc">{{ t("settingsView.download.cardDesc") }}</p>
+            </div>
+
+            <div class="setting-row column-layout">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.download.dirLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.download.dirHint") }}</span>
+              </div>
+              <div class="path-input-group">
+                <n-input
+                  v-model:value="form.defaultDownloadDir"
+                  :placeholder="t('settingsView.download.placeholder')"
+                  readonly
+                  class="flex-1"
+                />
+                <n-button secondary @click="handleSelectDownloadDir">
+                  {{ t("settingsView.download.changeDirBtn") }}
+                </n-button>
+                <n-button v-if="form.defaultDownloadDir" quaternary @click="resetDownloadDir">
+                  {{ t("settingsView.download.resetDirBtn") }}
+                </n-button>
+              </div>
+            </div>
+
+            <div class="setting-row column-layout">
+              <div class="setting-meta flex-between">
+                <div>
+                  <span class="meta-label">{{ t("settingsView.download.concurrencyLabel") }}</span>
+                  <span class="meta-hint">{{ t("settingsView.download.concurrencyHint") }}</span>
+                </div>
+                <n-tag type="info" size="small" round>
+                  {{
+                    t("settingsView.download.concurrencyUnit", { count: form.downloadConcurrency })
+                  }}
+                </n-tag>
+              </div>
+              <div class="slider-wrapper">
+                <n-slider
+                  v-model:value="form.downloadConcurrency"
+                  :min="1"
+                  :max="50"
+                  :step="1"
+                  :marks="{
+                    1: '1',
+                    10: t('settingsView.download.concurrencyRecommend'),
+                    25: '25',
+                    50: '50',
+                  }"
+                  @update:value="saveForm"
+                />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.download.autoResumeLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.download.autoResumeHint") }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-switch v-model:value="form.autoResumeDownloads" @update:value="saveForm" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. 桌面通知 -->
+        <section v-else-if="activeTab === 'notification'" class="settings-section">
+          <div class="section-card">
+            <div class="card-header">
+              <h3 class="card-title">{{ t("settingsView.notification.cardTitle") }}</h3>
+              <p class="card-desc">{{ t("settingsView.notification.cardDesc") }}</p>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.notification.enableLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.notification.enableHint") }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-switch v-model:value="form.notificationsEnabled" @update:value="saveForm" />
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-meta">
+                <span class="meta-label">{{ t("settingsView.notification.silentLabel") }}</span>
+                <span class="meta-hint">{{ t("settingsView.notification.silentHint") }}</span>
+              </div>
+              <div class="setting-ctrl">
+                <n-switch
+                  v-model:value="form.silentNotifications"
+                  :disabled="!form.notificationsEnabled"
+                  @update:value="saveForm"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. 全局快捷键 -->
+        <section v-else-if="activeTab === 'shortcut'" class="settings-section">
+          <GlobalShortcutManager />
+        </section>
+
+        <!-- 6. 诊断与关于 -->
+        <section v-else-if="activeTab === 'diagnostics'" class="settings-section">
+          <!-- 硬件与内核信息卡片 -->
+          <div class="section-card">
+            <div class="card-header flex-between">
+              <div>
+                <h3 class="card-title">{{ t("settingsView.diagnostics.cardTitle") }}</h3>
+                <p class="card-desc">{{ t("settingsView.diagnostics.cardDesc") }}</p>
+              </div>
+              <n-button
+                size="small"
+                secondary
+                :loading="loadingDiagnostics"
+                @click="loadDiagnostics"
+              >
+                {{ t("settingsView.diagnostics.refreshBtn") }}
+              </n-button>
+            </div>
+
+            <div v-if="diagnostics" class="diagnostics-grid">
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.os") }}</span>
+                <span class="cell-val"
+                  >{{ diagnostics.osPlatform || "Unknown" }} ({{
+                    diagnostics.osArch || "Unknown"
+                  }})</span
+                >
+              </div>
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.osVersion") }}</span>
+                <span class="cell-val">{{ diagnostics.osRelease || "N/A" }}</span>
+              </div>
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.appVersion") }}</span>
+                <span class="cell-val">v{{ diagnostics.appVersion || "0.1.3" }}</span>
+              </div>
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.electronVer") }}</span>
+                <span class="cell-val">{{
+                  diagnostics.electronVersion ? `v${diagnostics.electronVersion}` : "N/A (Browser)"
+                }}</span>
+              </div>
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.nodeVer") }}</span>
+                <span class="cell-val">{{
+                  diagnostics.nodeVersion ? `v${diagnostics.nodeVersion}` : "N/A"
+                }}</span>
+              </div>
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.chromeVer") }}</span>
+                <span class="cell-val">{{
+                  diagnostics.chromeVersion ? `v${diagnostics.chromeVersion}` : "N/A"
+                }}</span>
+              </div>
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.memoryRss") }}</span>
+                <span class="cell-val">{{
+                  diagnostics.totalMemoryMb
+                    ? `${Math.round(diagnostics.totalMemoryMb - diagnostics.freeMemoryMb)} / ${diagnostics.totalMemoryMb} MB`
+                    : "N/A"
+                }}</span>
+              </div>
+              <div class="diag-cell">
+                <span class="cell-label">{{ t("settingsView.diagnostics.uptime") }}</span>
+                <span class="cell-val">{{ formatUptime(diagnostics.uptimeSeconds) }}</span>
+              </div>
+            </div>
+
+            <div class="diag-actions-row">
+              <n-button secondary type="info" :loading="exportingLogs" @click="handleExportLogs">
+                {{ t("settingsView.diagnostics.exportLogsBtn") }}
+              </n-button>
+            </div>
+          </div>
+
+          <!-- 关于与版本升级卡片 -->
+          <div class="section-card" style="margin-top: 16px">
+            <div class="about-hero-box">
+              <div class="about-logo-wrapper">
+                <svg viewBox="0 0 28 28" width="48" height="48" fill="none">
+                  <ellipse
+                    cx="14"
+                    cy="14"
+                    rx="12"
+                    ry="4.5"
+                    stroke="#38bdf8"
+                    stroke-width="1.5"
+                    transform="rotate(-30 14 14)"
+                    opacity="0.85"
+                  />
+                  <polygon points="14,24 4,6 8.5,6 14,16 19.5,6 24,6" fill="#42d392" />
+                  <polygon points="14,19.5 8,6 11.5,6 14,11 16.5,6 20,6" fill="#38bdf8" />
+                  <circle cx="23" cy="11" r="1.6" fill="#ffffff" />
+                </svg>
+              </div>
+              <div class="about-meta">
+                <h4 class="about-name">{{ t("settingsView.diagnostics.aboutTitle") }}</h4>
+                <p class="about-version">
+                  {{ t("settingsView.diagnostics.aboutDesc") }}
+                </p>
+                <div class="about-buttons">
+                  <n-button size="small" type="primary" secondary @click="handleCheckUpdate">
+                    {{ t("settingsView.diagnostics.checkUpdateBtn") }}
+                  </n-button>
+                  <n-button size="small" tertiary @click="openRepo">
+                    {{ t("settingsView.diagnostics.openRepoBtn") }}
+                  </n-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.settings-page {
-  padding: 24px;
-  max-width: 960px;
-  margin: 0 auto;
-}
-
-.settings-header {
+.settings-workspace {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.settings-header .title {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 6px 0;
-}
-
-.settings-header .subtitle {
-  font-size: 13px;
-  opacity: 0.7;
-  margin: 0;
-}
-
-.settings-card {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-}
-
-.pane-content {
-  padding: 16px 24px 28px 24px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  opacity: 0.85;
-}
-
-.setting-item {
+/* 顶部简介横幅 */
+.settings-header-banner {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: var(--app-shadow-sm);
 }
 
-.setting-item.column-layout {
-  flex-direction: column;
+.workspace-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--app-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.workspace-subtitle {
+  font-size: 13px;
+  color: var(--app-text-secondary);
+  margin: 0;
+}
+
+/* 两栏布局 */
+.settings-layout {
+  display: flex;
+  gap: 20px;
   align-items: flex-start;
 }
 
-.item-info .item-title {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
+/* 1. 左侧分类侧边栏 */
+.settings-sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: var(--app-shadow-sm);
+  position: sticky;
+  top: 60px;
 }
 
-.item-info .item-desc {
+.sidebar-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  color: var(--app-text-secondary);
+}
+
+.sidebar-nav-btn:hover {
+  background: var(--app-bg-hover);
+  color: var(--app-text-primary);
+}
+
+.sidebar-nav-btn.is-active {
+  background: var(--app-bg-subtle);
+  color: var(--app-primary);
+  box-shadow: var(--app-shadow-sm);
+  border: 1px solid var(--app-border-subtle);
+}
+
+.sidebar-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--app-bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-btn.is-active .sidebar-icon-box {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--app-primary);
+}
+
+.sidebar-text-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.nav-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.nav-desc {
+  font-size: 11px;
+  color: var(--app-text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/* 2. 右侧卡片内容区 */
+.settings-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-card {
+  background: var(--app-bg-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: var(--app-shadow-sm);
+}
+
+.card-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--app-border-subtle);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--app-text-primary);
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--app-text-secondary);
+  margin: 0;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--app-border-subtle);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.setting-row.column-layout {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.setting-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.meta-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--app-text-primary);
+}
+
+.meta-hint {
   font-size: 12px;
-  opacity: 0.65;
+  color: var(--app-text-muted);
   line-height: 1.4;
 }
 
+.path-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-wrapper {
+  padding: 8px 12px;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 诊断栅格 */
 .diagnostics-grid {
-  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.about-logo {
-  animation: float 4s ease-in-out infinite;
+.diag-cell {
+  background: var(--app-bg-subtle);
+  border: 1px solid var(--app-border-subtle);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
+.cell-label {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.cell-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text-regular);
+}
+
+.diag-actions-row {
+  padding-top: 8px;
+}
+
+/* 关于应用卡片 */
+.about-hero-box {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.about-logo-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--app-bg-subtle);
+  border: 1px solid var(--app-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.about-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--app-text-primary);
+}
+
+.about-version {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  margin: 0 0 6px 0;
+}
+
+.about-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 820px) {
+  .settings-layout {
+    flex-direction: column;
   }
-  50% {
-    transform: translateY(-6px);
+  .settings-sidebar {
+    width: 100%;
+    position: static;
   }
 }
 </style>
