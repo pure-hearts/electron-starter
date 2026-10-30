@@ -70,6 +70,12 @@
   - 封装安全的 Shell 原生操作（`showItemInFolder`、`trashItem`、`openPath`、`openExternal`），支持协议白名单与路径穿越防御；
   - 新增 `tests/shell-integration.test.ts` 与 `tests/theme-system-integration.test.ts` 2 个 Vitest 集成测试套件，全量 39 套件 149 测试全部通过；
   - 完善 `web-shim.ts`，Web 模式与桌面端构建双端平滑兼容。
+- [x] **跨平台桌面端应用图标套件生成与适配（2026-10-30 落地）**：
+  - 设计并生成科技风格矢量源文件 `resources/icons/icon.svg` 与 1024x1024 超清母图 `resources/icons/icon-1024.png`；
+  - 产出各平台官方标准格式：Windows 专用多尺寸复合 `icon.ico` (16~256px)、macOS 原生 Retina `icon.icns`、Linux/通用 512x512 `icon.png`；
+  - 产出 Web 端与启动页图标 `public/favicon.ico`、`public/favicon.png`，并在 `src/renderer/index.html` 和 `public/splash.html` 中完成引入；
+  - 编写跨平台自动化生成脚本 `scripts/generate-icons.py`，配置 npm 脚本 `pnpm icons:generate`；
+  - 更新 `electron-builder.yml` 打包配置与 `resources/icons/README.md` 图标资产规格说明。
 - [ ] 对应生产平台执行最终业务回归并核对 Release 产物。
 
 ## 阶段结论

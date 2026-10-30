@@ -28,7 +28,7 @@ publish:
   repo: electron-starter
 # Windows 生成 NSIS 安装向导（x64）；生产发布还必须验证代码签名。
 win:
-  icon: resources/icons/icon.png
+  icon: resources/icons/icon.ico
   target:
     - target: nsis
       arch: [x64]
@@ -38,7 +38,7 @@ nsis:
   allowToChangeInstallationDirectory: true
 # macOS 同时产出 DMG 及用于自动更新的 ZIP；正式发布需要签名和公证。
 mac:
-  icon: resources/icons/icon.png
+  icon: resources/icons/icon.icns
   target: [dmg, zip]
 # Linux 提供免安装 AppImage 和发行版 deb 格式。
 linux:
