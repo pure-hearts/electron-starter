@@ -1,0 +1,75 @@
+# 增量热更新自动化构建与发布：签名生成 manifest.json 与 renderer-<revision>.zip 并发布到 GitHub Releases (hot 通道)。
+name: Hot Update Release
+
+on:
+  push:
+    tags:
+      - "hot-*"
+  workflow_dispatch:
+    inputs:
+      asset_base_url:
+        description: "自定义热更新静态资源 CDN 基础 URL（留空默认使用当前仓库 Releases hot 标签地址）"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  pack-and-publish-hot:
+    name: Build, Sign & Publish Hot Update
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Verify signing private key secret
+        env:
+          HOT_UPDATE_PRIVATE_KEY: ${{ secrets.HOT_UPDATE_PRIVATE_KEY }}
+        run: |
+          if [ -z "$HOT_UPDATE_PRIVATE_KEY" ]; then
+            echo "::error::未配置仓库 Secret: HOT_UPDATE_PRIVATE_KEY。请在 GitHub Settings -> Secrets and variables -> Actions 中注入 Ed25519 私钥后再触发热更发布。"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck & Test before hot release
+        run: |
+          pnpm exec vp check
+          pnpm exec vp test --run
+
+      - name: Build renderer & pack signed hot bundle
+        env:
+          HOT_UPDATE_PRIVATE_KEY: ${{ secrets.HOT_UPDATE_PRIVATE_KEY }}
+          HOT_UPDATE_ASSET_BASE_URL: ${{ inputs.asset_base_url || format('https://github.com/{0}/releases/download/hot', github.repository) }}
+        run: pnpm run hot:pack
+
+      - name: Upload hot update bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hot-update-bundle
+          path: release/hot/
+          retention-days: 14
+
+      - name: Publish to GitHub Release (hot channel)
+        run: |
+          RELEASE_TAG="hot"
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --title "Hot Update Channel (Latest Renderer Bundle)" \
+              --notes "自动化增量热更新静态资源分发通道（包含 Ed25519 签名的 manifest.json 与 renderer 资源包）。"
+          fi
+          gh release upload "$RELEASE_TAG" release/hot/manifest.json release/hot/renderer-*.zip --clobber

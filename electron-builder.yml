@@ -11,9 +11,9 @@ protocols:
 # electron-builder 输出安装包的目录，不能与 Web 资源 dist 目录混淆。
 directories:
   output: release
-# 打包应用代码和 package.json；排除 source map 减少发布体积。
+# 仅打包 Electron 渲染层构建目录 (dist/renderer)、主进程产物与 package.json；严禁混入 dist/web 纯浏览器产物。
 files:
-  - dist/**/*
+  - dist/renderer/**/*
   - dist-electron/**/*
   - package.json
   - "!**/*.map"

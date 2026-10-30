@@ -1,0 +1,30 @@
+{
+  "id": "optimize-main-process-reliability",
+  "name": "optimize-main-process-reliability",
+  "title": "Optimize main process reliability: IPC timeout & profiling, hot update GC, download .part isolation",
+  "description": "提升主进程稳定性与可维护性：实现 IPC 超时熔断与慢日志分析、增量热更历史版本垃圾回收 (GC)、下载临时文件 .part 隔离与原子重命名",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "vyron",
+  "assignee": "vyron",
+  "createdAt": "2026-10-29",
+  "completedAt": "2026-10-29",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/main/ipc/index.ts",
+    "src/main/modules/update/hot/index.ts",
+    "src/main/modules/download/manager.ts"
+  ],
+  "notes": "",
+  "meta": {}
+}

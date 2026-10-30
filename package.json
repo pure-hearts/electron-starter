@@ -1,37 +1,46 @@
 {
   "name": "electron-starter",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "private": true,
-  "type": "module",
-  "packageManager": "pnpm@11.27.1",
   "description": "Lean Electron + Vue 3 + TypeScript + Vite+ starter",
+  "author": {
+    "name": "Electron Starter Maintainers",
+    "email": "replace-before-release@example.com"
+  },
+  "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vp dev",
+    "dev:web": "TARGET_PLATFORM=web vp dev",
     "build": "vp build",
+    "build:web": "TARGET_PLATFORM=web vp build",
     "check": "vp check",
     "test": "vp test --run",
+    "fmt": "vp fmt",
+    "fmt:check": "vp fmt --check",
     "dist:dir": "vp build && electron-builder --dir",
     "smoke": "node scripts/smoke.mjs",
+    "icons:generate": "python3 scripts/generate-icons.py",
     "dist:win": "vp build && electron-builder --win nsis --publish never",
     "dist:mac": "vp build && electron-builder --mac dmg zip --publish never",
     "dist:linux": "vp build && electron-builder --linux AppImage deb --publish never",
-    "hot:pack": "node --experimental-strip-types scripts/pack-hot.ts",
+    "hot:keygen": "node scripts/generate-hot-keys.mjs",
+    "hot:pack": "vp build && node --experimental-strip-types scripts/pack-hot.ts",
     "typecheck:vue": "vue-tsc --noEmit",
     "dev:testing": "vp dev --mode testing",
     "build:testing": "vp build --mode testing",
-    "build:production": "vp build --mode production"
-  },
-  "engines": {
-    "node": ">=24"
+    "build:production": "vp build --mode production",
+    "postinstall": "node scripts/prepare-macos-dev.mjs"
   },
   "dependencies": {
+    "@vueuse/core": "^15.0.0",
+    "@vueuse/integrations": "^15.0.0",
     "axios": "^1.13.2",
     "electron-log": "^5.4.3",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.6.2",
-    "element-plus": "^2.14.7",
     "fflate": "^0.8.2",
+    "naive-ui": "^2.45.3",
     "pinia": "^3.0.3",
     "vue": "^3.5.24",
     "vue-i18n": "^11.1.12",
@@ -43,14 +52,15 @@
     "electron": "44.5.1",
     "electron-builder": "^26.17.0",
     "typescript": "^6.0.0",
+    "unplugin-vue-components": "^32.1.0",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
     "vite-plugin-electron": "^1.0.0",
     "vite-plus": "1.3.0",
     "vue-tsc": "3.3.13"
   },
-  "author": {
-    "name": "Electron Starter Maintainers",
-    "email": "replace-before-release@example.com"
+  "engines": {
+    "node": ">=24"
   },
+  "packageManager": "pnpm@11.27.1",
   "desktopName": "electron-starter"
 }

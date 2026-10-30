@@ -10,5 +10,8 @@ release/
 !.env.example
 *.pem
 !*.pem.example
+!resources/hot-update-public-key.pem
 .DS_Store
 coverage/
+*.pid
+.dev-electron.pid

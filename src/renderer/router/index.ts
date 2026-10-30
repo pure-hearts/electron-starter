@@ -1,10 +1,13 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import Home from '../views/Home.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import Home from "../views/Home.vue";
+
+const base = import.meta.env.VITE_ROUTER_BASE || "/";
+
 export default createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(base),
   routes: [
-    { path: '/', component: Home },
-    { path: '/playground', component: () => import('../views/Playground.vue') },
-    { path: '/:pathMatch(.*)*', redirect: '/' }
-  ]
-})
+    { path: "/", component: Home },
+    { path: "/playground", component: () => import("../views/Playground.vue") },
+    { path: "/:pathMatch(.*)*", redirect: "/" },
+  ],
+});

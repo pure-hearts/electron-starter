@@ -8,17 +8,17 @@ on:
       - electron-builder.yml
       - package.json
       - pnpm-lock.yaml
-      - 'src/**'
-      - 'tests/**'
-      - 'scripts/**'
+      - "src/**"
+      - "tests/**"
+      - "scripts/**"
   workflow_dispatch:
   # PR 修改相关文件时也触发，以便合并前发现跨平台构建问题。
   pull_request:
     paths:
       - .github/workflows/package-check.yml
-      - 'scripts/**'
-      - 'src/**'
-      - 'tests/**'
+      - "scripts/**"
+      - "src/**"
+      - "tests/**"
 permissions:
   contents: read
 jobs:
@@ -37,8 +37,8 @@ jobs:
             target: linux
     runs-on: ${{ matrix.os }}
     env:
-# 仅测试无签名产物，禁止自动发现本机代码签名身份。
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # 仅测试无签名产物，禁止自动发现本机代码签名身份。
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

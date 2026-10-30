@@ -56,7 +56,7 @@ jobs:
             task: dist:linux
     runs-on: ${{ matrix.os }}
     env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
       CSC_LINK: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK || (matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK || '') }}
       CSC_KEY_PASSWORD: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_KEY_PASSWORD || (matrix.os == 'macos-latest' && secrets.MAC_CSC_KEY_PASSWORD || '') }}
       APPLE_ID: ${{ secrets.APPLE_ID }}
