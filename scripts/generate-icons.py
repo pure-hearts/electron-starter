@@ -294,6 +294,88 @@ def generate_icns(base_img: Image.Image, output_path: str):
             shutil.rmtree(iconset_dir)
 
 
+def render_tray_symbol(dim: int, is_template: bool = False) -> Image.Image:
+    """
+    专门渲染适用于 macOS 状态栏或 Windows/Linux 托盘的极简原子核符号：
+    - macOS Template 模式：纯黑 (#000000) 加 Alpha 透明通道，用于系统菜单栏自适应反色与高亮。
+    - 彩色模式：亮蓝与青色原子轨道，适配深/浅任务栏。
+    """
+    scale = 4
+    canvas_dim = dim * scale
+    img = Image.new("RGBA", (canvas_dim, canvas_dim), (0, 0, 0, 0))
+    center = (canvas_dim // 2, canvas_dim // 2)
+
+    rx = int(canvas_dim * 0.42)
+    ry = int(canvas_dim * 0.16)
+    stroke_w = max(int(scale * 1.5), int(canvas_dim * 0.08))
+    dot_r = max(int(scale * 1.2), int(canvas_dim * 0.075))
+    center_r = max(int(scale * 1.6), int(canvas_dim * 0.12))
+
+    if is_template:
+        orbit_color = (0, 0, 0, 240)
+        dot_color = (0, 0, 0, 255)
+        core_color = (0, 0, 0, 255)
+    else:
+        orbit_color = (37, 99, 235, 240)
+        dot_color = (56, 189, 248, 255)
+        core_color = (2, 132, 199, 255)
+
+    orbits = Image.new("RGBA", (canvas_dim, canvas_dim), (0, 0, 0, 0))
+    for angle, dot_angle in [(0, 0.0), (60, math.pi), (-60, math.pi / 2)]:
+        temp = Image.new("RGBA", (canvas_dim, canvas_dim), (0, 0, 0, 0))
+        d = ImageDraw.Draw(temp)
+        d.ellipse([center[0] - rx, center[1] - ry, center[0] + rx, center[1] + ry], outline=orbit_color, width=stroke_w)
+        dx = int(center[0] + rx * math.cos(dot_angle))
+        dy = int(center[1] + ry * math.sin(dot_angle))
+        d.ellipse([dx - dot_r, dy - dot_r, dx + dot_r, dy + dot_r], fill=dot_color)
+        rot = temp.rotate(angle, resample=Image.Resampling.BICUBIC, center=center)
+        orbits.alpha_composite(rot)
+
+    img.alpha_composite(orbits)
+    c_draw = ImageDraw.Draw(img)
+    c_draw.ellipse([center[0] - center_r, center[1] - center_r, center[0] + center_r, center[1] + center_r], fill=core_color)
+
+    # 保证 template 全通道的 RGB 为 (0, 0, 0) 并保留 Alpha，避免渲染时产生边缘偏色
+    if is_template:
+        _, _, _, a = img.split()
+        black = Image.new("L", img.size, 0)
+        img = Image.merge("RGBA", (black, black, black, a))
+
+    return img.resize((dim, dim), resample=Image.Resampling.LANCZOS)
+
+
+def generate_tray_icons(output_dir: str):
+    """
+    生成托盘所需全套规范文件：
+    - macOS: trayTemplate.png (16x16), trayTemplate@2x.png (32x32)
+    - Windows: tray.ico (包含 16x16, 24x24, 32x32 多尺寸复合图标)
+    - 通用/Linux: tray.png (16x16), tray@2x.png (32x32)
+    """
+    # 1. macOS 模版图标 (Template 命名触发 macOS 自动反色与高亮特性)
+    template_16 = render_tray_symbol(16, is_template=True)
+    template_32 = render_tray_symbol(32, is_template=True)
+    template_16_path = os.path.join(output_dir, "trayTemplate.png")
+    template_32_path = os.path.join(output_dir, "trayTemplate@2x.png")
+    template_16.save(template_16_path, "PNG")
+    template_32.save(template_32_path, "PNG")
+    print(f"✓ 生成 macOS 托盘模版图标: {template_16_path} (16x16) & {template_32_path} (32x32)")
+
+    # 2. Windows 专用多尺寸复合托盘 ico (优先保障 16/24/32 极佳像素呈现)
+    color_16 = render_tray_symbol(16, is_template=False)
+    color_24 = render_tray_symbol(24, is_template=False)
+    color_32 = render_tray_symbol(32, is_template=False)
+    win_ico_path = os.path.join(output_dir, "tray.ico")
+    color_32.save(win_ico_path, format="ICO", sizes=[(16, 16), (24, 24), (32, 32)])
+    print(f"✓ 生成 Windows 专用托盘图标: {win_ico_path} (多尺寸包含: 16, 24, 32)")
+
+    # 3. 跨平台/Linux 通用彩色托盘图标
+    color_16_path = os.path.join(output_dir, "tray.png")
+    color_32_path = os.path.join(output_dir, "tray@2x.png")
+    color_16.save(color_16_path, "PNG")
+    color_32.save(color_32_path, "PNG")
+    print(f"✓ 生成通用托盘彩色图标: {color_16_path} (16x16) & {color_32_path} (32x32)")
+
+
 def main():
     os.makedirs(ICONS_DIR, exist_ok=True)
     os.makedirs(PUBLIC_DIR, exist_ok=True)
@@ -331,6 +413,9 @@ def main():
     img_64 = img_1024.resize((64, 64), resample=Image.Resampling.LANCZOS)
     img_64.save(favicon_png_path, "PNG")
     print(f"✓ 生成 public/favicon.png: {favicon_png_path}")
+
+    print("7. 生成桌面托盘图标 (macOS Template & 通用彩色)...")
+    generate_tray_icons(ICONS_DIR)
 
     print("\n所有图标生成完成！")
 

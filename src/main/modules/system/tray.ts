@@ -32,10 +32,18 @@ export function createTray() {
       trayImage = fallback.resize({ width: 18, height: 18 });
     }
   } else if (platform.isWindows) {
-    const icoPath = getIconPath("icon.ico");
-    const img = nativeImage.createFromPath(icoPath);
-    trayImage = img.isEmpty() ? nativeImage.createFromPath(getIconPath("tray.png")) : img;
+    // Windows 优先加载托盘专用的复合 ico，避免大尺寸应用主图标被失真缩放
+    const trayIcoPath = getIconPath("tray.ico");
+    let img = nativeImage.createFromPath(trayIcoPath);
+    if (img.isEmpty()) {
+      img = nativeImage.createFromPath(getIconPath("tray.png"));
+    }
+    if (img.isEmpty()) {
+      img = nativeImage.createFromPath(getIconPath("icon.ico"));
+    }
+    trayImage = img;
   } else {
+    // Linux 及其他平台使用通用彩色托盘 png
     const pngPath = getIconPath("tray.png");
     const img = nativeImage.createFromPath(pngPath);
     trayImage = img.isEmpty() ? nativeImage.createFromPath(getIconPath("icon.png")) : img;
