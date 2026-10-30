@@ -79,14 +79,41 @@ describe("通知中心", () => {
     expect(() =>
       validate("notification:send", [{ title: "Hi", body: "OK", action: "/downloads" }]),
     ).not.toThrow();
+    expect(() =>
+      validate("notification:send", [
+        { title: "Hi", body: "OK", tag: "task:123", icon: "/path/to/icon.png" },
+      ]),
+    ).not.toThrow();
     expect(() => validate("notification:capabilities", [])).not.toThrow();
     for (const bad of [
       { title: "Hi", body: "OK", action: "https://evil.example" },
       { title: "Hi", body: "OK", action: "/../bad" },
       { title: "Hi", body: "OK", arbitraryCommand: "rm" },
       { title: "", body: "OK" },
+      { title: "Hi", body: "OK", tag: "bad tag with spaces" },
+      { title: "Hi", body: "OK", icon: "bad\nnewline" },
     ])
       expect(() => validate("notification:send", [bad])).toThrow();
+  });
+  it("同 tag 通知覆盖更新就地关闭前一条，且绕过 10 秒频控", () => {
+    const h = harness();
+    const first = h.center.send({ title: "下载中", body: "10%", tag: "download:1" });
+    expect(first.accepted).toBe(true);
+    expect(h.center.activeCount).toBe(1);
+    expect(h.notices[0].closed).toBe(false);
+
+    // 发送同 tag 的第二条通知，第一条被关闭，新通知激活
+    const second = h.center.send({ title: "下载中", body: "20%", tag: "download:1" });
+    expect(second.accepted).toBe(true);
+    expect(h.notices[0].closed).toBe(true);
+    expect(h.notices[1].closed).toBe(false);
+    expect(h.center.activeCount).toBe(1);
+
+    // 连续发送超过 10 次同 tag 状态更新，全部通过（不被频控拦截）
+    for (let p = 30; p <= 100; p += 5) {
+      const res = h.center.send({ title: "下载中", body: `${p}%`, tag: "download:1" });
+      expect(res.accepted).toBe(true);
+    }
   });
 });
 

@@ -5,6 +5,8 @@ export interface NotificationOptions {
   body: string;
   kind?: NotificationKind;
   dedupeKey?: string;
+  tag?: string;
+  icon?: string;
   // 只允许应用内部路径，绝不能作为外部网址或命令执行。
   action?: string;
 }

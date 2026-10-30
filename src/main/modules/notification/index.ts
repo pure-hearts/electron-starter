@@ -1,16 +1,48 @@
 /** Electron 原生通知适配器：统一持有对象，并向安全的 Renderer 桥接发送事件。 */
-import { Notification, BrowserWindow } from "electron";
+import { Notification, BrowserWindow, app } from "electron";
+import path from "node:path";
+import fs from "node:fs";
 import type { NotificationOptions } from "../../../shared/notification";
-import { broadcast, focusMainWindow } from "../../window";
+import { broadcast, focusMainWindow, getMainWindow } from "../../window";
 import { NotificationCenter } from "./center";
 import { log } from "../core/logger";
 import { getSetting } from "../store";
-import { showItemInFolder } from "../system/shell-module";
+
+function getNotificationIcon(customIcon?: string): string | undefined {
+  if (customIcon && typeof customIcon === "string") return customIcon;
+  const base = app.isPackaged
+    ? path.join(process.resourcesPath, "resources", "icons")
+    : path.join(process.cwd(), "resources", "icons");
+  const defaultIcon = path.join(base, "icon.png");
+  return fs.existsSync(defaultIcon) ? defaultIcon : undefined;
+}
+
+function calculateSilent(): boolean {
+  const soundEnabled = getSetting("notificationSound") ?? true;
+  if (!soundEnabled) return true;
+  const mainWindow = getMainWindow();
+  if (
+    mainWindow &&
+    !mainWindow.isDestroyed() &&
+    mainWindow.isFocused() &&
+    !mainWindow.isMinimized()
+  ) {
+    return true;
+  }
+  return false;
+}
 
 export const notificationCenter = new NotificationCenter({
   supported: () => Notification.isSupported(),
   create: (options: NotificationOptions) => {
-    const notice = new Notification({ title: options.title, body: options.body });
+    const silent = calculateSilent();
+    const icon = getNotificationIcon(options.icon);
+    const notice = new Notification({
+      title: options.title,
+      body: options.body,
+      silent,
+      icon,
+    });
     notice.on("failed", (_event, error) => {
       log.warn("Notification failed to display", error);
     });
@@ -20,19 +52,11 @@ export const notificationCenter = new NotificationCenter({
   activated: (payload, title) => {
     // 兼容旧版只接收 title 的通知点击监听器。
     broadcast("notification:clicked", title);
-    // 若通知携带目标文件路径动作，在原生资源管理器中高亮定位
-    if (payload.action && typeof payload.action === "string") {
-      try {
-        void showItemInFolder(payload.action);
-      } catch {
-        // 忽略非文件路径的 action
-      }
-    }
     const target =
       payload.sourceWindowId === undefined
         ? undefined
         : BrowserWindow.getAllWindows().find((w) => w.webContents.id === payload.sourceWindowId);
-    // 原窗口仍在时聚焦，否则恢复主窗口；不主动执行传入的路由动作。
+    // 恢复并聚焦窗口；具体业务动作统一由 Renderer 监听 notification:activated 自主响应。
     if (target && !target.isDestroyed()) {
       target.show();
       target.focus();

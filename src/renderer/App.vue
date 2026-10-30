@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { darkTheme, zhCN, enUS, type SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "./stores/app";
@@ -8,6 +9,7 @@ import NetworkBanner from "./components/NetworkBanner.vue";
 import GlobalDownloadDrawer from "./components/GlobalDownloadDrawer.vue";
 import { useDownloadStore } from "./stores/download";
 
+const router = useRouter();
 const { t, locale } = useI18n();
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
@@ -29,11 +31,32 @@ const localeOptions: SelectOption[] = [
 ];
 
 let unsubscribeDeepLink: (() => void) | undefined;
+let unsubscribeNotification: (() => void) | undefined;
 onMounted(async () => {
   // Register listener first, then consume cold-start links so no link is lost.
   unsubscribeDeepLink = window.$ipcBridge.on("protocol:open", (url) =>
     appStore.receiveDeepLink(url),
   );
+  // 统一响应通知点击事件：根据 action 参数在前端进行业务路由或文件定位调度
+  unsubscribeNotification = window.$ipcBridge.on("notification:activated", (payload) => {
+    if (!payload.action || typeof payload.action !== "string") return;
+    const knownRoutes = router
+      .getRoutes()
+      .map((r) => r.path)
+      .filter((p) => p !== "/:pathMatch(.*)*");
+    if (knownRoutes.includes(payload.action)) {
+      if (router.currentRoute.value.path !== payload.action) {
+        void router.push(payload.action);
+      }
+      return;
+    }
+    // 若不是前端已知路由，作为本地文件路径通过 IPC 请求定位
+    if (payload.action.startsWith("/") || /^[a-zA-Z]:\\/.test(payload.action)) {
+      void window.$ipcBridge
+        .invoke("shell:showItemInFolder", payload.action)
+        .catch(() => undefined);
+    }
+  });
   try {
     const pending = await window.$ipcBridge.invoke("protocol:pending");
     for (const url of pending) appStore.receiveDeepLink(url);
@@ -47,7 +70,10 @@ onMounted(async () => {
   }
   void downloadStore.init();
 });
-onUnmounted(() => unsubscribeDeepLink?.());
+onUnmounted(() => {
+  unsubscribeDeepLink?.();
+  unsubscribeNotification?.();
+});
 
 async function changeLocale(value: string) {
   try {

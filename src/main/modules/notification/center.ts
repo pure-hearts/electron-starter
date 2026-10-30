@@ -22,6 +22,7 @@ export interface NotificationAdapter {
 type Entry = { notice: NativeNotice; settle: (reason: NotificationSettled["reason"]) => void };
 export class NotificationCenter {
   private active = new Map<string, Entry>();
+  private tagged = new Map<string, string>();
   private recent = new Map<string, number>();
   private history: number[] = [];
   constructor(
@@ -31,13 +32,25 @@ export class NotificationCenter {
   send(options: NotificationOptions, sourceWindowId?: number): NotificationReceipt {
     if (!this.adapter.supported()) return { id: "", accepted: false, reason: "unsupported" };
     const time = this.now();
+
+    // 同 tag 覆盖更新：若已存在同 tag 活跃通知，先将其关闭并复用通道
+    let isTagReplacement = false;
+    if (options.tag) {
+      const existingId = this.tagged.get(options.tag);
+      if (existingId && this.active.has(existingId)) {
+        this.close(existingId);
+        isTagReplacement = true;
+      }
+    }
+
     // 相同业务标识在 3 秒内不重复弹出；定期删除过期项避免内存增长。
     for (const [key, at] of this.recent) if (time - at >= 3000) this.recent.delete(key);
-    if (options.dedupeKey && this.recent.has(options.dedupeKey))
+    if (!isTagReplacement && options.dedupeKey && this.recent.has(options.dedupeKey))
       return { id: "", accepted: false, reason: "duplicate" };
-    // 限制每 10 秒最多 10 次通知，避免意外循环轰炸系统通知中心。
+    // 限制每 10 秒最多 10 次通知，避免意外循环轰炸系统通知中心；同 tag 就地更新旁路频控。
     this.history = this.history.filter((at) => time - at < 10000);
-    if (this.history.length >= 10) return { id: "", accepted: false, reason: "rate-limited" };
+    if (!isTagReplacement && this.history.length >= 10)
+      return { id: "", accepted: false, reason: "rate-limited" };
     const id = randomUUID();
     const notice = this.adapter.create(options);
     const kind = options.kind ?? "info";
@@ -47,6 +60,9 @@ export class NotificationCenter {
       if (settled) return;
       settled = true;
       this.active.delete(id);
+      if (options.tag && this.tagged.get(options.tag) === id) {
+        this.tagged.delete(options.tag);
+      }
       notice.removeListener?.("click", onClick);
       notice.removeListener?.("close", onClose);
       notice.removeListener?.("failed", onFailed);
@@ -70,8 +86,11 @@ export class NotificationCenter {
       settle("failed");
       throw error;
     }
-    if (!settled) this.active.set(id, { notice, settle });
-    this.history.push(time);
+    if (!settled) {
+      this.active.set(id, { notice, settle });
+      if (options.tag) this.tagged.set(options.tag, id);
+    }
+    if (!isTagReplacement) this.history.push(time);
     if (options.dedupeKey) this.recent.set(options.dedupeKey, time);
     return { id, accepted: true };
   }
@@ -96,6 +115,7 @@ export class NotificationCenter {
         failures.push(error);
       }
     }
+    this.tagged.clear();
     this.recent.clear();
     this.history = [];
     if (failures.length) throw new AggregateError(failures, "Notification cleanup failed");

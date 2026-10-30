@@ -171,6 +171,8 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
         case "notification:show": {
           let title = "通知";
           let body = "";
+          let icon: string | undefined;
+          let tag: string | undefined;
           if (channel === "notification:show") {
             const rawTitle = args[0];
             const rawBody = args[1];
@@ -180,16 +182,18 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
             const opts = args[0] as NotificationOptions | undefined;
             title = opts?.title || "系统通知";
             body = opts?.body || "";
+            icon = opts?.icon;
+            tag = opts?.tag;
           }
 
           if (typeof window !== "undefined" && "Notification" in window) {
             if (Notification.permission === "granted") {
-              new Notification(title, { body });
+              new Notification(title, { body, icon, tag });
             } else if (Notification.permission !== "denied") {
               void Notification.requestPermission()
                 .then((permission) => {
                   if (permission === "granted") {
-                    new Notification(title, { body });
+                    new Notification(title, { body, icon, tag });
                   } else if (typeof document !== "undefined") {
                     feedback.notification.info(title, body);
                   }

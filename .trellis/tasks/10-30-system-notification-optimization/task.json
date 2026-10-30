@@ -1,0 +1,60 @@
+{
+  "id": "system-notification-optimization",
+  "name": "system-notification-optimization",
+  "title": "Optimize system notification",
+  "description": "Optimize desktop system notifications: fix silent setting, add default app icon, intelligent focus-based silencing, tag-based coalesce updates, and router navigation on click.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "vyron",
+  "assignee": "vyron",
+  "createdAt": "2026-10-30",
+  "completedAt": "2026-10-30",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    {
+      "id": "subtask-1",
+      "title": "Shared contract & IPC validation expansion for tag & icon",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-2",
+      "title": "NotificationCenter tag coalesce & rate-limit bypass implementation",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-3",
+      "title": "Main notification adapter silent calculation & default app icon",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-4",
+      "title": "Renderer App router navigation on notification activation",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-5",
+      "title": "Unit tests and full quality verification",
+      "status": "completed"
+    }
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/shared/notification.ts",
+    "src/shared/validation.ts",
+    "src/main/modules/notification/center.ts",
+    "src/main/modules/notification/index.ts",
+    "src/renderer/App.vue",
+    "src/renderer/bridge/web-shim.ts",
+    "tests/notification-center.test.ts"
+  ],
+  "notes": "",
+  "meta": {}
+}

@@ -185,7 +185,9 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
       // 对象必须是已知字段，拒绝潜在的命令/URL 或未定义扩展字段。
       const keys = Object.keys(o);
       if (
-        keys.every((key) => ["title", "body", "kind", "dedupeKey", "action"].includes(key)) &&
+        keys.every((key) =>
+          ["title", "body", "kind", "dedupeKey", "action", "tag", "icon"].includes(key),
+        ) &&
         typeof o.title === "string" &&
         o.title.length > 0 &&
         o.title.length <= 128 &&
@@ -198,6 +200,16 @@ export function validate(channel: InvokeChannel, args: unknown[]): void {
           (typeof o.dedupeKey === "string" &&
             o.dedupeKey.length > 0 &&
             o.dedupeKey.length <= 128)) &&
+        (o.tag === undefined ||
+          (typeof o.tag === "string" &&
+            o.tag.length > 0 &&
+            o.tag.length <= 64 &&
+            /^[A-Za-z0-9_:-]+$/.test(o.tag))) &&
+        (o.icon === undefined ||
+          (typeof o.icon === "string" &&
+            o.icon.length > 0 &&
+            o.icon.length <= 512 &&
+            !/[\r\n\0]/.test(o.icon))) &&
         (o.action === undefined ||
           (typeof o.action === "string" && /^\/[A-Za-z0-9_/-]{0,128}$/.test(o.action)))
       )
