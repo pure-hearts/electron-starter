@@ -145,4 +145,38 @@ describe("下载适配器生命周期", () => {
     expect(item.listenerCount("done")).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
   });
+  it("高频 progress 触发按 250ms 节流合并，状态跃迁立即发出", () => {
+    vi.useFakeTimers();
+    const h = harness();
+    const id = h.manager.start("https://example.com/file", h.sender);
+    const item = new Item();
+    h.manager.accept(item);
+
+    // 第一次 progress 立即触发
+    item.emit("updated", {}, "progressing");
+    const progressCount1 = h.states.filter((s) => s.state === "progress").length;
+    expect(progressCount1).toBe(1);
+
+    // 短时间内（100ms 内）连续触发 5 次 progress
+    for (let i = 0; i < 5; i++) {
+      vi.advanceTimersByTime(20);
+      item.emit("updated", {}, "progressing");
+    }
+    // 依然只有第一次发出的 progress
+    expect(h.states.filter((s) => s.state === "progress").length).toBe(1);
+
+    // 跨过 250ms 窗口后，节流合并的最新 progress 发出
+    vi.advanceTimersByTime(250);
+    expect(h.states.filter((s) => s.state === "progress").length).toBe(2);
+
+    // pause 关键状态跃迁无需等待节流，立即触发
+    h.manager.control(id, "pause");
+    expect(h.states.at(-1)?.state).toBe("paused");
+
+    // resume 手动恢复
+    h.manager.control(id, "resume");
+    expect(h.states.at(-1)?.state).toBe("progress");
+
+    h.manager.dispose();
+  });
 });

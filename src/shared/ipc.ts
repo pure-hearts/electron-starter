@@ -38,6 +38,10 @@ export interface DesktopInvoke {
   "download:pause": { args: [id: string]; result: void };
   "download:resume": { args: [id: string]; result: void };
   "download:retry": { args: [failedId: string]; result: string };
+  "download:history:get": { args: [limit?: number]; result: DownloadState[] };
+  "download:history:remove": { args: [id: string]; result: boolean };
+  "download:history:clear": { args: []; result: number };
+  "download:file:exists": { args: [path: string]; result: boolean };
   "print:printers": { args: []; result: { name: string; displayName: string }[] };
   "print:execute": { args: []; result: { success: boolean; failureReason?: string } };
   // 整包更新的操作通道，实际下载和安装行为都在主进程实现。
@@ -144,10 +148,27 @@ export type InvokeResult<C extends InvokeChannel> = DesktopInvoke[C]["result"];
 export interface DownloadState {
   id: string;
   url: string;
-  state: "queued" | "started" | "progress" | "paused" | "completed" | "cancelled" | "failed";
+  state:
+    | "queued"
+    | "started"
+    | "progress"
+    | "paused"
+    | "interrupted"
+    | "completed"
+    | "cancelled"
+    | "failed";
+  filename?: string;
   percent?: number;
+  receivedBytes?: number;
+  totalBytes?: number;
+  speed?: number;
+  eta?: number;
+  canResume?: boolean;
   path?: string;
   error?: string;
+  createdAt?: number;
+  completedAt?: number;
+  fileExists?: boolean;
 }
 export interface UpdateState {
   kind: "full" | "hot";

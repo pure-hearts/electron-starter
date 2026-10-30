@@ -250,6 +250,22 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
           return (channel === "download:retry" ? "retry-id" : undefined) as InvokeResult<C>;
         }
 
+        case "download:history:get": {
+          return [] as InvokeResult<C>;
+        }
+
+        case "download:history:remove": {
+          return true as InvokeResult<C>;
+        }
+
+        case "download:history:clear": {
+          return 0 as InvokeResult<C>;
+        }
+
+        case "download:file:exists": {
+          return true as InvokeResult<C>;
+        }
+
         // ----------------- 7. 打印 -----------------
         case "print:printers": {
           return [

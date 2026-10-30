@@ -5,10 +5,12 @@ import { useAppStore, type ThemeMode } from "../stores/app";
 import { usePlatform } from "../bridge";
 import { useAxios } from "../api/request";
 import { feedback } from "../utils/feedback";
+import { useDownloadStore, formatBytes, formatSpeed, formatEta } from "../stores/download";
 import type { DownloadState, UpdateState, HotUpdateResult, HotUpdateInfo } from "../../shared/ipc";
 
 const desktop = window.$ipcBridge;
 const appStore = useAppStore();
+const downloadStore = useDownloadStore();
 const { isElectron } = usePlatform();
 
 // 基础系统与环境状态
@@ -159,7 +161,7 @@ const defaultDownloadURL =
   import.meta.env.VITE_APP_DOWNLOAD_TEST_URL ||
   "https://github.com/pure-hearts/electron-starter/releases/download/v0.1.0/latest.yml";
 const downloadURL = ref(defaultDownloadURL);
-const downloads = ref<DownloadState[]>([]);
+const downloads = computed(() => downloadStore.activeList);
 const printList = ref<string[]>([]);
 const themeValue = ref<ThemeMode>("system");
 
@@ -219,19 +221,11 @@ async function triggerUseAxios() {
   await executeAxios(target).catch(() => undefined);
 }
 
-const activeDownloadsCount = computed(
-  () => downloads.value.filter((t) => ["started", "progress"].includes(t.state)).length,
-);
+const activeDownloadsCount = computed(() => downloadStore.activeCount);
 const concurrencyRatio = computed(() => {
-  if (downloadConcurrency.value <= 0) return 0;
-  return Math.min(100, Math.round((activeDownloadsCount.value / downloadConcurrency.value) * 100));
+  if (downloadStore.concurrency <= 0) return 0;
+  return Math.min(100, Math.round((activeDownloadsCount.value / downloadStore.concurrency) * 100));
 });
-
-function updateDownload(state: DownloadState) {
-  const index = downloads.value.findIndex((task) => task.id === state.id);
-  if (index < 0) downloads.value.push(state);
-  else downloads.value[index] = { ...downloads.value[index], ...state };
-}
 
 async function beginDownload() {
   if (!downloadURL.value.trim().startsWith("http")) {
@@ -239,10 +233,7 @@ async function beginDownload() {
     return;
   }
   await run("download:start", "创建下载任务", async () => {
-    const id = await desktop.invoke("download:start", downloadURL.value.trim());
-    if (!downloads.value.some((task) => task.id === id)) {
-      downloads.value.unshift({ id, url: downloadURL.value.trim(), state: "queued", percent: 0 });
-    }
+    const id = await downloadStore.start(downloadURL.value.trim());
     return { taskId: id };
   });
 }
@@ -251,20 +242,16 @@ async function operateDownload(id: string, action: "pause" | "resume" | "cancel"
   const key = `${id}:${action}`;
   const actionName = { pause: "暂停", resume: "恢复", cancel: "取消", retry: "重试" }[action];
   await run(key, `下载任务${actionName}`, async () => {
-    if (action === "pause") return desktop.invoke("download:pause", id);
-    if (action === "resume") return desktop.invoke("download:resume", id);
-    if (action === "cancel") return desktop.invoke("download:cancel", id);
-    return desktop.invoke("download:retry", id);
+    if (action === "pause") return downloadStore.pause(id);
+    if (action === "resume") return downloadStore.resume(id);
+    if (action === "cancel") return downloadStore.cancel(id);
+    return downloadStore.retry(id);
   });
 }
 
 async function saveDownloadConcurrency() {
   await run("concurrency:set", "保存并发限制", async () => {
-    downloadConcurrency.value = await desktop.invoke(
-      "download:concurrency:set",
-      downloadConcurrency.value,
-    );
-    return downloadConcurrency.value;
+    return downloadStore.setConcurrency(downloadConcurrency.value);
   });
 }
 
@@ -331,7 +318,6 @@ const unsubscribers: Array<() => void> = [];
 onMounted(async () => {
   unsubscribers.push(
     desktop.on("download:state", (state: DownloadState) => {
-      updateDownload(state);
       appendLog("下载状态推送", "info", state);
     }),
   );
@@ -763,6 +749,31 @@ onUnmounted(() => {
               </div>
             </template>
 
+            <!-- 全局下载中心抽屉联动与当前速率 -->
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 14px;
+              "
+            >
+              <div style="display: flex; gap: 8px; align-items: center">
+                <n-button
+                  size="small"
+                  type="primary"
+                  secondary
+                  @click="downloadStore.toggleDrawer(true)"
+                >
+                  📂 打开全局下载中心抽屉
+                </n-button>
+                <n-tag v-if="downloadStore.totalSpeed > 0" type="success" size="small" round>
+                  总传输速率: {{ formatSpeed(downloadStore.totalSpeed) }}
+                </n-tag>
+              </div>
+              <span class="card-badge">已启用 SQLite 持久化 & 250ms IPC 节流</span>
+            </div>
+
             <!-- 并发设置联动 -->
             <div class="concurrency-control-bar">
               <span class="label">最大并行下载并发数：</span>
@@ -856,6 +867,27 @@ onUnmounted(() => {
                     />
                   </div>
 
+                  <!-- 指标数据展示：大小、速度、ETA -->
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      font-size: 11px;
+                      color: var(--n-text-color-3);
+                      margin-top: 4px;
+                    "
+                  >
+                    <span>
+                      {{ formatBytes(item.receivedBytes) }} / {{ formatBytes(item.totalBytes) }}
+                    </span>
+                    <span v-if="item.speed">
+                      {{ formatSpeed(item.speed) }} · 约剩 {{ formatEta(item.eta) }}
+                    </span>
+                    <span v-else-if="item.state === 'interrupted'" style="color: #f0a020">
+                      ⚠️ 网络中断，可点击恢复
+                    </span>
+                  </div>
+
                   <div class="item-footer">
                     <span v-if="item.error" class="error-msg">⚠️ {{ item.error }}</span>
                     <span v-else class="id-text">TaskID: {{ item.id.slice(0, 8) }}...</span>
@@ -869,7 +901,10 @@ onUnmounted(() => {
                         暂停
                       </n-button>
                       <n-button
-                        :disabled="item.state !== 'paused'"
+                        :disabled="
+                          !['paused', 'interrupted'].includes(item.state) ||
+                          item.canResume === false
+                        "
                         :loading="isLoading(`${item.id}:resume`)"
                         @click="operateDownload(item.id, 'resume')"
                       >

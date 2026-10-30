@@ -1,0 +1,69 @@
+{
+  "id": "download-feature-optimization",
+  "name": "download-feature-optimization",
+  "title": "Download Feature Optimization and Architecture Encapsulation",
+  "description": "Comprehensive download feature upgrade: SQLite history persistence, IPC throttling, EMA speed/ETA estimation, atomic temp-file rename, filename collision handling, strict manual network resumption, global download drawer, and Pinia store encapsulation.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "download",
+  "package": null,
+  "priority": "P2",
+  "creator": "vyron",
+  "assignee": "vyron",
+  "createdAt": "2026-10-30",
+  "completedAt": "2026-10-30",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    {
+      "id": "subtask-1",
+      "title": "Shared IPC Contract & Core Domain Enhancement (Throttling, Speed/ETA, Interrupted state)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-2",
+      "title": "Native SQLite Persistence & File Safety Policy (downloads.db, atomic rename, cleanup)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-3",
+      "title": "Electron Adapter Integration & Enriched Notifications (Show in folder, custom actions)",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-4",
+      "title": "Frontend Download Store, Global Drawer & TitleBar Badge Integration",
+      "status": "completed"
+    },
+    {
+      "id": "subtask-5",
+      "title": "Unit Tests & Full Quality Gate Verification (Vitest, check, test)",
+      "status": "completed"
+    }
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/shared/ipc.ts",
+    "src/main/modules/download/manager.ts",
+    "src/main/modules/download/index.ts",
+    "src/main/modules/download/speed-tracker.ts",
+    "src/main/modules/download/file-policy.ts",
+    "src/main/modules/download/database.ts",
+    "src/main/ipc/handlers/transfer.ts",
+    "src/renderer/stores/download.ts",
+    "src/renderer/components/GlobalDownloadDrawer.vue",
+    "src/renderer/components/TitleBar.vue",
+    "src/renderer/views/Playground.vue",
+    "tests/download-manager.test.ts",
+    "tests/download-speed-tracker.test.ts",
+    "tests/download-file-policy.test.ts",
+    "tests/download-database.test.ts",
+    "tests/download-store.test.ts"
+  ],
+  "notes": "",
+  "meta": {}
+}

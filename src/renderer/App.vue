@@ -5,9 +5,12 @@ import { darkTheme, zhCN, enUS, type SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "./stores/app";
 import TitleBar from "./components/TitleBar.vue";
 import NetworkBanner from "./components/NetworkBanner.vue";
+import GlobalDownloadDrawer from "./components/GlobalDownloadDrawer.vue";
+import { useDownloadStore } from "./stores/download";
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
+const downloadStore = useDownloadStore();
 const currentLocale = computed(() => locale.value);
 const currentTheme = computed(() => appStore.theme);
 
@@ -42,6 +45,7 @@ onMounted(async () => {
   } catch (error) {
     console.warn("Could not load preferences", error);
   }
+  void downloadStore.init();
 });
 onUnmounted(() => unsubscribeDeepLink?.());
 
@@ -72,6 +76,7 @@ async function changeTheme(value: string) {
     <div class="app">
       <TitleBar />
       <NetworkBanner />
+      <GlobalDownloadDrawer />
       <header class="header">
         <nav class="header-nav">
           <router-link to="/">{{ t("home") }}</router-link>

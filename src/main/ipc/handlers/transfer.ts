@@ -5,6 +5,10 @@ import {
   retryDownload,
   getDownloadConcurrency,
   setDownloadConcurrency,
+  getDownloadHistory,
+  removeDownloadHistory,
+  clearDownloadHistory,
+  checkDownloadFileExists,
 } from "../../modules/download";
 import { checkUpdate, installUpdate } from "../../modules/update/full";
 import {
@@ -24,6 +28,10 @@ export const transferHandlers = {
   "download:pause": (_e, [id]) => controlDownload(id as string, "pause"),
   "download:resume": (_e, [id]) => controlDownload(id as string, "resume"),
   "download:retry": (e, [id]) => retryDownload(id as string, e.sender),
+  "download:history:get": (_e, [limit]) => getDownloadHistory(limit as number | undefined),
+  "download:history:remove": (_e, [id]) => removeDownloadHistory(id as string),
+  "download:history:clear": () => clearDownloadHistory(),
+  "download:file:exists": (_e, [targetPath]) => checkDownloadFileExists(targetPath as string),
   "updater:check": () => checkUpdate(),
   "updater:install": () => installUpdate(),
   "hot:check": () => checkHotUpdate(),

@@ -2,9 +2,11 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/app";
+import { useDownloadStore } from "../stores/download";
 import { isElectron } from "../bridge/platform";
 
 const appStore = useAppStore();
+const downloadStore = useDownloadStore();
 const router = useRouter();
 
 function openSettings() {
@@ -63,6 +65,34 @@ function handleDblClick(e: MouseEvent) {
 
     <!-- 右侧动作与设置 -->
     <div class="titlebar-actions no-drag flex items-center">
+      <!-- 下载中心按钮 (带进行中 Badge 徽标与抽屉触发) -->
+      <button
+        class="window-btn download-btn"
+        title="下载中心"
+        aria-label="下载中心"
+        @click="downloadStore.toggleDrawer()"
+      >
+        <span class="btn-icon-wrapper">
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span v-if="downloadStore.activeCount > 0" class="download-badge">
+            {{ downloadStore.activeCount }}
+          </span>
+        </span>
+      </button>
+
       <button
         class="window-btn settings-btn"
         title="设置中心"
@@ -231,6 +261,52 @@ function handleDblClick(e: MouseEvent) {
   height: 100%;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
+}
+
+.download-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--app-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  margin-right: 4px;
+  border-radius: 4px;
+}
+
+.download-btn:hover {
+  background-color: var(--app-bg-hover, rgba(125, 125, 125, 0.15));
+  color: var(--app-text-primary);
+}
+
+.btn-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  background: var(--n-primary-color, #18a058);
+  color: #fff;
+  font-size: 9px;
+  font-weight: bold;
+  height: 14px;
+  min-width: 14px;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 7px;
+  padding: 0 3px;
+  box-shadow: 0 0 0 1.5px var(--app-bg-surface, #ffffff);
 }
 
 .settings-btn {
