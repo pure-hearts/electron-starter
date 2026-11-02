@@ -19,7 +19,6 @@
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "dist:dir": "vp build && electron-builder --dir",
-    "smoke": "node scripts/smoke.mjs",
     "icons:generate": "python3 scripts/generate-icons.py",
     "dist:win": "vp build && electron-builder --win nsis --publish never",
     "dist:mac": "vp build && electron-builder --mac dmg zip --publish never",

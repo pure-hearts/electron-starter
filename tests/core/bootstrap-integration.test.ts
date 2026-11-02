@@ -20,7 +20,6 @@ const mocks = vi.hoisted(() => ({
     dispose: vi.fn(),
     broadcast: vi.fn(),
   },
-  smoke: { register: vi.fn() },
 }));
 
 vi.mock("../../src/main/modules/core/logger", () => ({
@@ -76,9 +75,6 @@ vi.mock("../../src/main/window", () => ({
   createMainWindow: mocks.window.create,
   disposeWindows: mocks.window.dispose,
   broadcast: mocks.window.broadcast,
-}));
-vi.mock("../../src/main/bootstrap/smoke", () => ({
-  registerSmokeChecks: mocks.smoke.register,
 }));
 
 import { bootstrapMain, shutdownMain } from "../../src/main/bootstrap";

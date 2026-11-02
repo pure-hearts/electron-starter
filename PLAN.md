@@ -84,6 +84,11 @@
   - 封装系统诊断与排障模块 `diagnostics.ts`，支持一键导出脱敏日志与系统参数的 ZIP 压缩包；
   - 封装全局网络监听与 `NetworkBanner.vue` 离线提示组件，WebShim 全量对齐新增通道；
   - 新增 `tests/diagnostics-archive.test.ts` 与 `tests/shortcut-policy.test.ts` 测试套件，全量 41 套件 154 项测试用例全部通过，`vp check` 0 错误。
+- [x] **主进程与 Preload 核心瘦身及架构规范化（2026-11-02 落地）**：
+  - **移除 Smoke 烟雾测试**：彻底删除侵入核心流程的 `src/main/bootstrap/smoke.ts`、相关 CI 脚本与主入口测试目录劫持，净化生产启动链路；
+  - **开发环境独立收拢**：新建 `src/main/dev/` 文件夹（`pid-lock.ts`、`dev-server.ts`、`index.ts`），将孤儿进程锁治理与 `--dev-server-url` 还原参数统一封装，主入口 `src/main/index.ts` 精简至单一核心职责；
+  - **Preload 架构规范化**：将事件白名单统一定义至 `src/shared/validation.ts` (`allowedEvents`)，消除局部硬编码，Preload 订阅增加类型防御与精确 dispose，新增单测覆盖保障；
+  - 全量 48 个测试套件 199 项测试全部通过，`vp check` 0 错误，主进程与渲染进程产物构建成功。
 - [ ] 对应生产平台执行最终业务回归并核对 Release 产物。
 
 ## 阶段结论

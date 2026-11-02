@@ -27,6 +27,7 @@ import { singleFlight } from "../../core/single-flight";
 import { parseHotPointer, type HotPointer as Pointer } from "./pointer";
 import { validateUpdateFeedUrl } from "../full/feed-url";
 import { notifyBusiness } from "../../notification";
+import { appendDevServerArg } from "../../../dev";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -118,6 +119,7 @@ export function recoverPendingUpdate(): void {
 }
 
 import { filterStaleRevisions } from "./gc";
+
 export { filterStaleRevisions } from "./gc";
 
 /**
@@ -195,9 +197,7 @@ export function getHotUpdateInfo(): HotUpdateInfo {
 export function applyHotRestart(): void {
   log.info("Relaunching application to activate staged hot update");
   const args = process.argv.slice(1);
-  if (process.env.VITE_DEV_SERVER_URL && !args.some((a) => a.startsWith("--dev-server-url="))) {
-    args.push(`--dev-server-url=${process.env.VITE_DEV_SERVER_URL}`);
-  }
+  appendDevServerArg(args);
   app.relaunch({ args });
   app.exit(0);
 }

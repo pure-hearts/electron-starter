@@ -17,7 +17,6 @@ import { createTray, destroyTray } from "../modules/system/tray";
 import { initUpdater, disposeUpdater } from "../modules/update/full";
 import { recoverPendingUpdate, disposeHotUpdate } from "../modules/update/hot";
 import { configureSessionSecurity, disposeSessionSecurity } from "../session-security";
-import { registerSmokeChecks } from "./smoke";
 import { StartupLifecycle } from "../modules/system/startup-lifecycle";
 import { initGlobalShortcuts, disposeGlobalShortcuts } from "../modules/system/shortcut-module";
 import { initNetworkMonitor, disposeNetworkMonitor } from "../modules/system/network-module";
@@ -51,7 +50,6 @@ export function bootstrapMain(): void {
           log.error("Main window failed to load", code, desc);
         });
         processDeepLinkArgs(process.argv);
-        registerSmokeChecks(main);
       },
       stop: () => disposeWindows(),
     },

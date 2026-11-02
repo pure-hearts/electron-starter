@@ -3,7 +3,7 @@
  * 通道白名单限制可调用的功能，validate 检查参数数量、类型和内容。
  * safeUrl 约束下载地址；TypeScript 类型不能替代这些实际运行时检查。
  */
-import type { InvokeChannel, SettingKey } from "./ipc";
+import type { InvokeChannel, EventChannel, SettingKey } from "./ipc";
 /** Runtime validation is required even if TS types compile. */
 // 设置键也使用白名单，避免 IPC 可以操作任意配置项。
 export const SETTINGS = new Set<SettingKey>([
@@ -75,6 +75,20 @@ export const allowedChannels = new Set<InvokeChannel>([
   "diagnostics:system:get",
   "diagnostics:exportLogs",
   "app:networkStatus",
+]);
+
+// 事件白名单：仅允许页面订阅下载进度、更新状态、协议唤起和通知交互等受控系统事件。
+export const allowedEvents = new Set<EventChannel>([
+  "download:state",
+  "update:state",
+  "protocol:open",
+  "notification:clicked",
+  "notification:activated",
+  "notification:settled",
+  "window:maximize-change",
+  "theme:system:changed",
+  "network:change",
+  "settings:changed",
 ]);
 export function safeExternalUrl(input: string): URL {
   if (typeof input !== "string" || input.length > 4096) throw new Error("Invalid URL");
