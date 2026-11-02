@@ -12,6 +12,13 @@ const LONG_RUNNING_CHANNELS = new Set<string>([
   "update:check",
   "update:download",
   "download:start",
+  "fs:copy",
+  "fs:move",
+  "fs:checksum",
+  "fs:dialog:open",
+  "fs:dialog:save",
+  "fs:showOpenDialog",
+  "fs:showSaveDialog",
 ]);
 
 const DEFAULT_TIMEOUT_MS = 10_000;

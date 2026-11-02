@@ -54,6 +54,17 @@ export const bridge = new Proxy({} as DesktopBridge, {
 });
 
 /**
+ * Composition API: 获取统一强类型 IPC Bridge 实例
+ * 支持解构调用：const { invoke, on } = useIpcBridge();
+ */
+export function useIpcBridge(): DesktopBridge {
+  return bridge;
+}
+
+/** 兼容拼写别名与旧版 Hook 名称 */
+export const useIpcBrige = useIpcBridge;
+
+/**
  * Composition API: 获取统一 Bridge 实例
  */
 export function useBridge(): DesktopBridge {

@@ -6,6 +6,7 @@ import { serviceHandlers } from "./services";
 import { shellHandlers } from "./shell";
 import { themeHandlers } from "./theme";
 import { settingsHandlers } from "./settings";
+import { fsHandlers } from "./fs";
 
 export {
   systemHandlers,
@@ -14,6 +15,7 @@ export {
   shellHandlers,
   themeHandlers,
   settingsHandlers,
+  fsHandlers,
 };
 
 export const allHandlers: HandlerGroup = {
@@ -23,4 +25,5 @@ export const allHandlers: HandlerGroup = {
   ...shellHandlers,
   ...themeHandlers,
   ...settingsHandlers,
+  ...fsHandlers,
 };

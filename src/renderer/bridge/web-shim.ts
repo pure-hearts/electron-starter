@@ -491,6 +491,271 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
           return { isOnline } as InvokeResult<C>;
         }
 
+        // ----------------- 13. 文件系统 (FS API) 模拟 -----------------
+        case "fs:pathExists":
+        case "fs:exists": {
+          const p = String(args[0] || "");
+          const key = STORAGE_PREFIX + "vfs:" + p;
+          const existsInStorage = getStorageItem(key) !== null;
+          return existsInStorage as InvokeResult<C>;
+        }
+
+        case "fs:ensureDir":
+        case "fs:mkdirs":
+        case "fs:mkdir": {
+          const p = String(args[0] || "");
+          const key = STORAGE_PREFIX + "vfs:" + p;
+          if (getStorageItem(key) === null) {
+            setStorageItem(key, JSON.stringify({ isDir: true, mtime: Date.now() }));
+          }
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:ensureFile": {
+          const p = String(args[0] || "");
+          const key = STORAGE_PREFIX + "vfs:" + p;
+          if (getStorageItem(key) === null) {
+            setStorageItem(key, JSON.stringify({ content: "", isDir: false, mtime: Date.now() }));
+          }
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:ensureLink":
+        case "fs:ensureSymlink": {
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:isEmpty": {
+          const p = String(args[0] || "");
+          const raw = getStorageItem(STORAGE_PREFIX + "vfs:" + p);
+          if (!raw) return true as InvokeResult<C>;
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed.isDir) return true as InvokeResult<C>;
+            return (!parsed.content || parsed.content.length === 0) as InvokeResult<C>;
+          } catch {
+            return false as InvokeResult<C>;
+          }
+        }
+
+        case "fs:readJson": {
+          const p = String(args[0] || "");
+          const fallback = args[1];
+          const raw = getStorageItem(STORAGE_PREFIX + "vfs:" + p);
+          if (!raw) {
+            if (fallback !== undefined) return fallback as InvokeResult<C>;
+            throw new Error(`[WebShim] File not found: ${p}`);
+          }
+          try {
+            const parsed = JSON.parse(raw);
+            return JSON.parse(parsed.content ?? raw) as InvokeResult<C>;
+          } catch (err) {
+            if (fallback !== undefined) return fallback as InvokeResult<C>;
+            throw err;
+          }
+        }
+
+        case "fs:writeJson":
+        case "fs:outputJson": {
+          const p = String(args[0] || "");
+          const data = args[1];
+          const spaces = (args[2] as { spaces?: number } | undefined)?.spaces ?? 2;
+          const content = JSON.stringify(data, null, spaces);
+          setStorageItem(
+            STORAGE_PREFIX + "vfs:" + p,
+            JSON.stringify({ content, isDir: false, mtime: Date.now() }),
+          );
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:readText":
+        case "fs:readFile": {
+          const p = String(args[0] || "");
+          const opts = args[1] as { fallback?: string } | undefined;
+          const raw = getStorageItem(STORAGE_PREFIX + "vfs:" + p);
+          if (!raw) {
+            if (opts?.fallback !== undefined) return opts.fallback as InvokeResult<C>;
+            throw new Error(`[WebShim] File not found: ${p}`);
+          }
+          try {
+            const parsed = JSON.parse(raw);
+            return (parsed.content ?? raw) as InvokeResult<C>;
+          } catch {
+            return raw as InvokeResult<C>;
+          }
+        }
+
+        case "fs:writeText":
+        case "fs:outputFile":
+        case "fs:writeFile": {
+          const p = String(args[0] || "");
+          const content = String(args[1] ?? "");
+          const opts = args[2] as { append?: boolean } | undefined;
+          let finalContent = content;
+          if (opts?.append) {
+            const oldRaw = getStorageItem(STORAGE_PREFIX + "vfs:" + p);
+            if (oldRaw) {
+              try {
+                finalContent = (JSON.parse(oldRaw).content ?? "") + content;
+              } catch {
+                finalContent = oldRaw + content;
+              }
+            }
+          }
+          setStorageItem(
+            STORAGE_PREFIX + "vfs:" + p,
+            JSON.stringify({ content: finalContent, isDir: false, mtime: Date.now() }),
+          );
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:appendFile": {
+          const p = String(args[0] || "");
+          const data = String(args[1] ?? "");
+          const oldRaw = getStorageItem(STORAGE_PREFIX + "vfs:" + p);
+          let finalContent = data;
+          if (oldRaw) {
+            try {
+              finalContent = (JSON.parse(oldRaw).content ?? "") + data;
+            } catch {
+              finalContent = oldRaw + data;
+            }
+          }
+          setStorageItem(
+            STORAGE_PREFIX + "vfs:" + p,
+            JSON.stringify({ content: finalContent, isDir: false, mtime: Date.now() }),
+          );
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:readBinary": {
+          const p = String(args[0] || "");
+          const raw = getStorageItem(STORAGE_PREFIX + "vfs:" + p);
+          if (!raw) throw new Error(`[WebShim] File not found: ${p}`);
+          try {
+            const parsed = JSON.parse(raw);
+            return (parsed.content ?? "") as InvokeResult<C>;
+          } catch {
+            return "" as InvokeResult<C>;
+          }
+        }
+
+        case "fs:writeBinary": {
+          const p = String(args[0] || "");
+          const b64 = String(args[1] || "");
+          setStorageItem(
+            STORAGE_PREFIX + "vfs:" + p,
+            JSON.stringify({ content: b64, isDir: false, mtime: Date.now() }),
+          );
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:copy": {
+          const src = String(args[0] || "");
+          const dest = String(args[1] || "");
+          const raw = getStorageItem(STORAGE_PREFIX + "vfs:" + src);
+          if (raw) setStorageItem(STORAGE_PREFIX + "vfs:" + dest, raw);
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:move": {
+          const src = String(args[0] || "");
+          const dest = String(args[1] || "");
+          const raw = getStorageItem(STORAGE_PREFIX + "vfs:" + src);
+          if (raw) {
+            setStorageItem(STORAGE_PREFIX + "vfs:" + dest, raw);
+            removeStorageItem(STORAGE_PREFIX + "vfs:" + src);
+          }
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:remove":
+        case "fs:trash": {
+          const p = String(args[0] || "");
+          removeStorageItem(STORAGE_PREFIX + "vfs:" + p);
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:emptyDir": {
+          return true as InvokeResult<C>;
+        }
+
+        case "fs:readDir":
+        case "fs:readdir": {
+          return [] as InvokeResult<C>;
+        }
+
+        case "fs:stat":
+        case "fs:lstat": {
+          const p = String(args[0] || "");
+          const raw = getStorageItem(STORAGE_PREFIX + "vfs:" + p);
+          if (!raw) return null as InvokeResult<C>;
+          try {
+            const parsed = JSON.parse(raw);
+            return {
+              size: (parsed.content || "").length,
+              isFile: !parsed.isDir,
+              isDirectory: !!parsed.isDir,
+              isSymbolicLink: false,
+              mtime: parsed.mtime || Date.now(),
+              birthtime: parsed.mtime || Date.now(),
+              mode: 0o666,
+              readonly: false,
+            } as InvokeResult<C>;
+          } catch {
+            return null as InvokeResult<C>;
+          }
+        }
+
+        case "fs:checksum": {
+          return "mock-checksum-sha256" as InvokeResult<C>;
+        }
+
+        case "fs:appPaths": {
+          return {
+            home: "/mock/home",
+            appData: "/mock/appData",
+            userData: "/mock/userData",
+            temp: "/mock/temp",
+            desktop: "/mock/desktop",
+            documents: "/mock/documents",
+            downloads: "/mock/downloads",
+          } as InvokeResult<C>;
+        }
+
+        case "fs:pathInfo": {
+          const p = String(args[0] || "");
+          const lastSlash = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+          const dir = lastSlash >= 0 ? p.substring(0, lastSlash) : "";
+          const base = lastSlash >= 0 ? p.substring(lastSlash + 1) : p;
+          const dot = base.lastIndexOf(".");
+          const ext = dot > 0 ? base.substring(dot) : "";
+          const name = dot > 0 ? base.substring(0, dot) : base;
+          return {
+            root: p.startsWith("/") ? "/" : "",
+            dir,
+            dirname: dir,
+            base,
+            basename: base,
+            ext,
+            extname: ext,
+            name,
+            isAbsolute: p.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(p),
+          } as InvokeResult<C>;
+        }
+
+        case "fs:dialog:open":
+        case "fs:showOpenDialog": {
+          notifyMessage("info", "Web 模式：文件选择已模拟");
+          return ["/mock/documents/demo.txt"] as InvokeResult<C>;
+        }
+
+        case "fs:dialog:save":
+        case "fs:showSaveDialog": {
+          notifyMessage("info", "Web 模式：文件保存已模拟");
+          return "/mock/documents/saved.txt" as InvokeResult<C>;
+        }
+
         default: {
           console.warn(`[WebShim] 未知通道调用: ${String(channel)}`, args);
           return undefined as InvokeResult<C>;

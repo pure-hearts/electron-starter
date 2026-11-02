@@ -1,0 +1,32 @@
+{
+  "id": "file-system-api",
+  "name": "file-system-api",
+  "title": "Design and Implement File System API",
+  "description": "规划与实现类型安全的 Electron 文件系统 API，覆盖对话框、文件读写、目录操作与 WebShim 兼容",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "vyron",
+  "assignee": "vyron",
+  "createdAt": "2026-11-02",
+  "completedAt": "2026-11-02",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/shared/ipc.ts",
+    "src/shared/validation.ts",
+    "src/main/ipc/index.ts",
+    "src/main/ipc/handlers/index.ts",
+    "src/renderer/bridge/web-shim.ts"
+  ],
+  "notes": "",
+  "meta": {}
+}

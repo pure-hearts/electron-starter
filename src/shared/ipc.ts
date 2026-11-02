@@ -88,6 +88,129 @@ export interface DesktopInvoke {
   };
   // 网络连通状态
   "app:networkStatus": { args: []; result: { isOnline: boolean } };
+
+  // === 文件系统 API: 存在性与智能保底 (Ensure & Existence) ===
+  /** 确保目录存在；存在返回 true，不存在则递归创建后返回 true */
+  "fs:ensureDir": { args: [path: string]; result: boolean };
+  /** 兼容 mkdirs 别名 */
+  "fs:mkdirs": { args: [path: string]; result: boolean };
+  /** 确保文件存在；不存在则自动创建父级目录及空文件 */
+  "fs:ensureFile": { args: [path: string]; result: boolean };
+  /** 确保硬链接存在，自动补齐目标父级目录 */
+  "fs:ensureLink": { args: [src: string, dest: string]; result: boolean };
+  /** 确保符号链接存在，自动补齐目标父级目录 */
+  "fs:ensureSymlink": {
+    args: [src: string, dest: string, type?: "dir" | "file" | "junction"];
+    result: boolean;
+  };
+  /** 判断目标路径是否存在 */
+  "fs:exists": { args: [path: string]; result: boolean };
+  /** 兼容 pathExists 别名 */
+  "fs:pathExists": { args: [path: string]; result: boolean };
+  /** 检查目录是否为空目录，或文件是否为 0 字节 */
+  "fs:isEmpty": { args: [path: string]; result: boolean };
+
+  // === 文件系统 API: 便捷读写与结构化数据 (Convenient Read/Write) ===
+  /** 读取并反序列化 JSON，支持 fallback 兜底默认值 */
+  "fs:readJson": { args: [path: string, fallback?: unknown]; result: unknown };
+  /** 写入 JSON 数据，自动创建父级目录并格式化缩进 */
+  "fs:writeJson": {
+    args: [path: string, data: unknown, options?: { spaces?: number }];
+    result: boolean;
+  };
+  /** 兼容 outputJson 别名 */
+  "fs:outputJson": {
+    args: [path: string, data: unknown, options?: { spaces?: number }];
+    result: boolean;
+  };
+  /** 读取 UTF-8 文本内容，支持 fallback 兜底与 50MB 阈值保护 */
+  "fs:readText": {
+    args: [path: string, options?: { encoding?: "utf-8" | "ascii"; fallback?: string }];
+    result: string;
+  };
+  /** 写入文本内容，自动补齐父级目录，支持覆盖或 append 追加 */
+  "fs:writeText": {
+    args: [
+      path: string,
+      content: string,
+      options?: { encoding?: "utf-8" | "base64"; append?: boolean },
+    ];
+    result: boolean;
+  };
+  /** 兼容 outputFile 别名 */
+  "fs:outputFile": {
+    args: [
+      path: string,
+      data: string,
+      options?: { encoding?: "utf-8" | "base64"; append?: boolean },
+    ];
+    result: boolean;
+  };
+  /** 读取二进制文件并转为 Base64 编码字符串（带 50MB 保护） */
+  "fs:readBinary": { args: [path: string]; result: string };
+  /** 将 Base64 编码数据写入二进制文件，自动补齐父目录 */
+  "fs:writeBinary": { args: [path: string, base64Data: string]; result: boolean };
+  /** 标准文件异步读取 */
+  "fs:readFile": {
+    args: [path: string, options?: { encoding?: "utf-8" | "base64" }];
+    result: string;
+  };
+  /** 标准文件异步写入 */
+  "fs:writeFile": {
+    args: [path: string, data: string, options?: { encoding?: "utf-8" | "base64" }];
+    result: boolean;
+  };
+  /** 追加文件内容 */
+  "fs:appendFile": {
+    args: [path: string, data: string, options?: { encoding?: "utf-8" }];
+    result: boolean;
+  };
+
+  // === 文件系统 API: 高级文件管理 (Copy, Move, Remove, Clean) ===
+  /** 递归复制文件或整个目录树 */
+  "fs:copy": { args: [src: string, dest: string, options?: FsCopyOptions]; result: boolean };
+  /** 移动文件或目录，底层支持跨分区 EXDEV 自动降级与目标父目录补齐 */
+  "fs:move": { args: [src: string, dest: string, options?: FsMoveOptions]; result: boolean };
+  /** 幂等安全删除文件或目录（类似 rm -rf，路径不存在静默返回 true） */
+  "fs:remove": { args: [path: string]; result: boolean };
+  /** 清空目录内所有子文件与子目录，保留目录本身 */
+  "fs:emptyDir": { args: [path: string]; result: boolean };
+  /** 安全移至系统废纸篓/回收站（防误删） */
+  "fs:trash": { args: [path: string]; result: boolean };
+  /** 创建目录 */
+  "fs:mkdir": { args: [path: string, options?: { recursive?: boolean }]; result: boolean };
+
+  // === 文件系统 API: 目录检索与元数据完整性 (Inspection & Integrity) ===
+  /** 扫描目录下所有条目清单（含名称、类型、大小、修改时间） */
+  "fs:readDir": {
+    args: [path: string, options?: { recursive?: boolean; maxDepth?: number }];
+    result: FsEntry[];
+  };
+  /** 兼容 readdir 别名 */
+  "fs:readdir": {
+    args: [path: string, options?: { recursive?: boolean; maxDepth?: number }];
+    result: FsEntry[];
+  };
+  /** 获取文件或目录属性元数据 */
+  "fs:stat": { args: [path: string]; result: FsStat | null };
+  /** 获取符号链接属性元数据 */
+  "fs:lstat": { args: [path: string]; result: FsStat | null };
+  /** 主进程管道流式计算文件散列摘要（MD5 / SHA256） */
+  "fs:checksum": { args: [path: string, algorithm?: "md5" | "sha256"]; result: string };
+
+  // === 文件系统 API: 系统路径与原生对话框 (Paths & Dialogs) ===
+  /** 获取常用预设标准基准路径字典（userData, documents, downloads 等） */
+  "fs:appPaths": { args: []; result: AppPaths };
+  /** 解析路径结构信息（root, dir, base, ext, name, isAbsolute） */
+  "fs:pathInfo": { args: [path: string]; result: FsPathInfo };
+  /** 唤起系统原生文件/目录打开选择对话框 */
+  "fs:dialog:open": { args: [options?: FsOpenDialogOptions]; result: string[] | null };
+  /** 唤起系统原生文件保存对话框 */
+  "fs:dialog:save": { args: [options?: FsSaveDialogOptions]; result: string | null };
+  /** 兼容 showOpenDialog 别名 */
+  "fs:showOpenDialog": { args: [options?: FsOpenDialogOptions]; result: string[] | null };
+  /** 兼容 showSaveDialog 别名 */
+  "fs:showSaveDialog": { args: [options?: FsSaveDialogOptions]; result: string | null };
 }
 // 只允许存取这些明确列出的设置，不能把任意名称映射成文件系统操作。
 export type SettingKey =
@@ -211,4 +334,89 @@ export type EventChannel = keyof DesktopEvents;
 export interface DesktopBridge {
   invoke<C extends InvokeChannel>(channel: C, ...args: InvokeArgs<C>): Promise<InvokeResult<C>>;
   on<E extends EventChannel>(channel: E, callback: (payload: DesktopEvents[E]) => void): () => void;
+}
+
+/** 文件或目录元数据属性 */
+export interface FsStat {
+  size: number;
+  isFile: boolean;
+  isDirectory: boolean;
+  isSymbolicLink: boolean;
+  mtime: number;
+  birthtime: number;
+  mode: number;
+  readonly: boolean;
+}
+
+/** 目录检索条目信息 */
+export interface FsEntry {
+  name: string;
+  path: string;
+  isFile: boolean;
+  isDirectory: boolean;
+  isSymbolicLink: boolean;
+  size?: number;
+  mtime?: number;
+}
+
+/** 文件/目录复制选项 */
+export interface FsCopyOptions {
+  overwrite?: boolean;
+  errorOnExist?: boolean;
+}
+
+/** 文件/目录移动选项 */
+export interface FsMoveOptions {
+  overwrite?: boolean;
+}
+
+/** 原生打开文件/目录对话框选项 */
+export interface FsOpenDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  buttonLabel?: string;
+  filters?: { name: string; extensions: string[] }[];
+  properties?: Array<
+    | "openFile"
+    | "openDirectory"
+    | "multiSelections"
+    | "showHiddenFiles"
+    | "createDirectory"
+    | "promptToCreate"
+  >;
+}
+
+/** 原生保存文件对话框选项 */
+export interface FsSaveDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  buttonLabel?: string;
+  filters?: { name: string; extensions: string[] }[];
+}
+
+/** 路径结构解析信息 */
+export interface FsPathInfo {
+  root: string;
+  dir: string;
+  dirname: string;
+  base: string;
+  basename: string;
+  ext: string;
+  extname: string;
+  name: string;
+  isAbsolute: boolean;
+}
+
+/** 常用系统基准目录字典 */
+export interface AppPaths {
+  home: string;
+  appData: string;
+  userData: string;
+  temp: string;
+  desktop: string;
+  documents: string;
+  downloads: string;
+  pictures?: string;
+  music?: string;
+  videos?: string;
 }
