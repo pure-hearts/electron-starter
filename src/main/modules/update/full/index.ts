@@ -7,10 +7,13 @@ import { runtimeConfig } from "../../core/config";
 import { UpdateGate } from "./gate";
 import { validateUpdateFeedUrl } from "./feed-url";
 import { notifyBusiness } from "../../notification";
+
 // 防止重复绑定 autoUpdater 事件，重复绑定会触发多次页面状态通知。
 let configured = false;
+
 // 更新门禁：检查中禁止并发请求，下载未完成禁止触发安装。
 const gate = new UpdateGate();
+
 /** 初始化 Feed 地址及更新事件监听；应用启动期间通常只调用一次。 */
 export function initUpdater() {
   if (configured) return;

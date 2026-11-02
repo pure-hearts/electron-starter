@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { resolveRendererAsset } from "../../src/main/modules/core/resource-path";
+
 function fixture(run: (root: string, outside: string) => void) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "renderer-assets-"));
   const root = path.join(dir, "dist");

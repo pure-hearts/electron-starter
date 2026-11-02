@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { parseHotPointer } from "../../src/main/modules/update/hot/pointer";
+
 const valid = {
   revision: 2,
   directory: "rev-2",

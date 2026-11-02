@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { activeRendererRoot } from "../update/hot";
 import { resolveRendererAsset } from "../core/resource-path";
+
 // 应在 app.whenReady 前注册 app 自定义资源协议为受信任标准协议。
 protocol.registerSchemesAsPrivileged([
   {
@@ -11,12 +12,15 @@ protocol.registerSchemesAsPrivileged([
     privileges: { secure: true, standard: true, supportFetchAPI: true, stream: true },
   },
 ]);
+
 /** 创建生产构建页面地址；与用于外部唤起的 electron-starter:// 不同。 */
 export function rendererURL(resource = "/") {
   return "app://renderer" + (resource.startsWith("/") ? resource : "/" + resource);
 }
-/** 注册 app:// 资源处理器，读取当前生效的渲染资源目录。 */
+
 let resourceRegistered = false;
+
+/** 注册 app:// 资源处理器，读取当前生效的渲染资源目录。 */
 export function registerResourceProtocol() {
   if (resourceRegistered) return;
   protocol.handle("app", (req) => {

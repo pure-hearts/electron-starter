@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { DeepLinkInbox } from "../../src/main/modules/protocol/deep-link-inbox";
+
 describe("native deep link handoff regressions", () => {
   it("buffers multiple cold-launch activations in order, exactly once", () => {
     const inbox = new DeepLinkInbox("electron-starter");

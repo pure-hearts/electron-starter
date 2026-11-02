@@ -9,6 +9,7 @@ import type {
   NotificationActivation,
   NotificationSettled,
 } from "./notification";
+
 /** Shared IPC channel names, payloads, and subscription events. */
 // 以通道名称作为键，args 是可传入参数元组，result 是 Promise 解析后的结果类型。
 export interface DesktopInvoke {

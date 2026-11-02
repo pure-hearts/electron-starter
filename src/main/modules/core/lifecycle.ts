@@ -1,6 +1,7 @@
 /** 应用生命周期控制：区分"关闭窗口到托盘"和"真正退出整个程序"。 */
 import { app } from "electron";
 import { appendDevServerArg } from "../../dev";
+
 // quitting 标记供窗口 close 事件判断：真正退出时不能再拦截关闭并隐藏窗口。
 let quitting = false;
 /** 查询是否正在彻底退出，避免托盘模式阻止应用关闭。 */

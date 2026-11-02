@@ -50,7 +50,13 @@ export default defineConfig({
   // envDir 指向仓库根目录，允许各模式加载根目录下对应的 .env 文件。
   envDir: rootDir,
   check: { fmt: true },
-  lint: { options: { typeAware: true, typeCheck: true } },
+  lint: {
+    options: { typeAware: true, typeCheck: true },
+    plugins: ["import"],
+    rules: {
+      "import/newline-after-import": "error",
+    },
+  },
   test: { root: rootDir, include: ["tests/**/*.test.ts"] },
   publicDir: "../../public",
   // 支持环境变量覆盖基础路由子路径

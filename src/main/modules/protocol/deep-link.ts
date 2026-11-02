@@ -8,20 +8,26 @@ import { DeepLinkInbox } from "./deep-link-inbox";
 
 // 外部软件通过自定义协议 (如 electron-starter://...) 唤起已安装应用。
 export const DEEP_LINK_SCHEME = runtimeConfig().deepLinkScheme;
+
 const inbox = new DeepLinkInbox(DEEP_LINK_SCHEME);
+
 // 用于判断页面是否已开始接收实时 Deep Link 事件。
 let rendererSubscribed = false;
+
 export function markDeepLinkRendererUnready(): void {
   rendererSubscribed = false;
 }
+
 /** 页面订阅完成后领取历史积压链接，并清空队列防止重复处理。 */
 export function consumePendingDeepLinks(): string[] {
   rendererSubscribed = true;
   return inbox.drain();
 }
+
 function deepLinkFromArgs(args: string[]) {
   return args.find((x) => x.startsWith(DEEP_LINK_SCHEME + "://"));
 }
+
 /** 处理系统传入的链接；冷启动时先入队，窗口可用且订阅后再广播。 */
 export function handleDeepLink(input: string) {
   const url = inbox.accept(input);
@@ -41,12 +47,15 @@ export function handleDeepLink(input: string) {
     }
   }
 }
+
 /** 注册操作系统协议关联，并监听 macOS 的 open-url 事件。 */
 const onOpenUrl = (event: Electron.Event, url: string) => {
   event.preventDefault();
   handleDeepLink(url);
 };
+
 let deepLinkRegistered = false;
+
 export function registerDeepLink() {
   if (deepLinkRegistered) return;
   // 开发模式需要附加脚本入口参数；打包后则只注册可执行文件。

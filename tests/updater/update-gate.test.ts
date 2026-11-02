@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { UpdateGate } from "../../src/main/modules/update/full/gate";
+
 describe("full update state gate", () => {
   it("rejects concurrent checks and installation before download", () => {
     const gate = new UpdateGate();

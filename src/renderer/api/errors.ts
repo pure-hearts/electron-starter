@@ -1,4 +1,5 @@
 import axios from "axios";
+
 export type RequestFailureKind = "cancelled" | "timeout" | "http" | "network" | "unknown";
 export class RequestError extends Error {
   constructor(

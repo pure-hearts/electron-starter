@@ -1,6 +1,8 @@
 /** 会话策略先于页面创建安装，退出时才释放；应用运行期间始终拒绝系统权限。 */
 import { session } from "electron";
+
 let configured = false;
+
 export function configureSessionSecurity(): void {
   if (configured) return;
   configured = true;

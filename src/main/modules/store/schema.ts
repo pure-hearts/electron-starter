@@ -1,12 +1,16 @@
 /** 持久化配置的数据结构、默认值和旧版本迁移规则。 */
 import type { SettingKey, UserSettings } from "../../../shared/ipc";
+
 // SettingKey 约束用户能够存储的字段名称。
 export type SettingsValues = Record<SettingKey, string | boolean | number>;
+
 export interface SettingsState extends SettingsValues {
   schemaVersion: number;
 }
+
 // 增加配置字段或迁移行为时，按需提高结构版本号。
 export const CURRENT_SETTINGS_VERSION = 2;
+
 // 全新安装或无效字段回退时使用这些默认值。
 export const settingsDefaults: SettingsState = {
   schemaVersion: CURRENT_SETTINGS_VERSION,

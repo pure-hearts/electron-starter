@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+
 const fake = vi.hoisted(() => ({ state: {} as Record<string, unknown>, writes: vi.fn() }));
 vi.mock("electron-store", () => ({
   default: class {

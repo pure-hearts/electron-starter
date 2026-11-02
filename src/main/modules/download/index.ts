@@ -14,6 +14,7 @@ import { notifyBusiness } from "../notification";
 import { getSetting } from "../store";
 
 let downloadSettings: Store<{ concurrency: number }> | null = null;
+
 function currentDownloadSettings(): Store<{ concurrency: number }> {
   downloadSettings ??= new Store<{ concurrency: number }>({
     name: "download-settings",

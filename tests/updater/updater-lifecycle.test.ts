@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { EventEmitter } from "node:events";
+
 const mocks = vi.hoisted(() => ({
   broadcast: vi.fn(),
   notify: vi.fn(),

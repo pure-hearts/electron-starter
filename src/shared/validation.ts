@@ -4,6 +4,7 @@
  * safeUrl、safeLocalPath 等工具函数用于具体的独立安全约束。
  */
 import type { InvokeChannel, EventChannel, SettingKey } from "./ipc";
+
 /** Runtime validation is required even if TS types compile. */
 // 设置键也使用白名单，避免 IPC 可以操作任意配置项。
 export const SETTINGS = new Set<SettingKey>([

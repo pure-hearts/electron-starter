@@ -1,10 +1,12 @@
-import { platform } from "../../platform";
 /** electron-log 日志入口：在主进程写诊断日志，并限制渲染层日志内容。 */
+import { platform } from "../../platform";
 import log from "electron-log/main";
 import { app } from "electron";
 import { redactLogMessage } from "./log-redaction";
+
 // 统一导出 logger，其他主进程模块共享相同的日志设置。
 export { log };
+
 /** 初始化文件日志；不自动镜像全部网页 console，减少无关与敏感内容。 */
 export function initLogger() {
   // Electron 主进程启动后才初始化日志传输器。

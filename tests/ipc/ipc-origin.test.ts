@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { isTrustedIpcOrigin } from "../../src/main/ipc/origin";
+
 describe("IPC sender origin", () => {
   it("接受应用页面与本地开发服务", () => {
     expect(isTrustedIpcOrigin("app://renderer/index.html")).toBe(true);
