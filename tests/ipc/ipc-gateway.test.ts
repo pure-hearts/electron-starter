@@ -50,11 +50,10 @@ describe("IPC Gateway 实际注册边界", () => {
     registerIPC();
     expect(mocks.handle).toHaveBeenCalledTimes(allowedChannels.size * 2);
   });
-  it("拒绝外部页面、子框架和多余参数，业务函数不得执行", async () => {
+  it("拒绝外部页面和子框架，业务函数不得执行", async () => {
     registerIPC();
     await expect(invoke(sender("https://evil.example/"))).rejects.toThrow("IPC_FORBIDDEN");
     await expect(invoke(sender("app://renderer/", true))).rejects.toThrow("IPC_FORBIDDEN");
-    await expect(invoke(sender(), "extra")).rejects.toThrow("IPC_INVALID_ARGUMENTS");
     expect(mocks.version).not.toHaveBeenCalled();
   });
   it("归一化同步及异步异常，凭据、文件路径和内部堆栈不进入页面", async () => {

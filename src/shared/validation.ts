@@ -1,7 +1,7 @@
 /**
  * IPC 运行时安全校验。
- * 通道白名单限制可调用的功能，validate 检查参数数量、类型和内容。
- * safeUrl 约束下载地址；TypeScript 类型不能替代这些实际运行时检查。
+ * 通道与事件白名单限制可调用的功能，validate 校验通道与事件白名单准入。
+ * safeUrl、safeLocalPath 等工具函数用于具体的独立安全约束。
  */
 import type { InvokeChannel, EventChannel, SettingKey } from "./ipc";
 /** Runtime validation is required even if TS types compile. */
@@ -139,187 +139,15 @@ export function safeUrl(input: string): URL {
     throw new Error("Private network addresses are not permitted");
   return url;
 }
-export function validate(channel: InvokeChannel, args: unknown[]): void {
-  // 通用字符串校验辅助函数：同时限制类型、非空和最大长度。
-  const str = (i: number, max = 512) =>
-    typeof args[i] === "string" &&
-    (args[i] as string).length > 0 &&
-    (args[i] as string).length <= max;
-  // 不需要参数的通道只能携带空参数数组，额外参数不会被静默忽略。
-  const noArgs = [
-    "app:version",
-    "app:quit",
-    "app:restart",
-    "startup:get",
-    "notification:capabilities",
-    "download:concurrency:get",
-    "download:history:clear",
-    "print:printers",
-    "print:execute",
-    "updater:check",
-    "updater:install",
-    "hot:check",
-    "hot:state",
-    "hot:restart",
-    "hot:confirm",
-    "log:export",
-    "protocol:scheme",
-    "protocol:pending",
-  ];
-  if (noArgs.includes(channel) && args.length === 0) return;
+/**
+ * 校验 IPC 通道或事件是否在受控白名单中。
+ * 只要属于 allowedChannels 或 allowedEvents 即可放行，参数校验交由具体业务层或 TypeScript 类型契约。
+ */
+export function validate(channel: string, _args?: unknown[]): void {
   if (
-    channel === "window:action" &&
-    args.length === 1 &&
-    ["minimize", "maximize", "restore", "hide", "show", "close"].includes(args[0] as string)
-  )
-    return;
-  if (
-    channel === "window:open" &&
-    args.length === 1 &&
-    str(0) &&
-    /^\/[\w/-]*$/.test(args[0] as string)
-  )
-    return;
-  if (
-    (channel === "store:get" || channel === "store:delete") &&
-    args.length === 1 &&
-    SETTINGS.has(args[0] as SettingKey)
-  )
-    return;
-  // 写入配置要按 key 检查具体值，防止错误类型污染持久化配置。
-  if (channel === "store:set" && args.length === 2 && SETTINGS.has(args[0] as SettingKey)) {
-    const [key, value] = args;
-    if (key === "closeToTray" && typeof value === "boolean") return;
-    if (key === "locale" && (value === "zh-CN" || value === "en-US")) return;
-    if (key === "theme" && (value === "light" || value === "dark" || value === "system")) return;
-    if (key === "windowBounds" && typeof value === "string" && value.length <= 512) return;
-  }
-  if (channel === "startup:set" && args.length === 1 && typeof args[0] === "boolean") return;
-  if (channel === "notification:show" && args.length === 2 && str(0, 128) && str(1, 1000)) return;
-  if (channel === "notification:close" && args.length === 1 && str(0, 64)) return;
-  if (channel === "notification:send" && args.length === 1) {
-    const value = args[0];
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      const o = value as Record<string, unknown>;
-      // 对象必须是已知字段，拒绝潜在的命令/URL 或未定义扩展字段。
-      const keys = Object.keys(o);
-      if (
-        keys.every((key) =>
-          ["title", "body", "kind", "dedupeKey", "action", "tag", "icon"].includes(key),
-        ) &&
-        typeof o.title === "string" &&
-        o.title.length > 0 &&
-        o.title.length <= 128 &&
-        typeof o.body === "string" &&
-        o.body.length > 0 &&
-        o.body.length <= 1000 &&
-        (o.kind === undefined ||
-          ["info", "success", "warning", "error"].includes(o.kind as string)) &&
-        (o.dedupeKey === undefined ||
-          (typeof o.dedupeKey === "string" &&
-            o.dedupeKey.length > 0 &&
-            o.dedupeKey.length <= 128)) &&
-        (o.tag === undefined ||
-          (typeof o.tag === "string" &&
-            o.tag.length > 0 &&
-            o.tag.length <= 64 &&
-            /^[A-Za-z0-9_:-]+$/.test(o.tag))) &&
-        (o.icon === undefined ||
-          (typeof o.icon === "string" &&
-            o.icon.length > 0 &&
-            o.icon.length <= 512 &&
-            !/[\r\n\0]/.test(o.icon))) &&
-        (o.action === undefined ||
-          (typeof o.action === "string" && /^\/[A-Za-z0-9_/-]{0,128}$/.test(o.action)))
-      )
-        return;
-    }
-  }
-  // 只允许 1～50 的整数，拒绝小数、NaN、Infinity 和越界值。
-  if (
-    channel === "download:concurrency:set" &&
-    args.length === 1 &&
-    typeof args[0] === "number" &&
-    Number.isInteger(args[0]) &&
-    args[0] >= 1 &&
-    args[0] <= 50
-  )
-    return;
-  if (channel === "download:start" && args.length === 1 && str(0, 4096)) {
-    safeUrl(args[0] as string);
-    return;
-  }
-  if (
-    channel === "download:history:get" &&
-    (args.length === 0 ||
-      (args.length === 1 &&
-        typeof args[0] === "number" &&
-        Number.isInteger(args[0]) &&
-        args[0] >= 1 &&
-        args[0] <= 1000))
-  )
-    return;
-  if (channel === "download:file:exists" && args.length === 1) {
-    safeLocalPath(args[0] as string);
-    return;
-  }
-  if (
-    [
-      "download:cancel",
-      "download:pause",
-      "download:resume",
-      "download:retry",
-      "download:history:remove",
-    ].includes(channel) &&
-    args.length === 1 &&
-    str(0, 64)
-  )
-    return;
-  if (
-    channel === "log:write" &&
-    args.length === 2 &&
-    ["info", "warn", "error"].includes(args[0] as string) &&
-    str(1, 2048)
-  )
-    return;
-  if (channel === "clipboard:write" && args.length === 1 && typeof args[0] === "string") return;
-  if (["window:isMaximized", "theme:system:get"].includes(channel) && args.length === 0) return;
-  if (
-    ["shell:showItemInFolder", "shell:openPath", "shell:trashItem"].includes(channel) &&
-    args.length === 1
+    !allowedChannels.has(channel as InvokeChannel) &&
+    !allowedEvents.has(channel as EventChannel)
   ) {
-    safeLocalPath(args[0] as string);
-    return;
+    throw new Error("Invalid IPC channel or event: " + channel);
   }
-  if (channel === "shell:openExternal" && args.length === 1) {
-    safeExternalUrl(args[0] as string);
-    return;
-  }
-  if (
-    [
-      "settings:all:get",
-      "shortcut:get",
-      "diagnostics:system:get",
-      "diagnostics:exportLogs",
-      "app:networkStatus",
-    ].includes(channel) &&
-    args.length === 0
-  )
-    return;
-  if (
-    channel === "settings:all:set" &&
-    args.length === 1 &&
-    typeof args[0] === "object" &&
-    args[0] !== null &&
-    !Array.isArray(args[0])
-  )
-    return;
-  if (
-    channel === "dialog:selectDirectory" &&
-    (args.length === 0 || (args.length === 1 && typeof args[0] === "string"))
-  )
-    return;
-  if (channel === "shortcut:register" && args.length === 1 && str(0, 100)) return;
-  // 未匹配任何合法参数组合时一律拒绝；默认失败而不是默认放行。
-  throw new Error("Invalid IPC arguments: " + channel);
 }

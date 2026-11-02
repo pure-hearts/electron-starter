@@ -1,6 +1,5 @@
 /** electron-store 持久化用户偏好：首次使用时初始化，发现旧结构后迁移。 */
 import Store from "electron-store";
-import { validate } from "../../../shared/validation";
 import type { SettingKey } from "../../../shared/ipc";
 import {
   migrateSettings,
@@ -41,9 +40,18 @@ export function getSetting(key: SettingKey): string | boolean | null {
   const value = currentStore().get(key);
   return typeof value === "string" || typeof value === "boolean" ? value : null;
 }
-/** 使用同一份纯校验规则，保护非 IPC 的内部写入调用。 */
+function assertSettingValue(key: SettingKey, value: unknown): void {
+  if (key === "closeToTray" && typeof value !== "boolean") throw new Error("Invalid boolean");
+  if (key === "locale" && value !== "zh-CN" && value !== "en-US") throw new Error("Invalid locale");
+  if (key === "theme" && value !== "light" && value !== "dark" && value !== "system")
+    throw new Error("Invalid theme");
+  if (key === "windowBounds" && (typeof value !== "string" || value.length > 512))
+    throw new Error("Invalid windowBounds");
+}
+
+/** 保护非 IPC 的内部写入调用，防止非法值污染配置。 */
 export function setSetting(key: SettingKey, value: string | boolean): void {
-  validate("store:set", [key, value]);
+  assertSettingValue(key, value);
   currentStore().set(key, value);
 }
 /** 删除指定配置项，随后读取时恢复到 Store 预设默认值。 */

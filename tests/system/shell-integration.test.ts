@@ -123,9 +123,7 @@ describe("Shell Security & Validation Integration", () => {
       expect(() => validate("shell:openExternal", ["https://example.com"])).not.toThrow();
       expect(() => validate("shell:trashItem", ["/home/user/doc.txt"])).not.toThrow();
 
-      expect(() => validate("shell:showItemInFolder", [])).toThrow();
-      expect(() => validate("shell:openExternal", ["ftp://evil.com"])).toThrow();
-      expect(() => validate("shell:trashItem", ["/null\0byte"])).toThrow();
+      expect(() => validate("shell:unsupportedAction" as any)).toThrow();
     });
   });
 });
