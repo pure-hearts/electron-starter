@@ -1,7 +1,7 @@
-import { defineConfig, presetUno } from "unocss";
+import { defineConfig, presetWind3 } from "unocss";
 
 export default defineConfig({
-  presets: [presetUno()],
+  presets: [presetWind3()],
   rules: [
     ["drag", { "-webkit-app-region": "drag" }],
     ["no-drag", { "-webkit-app-region": "no-drag" }],
