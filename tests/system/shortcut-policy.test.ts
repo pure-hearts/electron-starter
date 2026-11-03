@@ -12,6 +12,8 @@ function isValidAccelerator(input: string): boolean {
 describe("Global shortcut accelerator validation", () => {
   it("accepts valid electron accelerators", () => {
     expect(isValidAccelerator("CommandOrControl+Shift+X")).toBe(true);
+    expect(isValidAccelerator("CommandOrControl+,")).toBe(true);
+    expect(isValidAccelerator("CommandOrControl+J")).toBe(true);
     expect(isValidAccelerator("Ctrl+Alt+K")).toBe(true);
     expect(isValidAccelerator("F11")).toBe(true);
     expect(isValidAccelerator("CommandOrControl+Alt+Left")).toBe(true);

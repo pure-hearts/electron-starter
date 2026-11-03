@@ -8,7 +8,7 @@ import { platform } from "../../platform";
 function linuxAutostartPath(): string {
   const home = app.getPath("home");
   const config = process.env.XDG_CONFIG_HOME || path.join(home, ".config");
-  const desktopName = process.env.APP_NAME || "electron-starter";
+  const desktopName = process.env.APP_NAME || "electron-vue-template";
   return path.join(config, "autostart", `${desktopName}.desktop`);
 }
 

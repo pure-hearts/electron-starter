@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type { SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "../stores/app";
@@ -10,6 +11,8 @@ import { useDownloadStore, formatBytes, formatSpeed, formatEta } from "../stores
 import type { DownloadState, UpdateState, HotUpdateResult, HotUpdateInfo } from "../../shared/ipc";
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const desktop = window.$ipcBridge;
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
@@ -21,6 +24,23 @@ const downloadConcurrency = ref(10);
 const closeToTray = ref(false);
 const startupEnabled = ref(false);
 const activeTab = ref<"window" | "transfer" | "update">("window");
+
+// 与路由 Query 中的 tab 双向同步
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab === "window" || newTab === "transfer" || newTab === "update") {
+      activeTab.value = newTab;
+    }
+  },
+  { immediate: true },
+);
+
+watch(activeTab, (val) => {
+  if (route.path === "/playground" && route.query.tab !== val) {
+    void router.replace({ query: { ...route.query, tab: val } });
+  }
+});
 
 // 独立 Loading 状态字典
 const loadingMap = ref<Record<string, boolean>>({});
@@ -151,7 +171,7 @@ function updateCloseToTray(enabled: boolean) {
 }
 
 // ----------------- 系统原生 Shell 与外观体验 -----------------
-const externalTestUrl = ref("https://github.com/pure-hearts/electron-starter");
+const externalTestUrl = ref("https://github.com/pure-hearts/electron-vue-template");
 const folderTestPath = ref("");
 const trashTestPath = ref("");
 
@@ -207,7 +227,7 @@ async function handleConfirmTrash() {
 // ----------------- Tab 2: 数据与传输 + VueUse useAxios -----------------
 const defaultDownloadURL =
   import.meta.env.VITE_APP_DOWNLOAD_TEST_URL ||
-  "https://github.com/pure-hearts/electron-starter/releases/download/v0.1.0/latest.yml";
+  "https://github.com/pure-hearts/electron-vue-template/releases/download/v0.1.0/latest.yml";
 const downloadURL = ref(defaultDownloadURL);
 const downloads = computed(() => downloadStore.activeList);
 const printList = ref<string[]>([]);
@@ -225,7 +245,7 @@ const apiPresets = [
   { label: "JSONPlaceholder (Mock)", url: "https://jsonplaceholder.typicode.com/todos/1" },
   {
     label: "GitHub API (易限流)",
-    url: "https://api.github.com/repos/pure-hearts/electron-starter",
+    url: "https://api.github.com/repos/pure-hearts/electron-vue-template",
   },
 ];
 const apiTestURL = ref(apiPresets[0].url);
@@ -671,7 +691,9 @@ onUnmounted(() => {
                       <button
                         type="button"
                         class="preset-chip"
-                        @click="externalTestUrl = 'https://github.com/pure-hearts/electron-starter'"
+                        @click="
+                          externalTestUrl = 'https://github.com/pure-hearts/electron-vue-template'
+                        "
                       >
                         {{ t("playgroundView.shell.externalPresetGithub") }}
                       </button>

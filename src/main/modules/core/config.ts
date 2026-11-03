@@ -14,7 +14,7 @@ export interface RuntimeConfig {
 const empty: RuntimeConfig = {
   appUpdateUrl: process.env.APP_UPDATE_URL || "",
   hotUpdateUrl: process.env.HOT_UPDATE_URL || "",
-  deepLinkScheme: process.env.APP_DEEP_LINK_SCHEME || "electron-starter",
+  deepLinkScheme: process.env.APP_DEEP_LINK_SCHEME || "electron-vue-template",
 };
 
 /** 读取 resources/app-config.json，并结合环境变量进行覆盖后返回规范结构。 */
@@ -46,7 +46,7 @@ export function runtimeConfig(): RuntimeConfig {
       process.env.APP_DEEP_LINK_SCHEME ||
       (typeof fileConfig.deepLinkScheme === "string" && fileConfig.deepLinkScheme.trim() !== ""
         ? fileConfig.deepLinkScheme
-        : "electron-starter");
+        : "electron-vue-template");
 
     return {
       appUpdateUrl,

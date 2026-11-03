@@ -20,7 +20,7 @@ export const serviceHandlers = {
   "log:write": (_e, [level, text]) =>
     writeRendererLog(level as "info" | "warn" | "error", text as string),
   "log:export": async () => {
-    const defaultLogName = `${process.env.APP_NAME || "electron-starter"}.log`;
+    const defaultLogName = `${process.env.APP_NAME || "electron-vue-template"}.log`;
     const result = await dialog.showSaveDialog({
       title: "导出诊断日志",
       defaultPath: defaultLogName,

@@ -1,15 +1,16 @@
 {
-  "name": "electron-starter",
+  "name": "electron-vue-template",
   "version": "0.1.4",
   "private": true,
-  "description": "Lean Electron + Vue 3 + TypeScript + Vite+ starter",
+  "description": "Lean Electron + Vue 3 + TypeScript + Vite+ template",
   "author": {
-    "name": "Electron Starter Maintainers",
+    "name": "Electron Vue Template Maintainers",
     "email": "replace-before-release@example.com"
   },
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
+    "init:app": "node --experimental-strip-types scripts/init-app.ts",
     "dev": "vp dev",
     "dev:web": "TARGET_PLATFORM=web vp dev",
     "build": "vp build",
@@ -61,5 +62,5 @@
     "node": ">=24"
   },
   "packageManager": "pnpm@11.27.1",
-  "desktopName": "electron-starter"
+  "desktopName": "electron-vue-template"
 }

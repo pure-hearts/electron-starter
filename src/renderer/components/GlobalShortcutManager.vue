@@ -1,57 +1,178 @@
 <template>
-  <div class="global-shortcut-manager">
-    <!-- 主操作栏 -->
-    <div class="manager-bar flex flex-wrap items-center gap-3">
-      <!-- 录制输入器 -->
-      <ShortcutRecorder
-        :model-value="modelValue"
-        :disabled="disabled || isRegistering"
-        @update:model-value="onShortcutChange"
-        @error="onRecorderError"
-      />
+  <div class="shortcut-center-container">
+    <!-- 头部工具操作栏 -->
+    <div class="table-toolbar flex-between">
+      <div class="search-box">
+        <n-input
+          v-model:value="searchKeyword"
+          placeholder="按命令名称、键位 (如 Ctrl, ,) 搜索快捷键..."
+          clearable
+          size="small"
+          class="search-input"
+        >
+          <template #prefix>
+            <span class="search-icon">🔍</span>
+          </template>
+        </n-input>
+      </div>
 
-      <!-- 快捷动作按钮组 -->
-      <n-button
-        secondary
-        type="default"
-        size="small"
-        :disabled="disabled || isRegistering || isDefaultShortcut"
-        @click="resetToDefault"
-      >
-        恢复默认
-      </n-button>
-
-      <n-button text type="info" size="small" class="help-link-btn" @click="showHelpModal = true">
-        <template #icon>
-          <span class="help-icon">?</span>
-        </template>
-        快捷键排障与帮助
-      </n-button>
+      <div class="toolbar-actions flex gap-2">
+        <n-button secondary size="small" @click="handleResetAll"> 恢复全部默认 </n-button>
+        <n-button text type="info" size="small" @click="showHelpModal = true">
+          快捷键帮助与排障
+        </n-button>
+      </div>
     </div>
 
-    <!-- 冲突与状态提示信息 -->
-    <div v-if="statusFeedback.message" class="status-tip mt-2">
-      <n-alert
-        :type="statusFeedback.type"
-        :title="statusFeedback.title"
-        closable
-        @close="clearStatusTip"
-      >
-        {{ statusFeedback.message }}
+    <!-- 状态反馈提示 -->
+    <div v-if="feedbackMsg.text" class="status-alert mt-2">
+      <n-alert :type="feedbackMsg.type" closable @close="feedbackMsg.text = ''">
+        {{ feedbackMsg.text }}
       </n-alert>
+    </div>
+
+    <!-- VS Code 风格键盘快捷键表格 -->
+    <div class="shortcut-table-wrapper mt-3">
+      <table class="vscode-shortcut-table">
+        <thead>
+          <tr>
+            <th class="col-cmd">命令</th>
+            <th class="col-binding">键绑定</th>
+            <th class="col-when">当</th>
+            <th class="col-actions">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in filteredShortcuts"
+            :key="item.id"
+            class="shortcut-row"
+            :class="{ 'is-editing': editingId === item.id }"
+          >
+            <!-- 1. 命令列 -->
+            <td class="col-cmd">
+              <div class="cmd-cell">
+                <button
+                  type="button"
+                  class="edit-icon-btn"
+                  title="点击修改此快捷键"
+                  @click="startEdit(item)"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </button>
+                <div class="cmd-info">
+                  <span class="cmd-title">{{ item.name }}</span>
+                  <span v-if="item.description" class="cmd-desc">{{ item.description }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- 2. 键绑定列 -->
+            <td class="col-binding">
+              <!-- 行内编辑态：输入框录制控件 -->
+              <div v-if="editingId === item.id" class="inline-recorder-box">
+                <ShortcutRecorder
+                  :model-value="tempAccelerator"
+                  placeholder="按键盘组合键进行录制..."
+                  @update:model-value="onTempAcceleratorChange"
+                  @error="onRecorderError"
+                />
+              </div>
+
+              <!-- 静态展示态：按键标签 -->
+              <div v-else class="keybinding-display" @dblclick="startEdit(item)">
+                <template v-if="item.accelerator">
+                  <span v-for="(k, idx) in formatKeys(item.accelerator)" :key="idx" class="key-cap">
+                    {{ k.symbol }}
+                  </span>
+                </template>
+                <span v-else class="key-none">未设置快捷键</span>
+              </div>
+            </td>
+
+            <!-- 3. 生效条件 (当) 列 -->
+            <td class="col-when">
+              <span class="when-badge" :class="item.scope">
+                {{ item.when }}
+              </span>
+            </td>
+
+            <!-- 4. 操作列 (可修改，可重置，可取消) -->
+            <td class="col-actions">
+              <div v-if="editingId === item.id" class="edit-action-group">
+                <n-button
+                  type="primary"
+                  size="tiny"
+                  :loading="isSaving"
+                  :disabled="isSaving || !tempAccelerator"
+                  @click="saveEdit(item.id)"
+                >
+                  保存修改
+                </n-button>
+                <n-button
+                  secondary
+                  type="warning"
+                  size="tiny"
+                  :disabled="isSaving || tempAccelerator === item.defaultAccelerator"
+                  @click="resetSingle(item.id)"
+                >
+                  重置默认
+                </n-button>
+                <n-button
+                  secondary
+                  type="default"
+                  size="tiny"
+                  :disabled="isSaving"
+                  @click="cancelEdit"
+                >
+                  取消
+                </n-button>
+              </div>
+
+              <div v-else class="normal-action-group">
+                <n-button quaternary size="tiny" type="primary" @click="startEdit(item)">
+                  修改
+                </n-button>
+                <n-button
+                  v-if="item.accelerator !== item.defaultAccelerator"
+                  quaternary
+                  size="tiny"
+                  type="warning"
+                  @click="resetSingle(item.id)"
+                >
+                  重置
+                </n-button>
+              </div>
+            </td>
+          </tr>
+
+          <tr v-if="filteredShortcuts.length === 0">
+            <td colspan="4" class="empty-cell">未找到匹配的快捷键设置</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- 快捷键指南与排障帮助弹窗 -->
     <n-modal
       v-model:show="showHelpModal"
       preset="card"
-      title="全局快捷键设置与排障指南"
+      title="键盘快捷键设置与排障指南"
       style="max-width: 640px; border-radius: 8px"
       :bordered="false"
       size="medium"
     >
       <div class="help-modal-content space-y-4">
-        <!-- 1. 跨平台键位映射说明 -->
         <div class="help-section">
           <h4 class="text-sm font-semibold mb-2">1. 操作系统键位对应关系</h4>
           <n-table size="small" :single-line="false">
@@ -78,67 +199,18 @@
                 <td><code>⇧ Shift</code></td>
                 <td><code>Shift</code></td>
               </tr>
-              <tr>
-                <td><n-tag size="small" type="default">Control</n-tag></td>
-                <td><code>⌃ Control</code></td>
-                <td><code>Ctrl</code></td>
-              </tr>
             </tbody>
           </n-table>
         </div>
 
-        <!-- 2. 为什么系统无法识别具体冲突软件？ -->
         <div class="help-section">
-          <h4 class="text-sm font-semibold mb-1">2. 为什么无法获知哪个外部软件占用了按键？</h4>
+          <h4 class="text-sm font-semibold mb-1">2. 全局快捷键与应用内快捷键的区别</h4>
           <p class="text-xs text-neutral-500 leading-relaxed">
-            Windows 与 macOS
-            内核为了保护用户隐私和防范键盘窃听（Keylogger），设计了严格的进程安全隔离。当热键被抢占时，底层
-            API 仅返回“已被注册”布尔值或错误码，不提供持有者进程名。
+            <strong>全局系统热键</strong
+            >：即使本应用处于后台或窗口最小化，在任何其他软件中按下该键位依然能呼出本应用。<br />
+            <strong>应用内快捷键</strong
+            >：仅在当前应用窗口被激活并聚焦时响应，避免与其他桌面软件发生全局热键抢占。
           </p>
-        </div>
-
-        <!-- 3. 常见冲突软件与排查建议 -->
-        <div class="help-section">
-          <h4 class="text-sm font-semibold mb-2">3. 常见高频冲突排查排障</h4>
-          <n-collapse default-expanded-names="common-apps">
-            <n-collapse-item title="典型占用场景参考" name="common-apps">
-              <ul class="text-xs space-y-1.5 list-disc pl-4 text-neutral-600 dark:text-neutral-400">
-                <li>
-                  <strong>微信 / QQ</strong>：默认占用
-                  <code>Ctrl+Alt+A</code>、<code>Ctrl+Alt+W</code>。
-                </li>
-                <li>
-                  <strong>输入法</strong>：例如 <code>Ctrl+Space</code> 或
-                  <code>Ctrl+Shift</code> 用于中英文切换。
-                </li>
-                <li>
-                  <strong>网易云音乐 / QQ音乐</strong>：常占用
-                  <code>Ctrl+Alt+方向键</code> 切换曲目。
-                </li>
-                <li>
-                  <strong>系统保留</strong>：macOS 的 <code>Cmd+Space</code>（聚焦搜索）、Windows 的
-                  <code>Win+L</code>、<code>Ctrl+Alt+Del</code>。
-                </li>
-              </ul>
-            </n-collapse-item>
-          </n-collapse>
-        </div>
-
-        <!-- 4. 推荐安全预设 -->
-        <div class="help-section">
-          <h4 class="text-sm font-semibold mb-2">4. 推荐安全预设组合（低冲突率）</h4>
-          <div class="flex flex-wrap gap-2">
-            <n-button
-              v-for="preset in recommendedPresets"
-              :key="preset.val"
-              size="small"
-              secondary
-              type="info"
-              @click="applyPreset(preset.val)"
-            >
-              {{ preset.label }} ({{ preset.val }})
-            </n-button>
-          </div>
         </div>
       </div>
 
@@ -154,157 +226,280 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import ShortcutRecorder from "./ShortcutRecorder.vue";
+import { useShortcutsStore, type ShortcutDefinition } from "../stores/shortcuts";
+import { formatAcceleratorDisplay, isMacPlatform } from "../utils/shortcut";
+import { feedback } from "../utils/feedback";
 
-const props = withDefaults(
-  defineProps<{
-    modelValue: string;
-    disabled?: boolean;
-    defaultShortcut?: string;
-  }>(),
-  {
-    disabled: false,
-    defaultShortcut: "CommandOrControl+Shift+X",
-  },
-);
+const shortcutsStore = useShortcutsStore();
 
-const emit = defineEmits<{
-  (e: "update:modelValue", value: string): void;
-  (e: "change", value: string): void;
-}>();
-
+const searchKeyword = ref("");
+const editingId = ref<string | null>(null);
+const tempAccelerator = ref("");
+const isSaving = ref(false);
 const showHelpModal = ref(false);
-const isRegistering = ref(false);
 
-const statusFeedback = ref<{
-  type: "info" | "success" | "warning" | "error";
-  title: string;
-  message: string;
-}>({
-  type: "info",
-  title: "",
-  message: "",
+const feedbackMsg = ref<{ type: "success" | "error" | "warning"; text: string }>({
+  type: "success",
+  text: "",
 });
 
-const isDefaultShortcut = computed(() => {
-  return props.modelValue === props.defaultShortcut;
+const isMac = isMacPlatform();
+
+const filteredShortcuts = computed(() => {
+  const kw = searchKeyword.value.trim().toLowerCase();
+  if (!kw) return shortcutsStore.shortcuts;
+  return shortcutsStore.shortcuts.filter((item) => {
+    return (
+      item.name.toLowerCase().includes(kw) ||
+      item.accelerator.toLowerCase().includes(kw) ||
+      (item.description && item.description.toLowerCase().includes(kw)) ||
+      item.when.toLowerCase().includes(kw)
+    );
+  });
 });
 
-const recommendedPresets = [
-  { label: "主窗口切换", val: "CommandOrControl+Shift+X" },
-  { label: "推荐组合 A", val: "CommandOrControl+Alt+K" },
-  { label: "推荐组合 B", val: "CommandOrControl+Shift+H" },
-  { label: "推荐组合 C", val: "Alt+Shift+O" },
-];
-
-function clearStatusTip() {
-  statusFeedback.value = {
-    type: "info",
-    title: "",
-    message: "",
-  };
+function formatKeys(acc: string) {
+  return formatAcceleratorDisplay(acc, isMac);
 }
 
-async function registerToMainProcess(newAccelerator: string): Promise<boolean> {
-  if (typeof window === "undefined" || !window.$ipcBridge) {
-    // 浏览器 Web 预览模式降级
-    return true;
-  }
-
-  isRegistering.value = true;
-  clearStatusTip();
-
-  try {
-    const res = await window.$ipcBridge.invoke("shortcut:register", newAccelerator);
-    if (res.success) {
-      statusFeedback.value = {
-        type: "success",
-        title: "快捷键已生效",
-        message: `已成功绑定并注册全局快捷键: ${newAccelerator}`,
-      };
-      return true;
-    } else {
-      statusFeedback.value = {
-        type: "error",
-        title: "快捷键注册冲突",
-        message:
-          res.error || `快捷键 ${newAccelerator} 已被系统或其他应用程序占用，保持原设置不变。`,
-      };
-      return false;
-    }
-  } catch (error) {
-    statusFeedback.value = {
-      type: "error",
-      title: "系统异常",
-      message: "注册快捷键时发生异常，请稍后重试",
-    };
-    return false;
-  } finally {
-    isRegistering.value = false;
-  }
+function startEdit(item: ShortcutDefinition) {
+  editingId.value = item.id;
+  tempAccelerator.value = item.accelerator;
+  feedbackMsg.value.text = "";
 }
 
-async function onShortcutChange(newVal: string) {
-  if (newVal === props.modelValue) return;
-
-  if (!newVal) {
-    emit("update:modelValue", "");
-    emit("change", "");
-    return;
-  }
-
-  // 先在主进程执行冲突检测与注册验证，验证通过后才向父级提交更新
-  const ok = await registerToMainProcess(newVal);
-  if (ok) {
-    emit("update:modelValue", newVal);
-    emit("change", newVal);
-  }
+function onTempAcceleratorChange(val: string) {
+  tempAccelerator.value = val;
 }
 
-function onRecorderError(errMsg: string) {
-  statusFeedback.value = {
+function onRecorderError(err: string) {
+  feedbackMsg.value = {
     type: "warning",
-    title: "按键无效",
-    message: errMsg,
+    text: err,
   };
 }
 
-async function resetToDefault() {
-  await onShortcutChange(props.defaultShortcut);
+async function saveEdit(id: string) {
+  if (!tempAccelerator.value) return;
+  isSaving.value = true;
+  try {
+    const res = await shortcutsStore.updateShortcut(id, tempAccelerator.value);
+    if (res.success) {
+      feedback.message.success("快捷键已更新生效");
+      editingId.value = null;
+    } else {
+      feedbackMsg.value = {
+        type: "error",
+        text: res.error || "快捷键更新失败，可能存在键位冲突",
+      };
+    }
+  } finally {
+    isSaving.value = false;
+  }
 }
 
-async function applyPreset(val: string) {
-  showHelpModal.value = false;
-  await onShortcutChange(val);
+async function resetSingle(id: string) {
+  isSaving.value = true;
+  try {
+    const res = await shortcutsStore.resetShortcut(id);
+    if (res.success) {
+      feedback.message.success("已恢复为默认快捷键");
+      if (editingId.value === id) {
+        const item = shortcutsStore.shortcuts.find((s) => s.id === id);
+        if (item) tempAccelerator.value = item.accelerator;
+      }
+    }
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+function cancelEdit() {
+  editingId.value = null;
+  tempAccelerator.value = "";
+  feedbackMsg.value.text = "";
+}
+
+async function handleResetAll() {
+  await shortcutsStore.resetAll();
+  cancelEdit();
+  feedback.message.success("所有快捷键已恢复为出厂默认设置");
 }
 </script>
 
 <style scoped>
-.global-shortcut-manager {
+.shortcut-center-container {
   width: 100%;
 }
 
-.help-link-btn {
-  display: inline-flex;
-  align-items: center;
-  font-size: 13px;
+.table-toolbar {
+  padding-bottom: 8px;
 }
 
-.help-icon {
+.search-input {
+  max-width: 320px;
+}
+
+.search-icon {
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.shortcut-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.08));
+  border-radius: 6px;
+  background: var(--app-bg-card, #ffffff);
+}
+
+.vscode-shortcut-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.vscode-shortcut-table thead th {
+  background: var(--app-bg-subtle, #f8fafc);
+  padding: 8px 14px;
+  font-weight: 600;
+  color: var(--app-text-muted, #64748b);
+  border-bottom: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.08));
+}
+
+.vscode-shortcut-table tbody tr {
+  border-bottom: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.05));
+  transition: background-color 0.15s ease;
+}
+
+.vscode-shortcut-table tbody tr:hover {
+  background-color: var(--app-bg-hover, rgba(0, 0, 0, 0.02));
+}
+
+.vscode-shortcut-table tbody tr.is-editing {
+  background-color: var(--app-bg-active, rgba(56, 189, 248, 0.06));
+}
+
+.vscode-shortcut-table td {
+  padding: 8px 14px;
+  vertical-align: middle;
+}
+
+.col-cmd {
+  width: 36%;
+}
+
+.col-binding {
+  width: 28%;
+}
+
+.col-when {
+  width: 20%;
+}
+
+.col-actions {
+  width: 16%;
+  text-align: right;
+}
+
+.cmd-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--app-text-muted, #94a3b8);
+  transition: all 0.15s;
+}
+
+.edit-icon-btn:hover {
+  color: var(--app-primary, #10b981);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.cmd-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd-title {
+  font-weight: 500;
+  color: var(--app-text-primary, #1e293b);
+}
+
+.cmd-desc {
+  font-size: 11px;
+  color: var(--app-text-muted, #94a3b8);
+  margin-top: 2px;
+}
+
+.keybinding-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.key-cap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  border: 1px solid currentColor;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
   font-size: 11px;
-  line-height: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--app-bg-subtle, #f1f5f9);
+  color: var(--app-text-primary, #334155);
+  border: 1px solid var(--app-border-subtle, #cbd5e1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
-.help-modal-content code {
-  background-color: rgba(0, 0, 0, 0.06);
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+.key-none {
+  font-size: 12px;
+  color: var(--app-text-muted, #94a3b8);
+  font-style: italic;
+}
+
+.inline-recorder-box {
+  max-width: 240px;
+}
+
+.when-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--app-bg-subtle, #f1f5f9);
+  color: var(--app-text-muted, #64748b);
+  border: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.06));
+}
+
+.when-badge.global {
+  background: rgba(14, 165, 233, 0.08);
+  color: #0284c7;
+  border-color: rgba(14, 165, 233, 0.2);
+}
+
+.edit-action-group,
+.normal-action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--app-text-muted, #94a3b8);
 }
 </style>

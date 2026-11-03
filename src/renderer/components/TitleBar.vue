@@ -17,17 +17,41 @@ const isMac = computed(() => platform.isMac);
 const isWindows = computed(() => platform.isWindows);
 const isLinux = computed(() => platform.isLinux);
 
-// 导航项
-const navItems = computed(() => [
-  { path: "/", label: t("home") },
-  { path: "/playground", label: t("playground") },
-  { path: "/settings", label: t("settings") },
+// 导航项定义
+interface NavItem {
+  id: string;
+  path: string;
+  query?: Record<string, string>;
+  label: string;
+}
+
+const navItems = computed<NavItem[]>(() => [
+  { id: "home", path: "/", label: t("home") },
+  { id: "window", path: "/playground", query: { tab: "window" }, label: t("navWindow") },
+  { id: "transfer", path: "/playground", query: { tab: "transfer" }, label: t("navTransfer") },
+  { id: "update", path: "/playground", query: { tab: "update" }, label: t("navUpdate") },
+  { id: "settings", path: "/settings", label: t("settings") },
 ]);
 
-function navigateTo(path: string) {
-  if (route.path !== path) {
-    void router.push(path);
+function navigateTo(path: string, query?: Record<string, string>) {
+  if (route.path !== path || (query?.tab && route.query.tab !== query.tab)) {
+    void router.push({ path, query });
   }
+}
+
+function isNavActive(item: NavItem): boolean {
+  if (item.path === "/") {
+    return route.path === "/";
+  }
+  if (item.path === "/settings") {
+    return route.path === "/settings";
+  }
+  if (item.path === "/playground") {
+    if (route.path !== "/playground") return false;
+    const currentTab = (route.query.tab as string) || "window";
+    return currentTab === (item.query?.tab || "window");
+  }
+  return false;
 }
 
 // 主题切换: system -> light -> dark -> system
@@ -92,8 +116,8 @@ function handleDblClick(e: MouseEvent) {
     <!-- macOS 桌面客户端: 留白 76px 给原生交通灯 -->
     <div v-if="isMac && isElectron" class="mac-native-traffic-spacer no-drag" />
 
-    <!-- 纯 Web 模式 或 Windows/Linux 桌面端: 统一展示现代 Electron + Vue 品牌 Logo 与标题 -->
-    <div v-else class="titlebar-brand no-drag" @click="navigateTo('/')">
+    <!-- 现代 Electron + Vue 品牌 Logo 与标题 (在所有平台均清晰显示) -->
+    <div class="titlebar-brand no-drag" @click="navigateTo('/')">
       <div class="brand-icon-wrapper">
         <!-- 现代 Electron + Vue 融合创意 SVG -->
         <svg viewBox="0 0 28 28" width="18" height="18" fill="none" class="brand-svg">
@@ -116,7 +140,7 @@ function handleDblClick(e: MouseEvent) {
           <circle cx="23" cy="11" r="1.6" fill="#ffffff" />
         </svg>
       </div>
-      <span class="brand-text">Electron Starter</span>
+      <span class="brand-text">electron-vue-template</span>
       <span class="brand-version-badge">Vue+</span>
     </div>
 
@@ -124,10 +148,10 @@ function handleDblClick(e: MouseEvent) {
     <nav class="titlebar-nav no-drag">
       <button
         v-for="item in navItems"
-        :key="item.path"
+        :key="item.id"
         class="nav-pill-btn"
-        :class="{ 'is-active': route.path === item.path }"
-        @click="navigateTo(item.path)"
+        :class="{ 'is-active': isNavActive(item) }"
+        @click="navigateTo(item.path, item.query)"
       >
         {{ item.label }}
       </button>

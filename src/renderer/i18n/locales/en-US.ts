@@ -1,7 +1,10 @@
 export default {
   // Navigation & General
   home: "Home",
-  playground: "System playground",
+  playground: "Playground",
+  navWindow: "Window & System",
+  navTransfer: "Data & Storage",
+  navUpdate: "Update & Diag",
   settings: "Settings",
   theme: {
     system: "System",

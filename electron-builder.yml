@@ -1,13 +1,13 @@
 # 应用在系统内的唯一标识；正式发布后尽量保持不变，否则可能影响更新与用户数据路径。
-appId: org.purehearts.electronstarter
-productName: Electron Starter
+appId: org.purehearts.electronvuetemplate
+productName: Electron Vue Template
 # asar 将应用源代码归档到安装包中，但不等同于加密或安全沙箱。
 asar: true
 # 安装时把自定义 Deep Link 协议注册给操作系统。
 protocols:
-  - name: Electron Starter Links
+  - name: Electron Vue Template Links
     schemes:
-      - electron-starter
+      - electron-vue-template
 # electron-builder 输出安装包的目录，不能与 Web 资源 dist 目录混淆。
 directories:
   output: release
@@ -27,7 +27,7 @@ extraResources:
 publish:
   provider: github
   owner: pure-hearts
-  repo: electron-starter
+  repo: electron-vue-template
 # Windows 生成 NSIS 安装向导（x64）；生产发布还必须验证代码签名。
 win:
   icon: resources/icons/icon.ico

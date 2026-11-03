@@ -2,6 +2,9 @@ export default {
   // 顶栏通用与导航
   home: "首页",
   playground: "功能校验中心",
+  navWindow: "窗口与系统",
+  navTransfer: "数据与传输",
+  navUpdate: "升级与诊断",
   settings: "设置中心",
   theme: {
     system: "跟随系统",

@@ -14,7 +14,7 @@
             <n-badge
               v-if="downloadStore.activeCount > 0"
               :value="downloadStore.activeCount"
-              type="primary"
+              type="info"
             />
           </div>
           <div v-if="downloadStore.totalSpeed > 0" class="header-speed-tag">

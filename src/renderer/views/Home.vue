@@ -1,39 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useOnline } from "@vueuse/core";
 import { useAppStore } from "../stores/app";
 import { useDownloadStore } from "../stores/download";
-import { usePlatform } from "../bridge";
-import type { PlatformInfo } from "../../shared/platform";
+import { platform, isElectron } from "../bridge/platform";
 
 const router = useRouter();
 const { t } = useI18n();
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
-const { isElectron } = usePlatform();
-
-const platformInfo = ref<PlatformInfo | null>(null);
-
-onMounted(async () => {
-  try {
-    platformInfo.value = await window.$ipcBridge.invoke("platform:info");
-  } catch {
-    // Web 模式容错
-  }
-});
 
 const osLabel = computed(() => {
-  if (!platformInfo.value) {
-    return isElectron ? t("homeView.desktopEnv") : t("homeView.webEnv");
-  }
-  const os = platformInfo.value.os;
-  const version = platformInfo.value.osVersion;
-  const arch = platformInfo.value.arch;
-  return `${os.toUpperCase()} ${version} (${arch})`;
+  if (platform.isMac) return "macOS (Apple Darwin)";
+  if (platform.isWindows) return "Windows (x64 / ARM64)";
+  if (platform.isLinux) return "Linux (X11 / Wayland)";
+  return isElectron ? t("homeView.desktopEnv") : t("homeView.webEnv");
 });
 
-const isOnline = computed(() => appStore.isOnline);
+const isOnline = useOnline();
 </script>
 
 <template>

@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { type SelectOption } from "naive-ui";
-import { useSettingsStore, type SettingsState } from "../stores/settings";
+import { useSettingsStore } from "../stores/settings";
 import { useAppStore } from "../stores/app";
 import { feedback } from "../utils/feedback";
 import GlobalShortcutManager from "../components/GlobalShortcutManager.vue";
@@ -62,8 +62,21 @@ const sidebarItems = computed(() => [
   },
 ]);
 
+export interface SettingsFormData {
+  locale: "zh-CN" | "en-US";
+  theme: "light" | "dark" | "system";
+  closeToTray: boolean;
+  autoStart: boolean;
+  defaultDownloadDir: string;
+  downloadConcurrency: number;
+  autoResumeDownloads: boolean;
+  notificationsEnabled: boolean;
+  silentNotifications: boolean;
+  hardwareAcceleration: boolean;
+}
+
 // 响应式表单
-const form = reactive<SettingsState>({
+const form = reactive<SettingsFormData>({
   locale: "zh-CN",
   theme: "system",
   closeToTray: false,
@@ -108,12 +121,12 @@ async function onThemeChange(val: "system" | "light" | "dark") {
 
 async function handleSelectDownloadDir() {
   if (typeof window !== "undefined" && window.$ipcBridge) {
-    const res = await window.$ipcBridge.invoke("dialog:selectDirectory", {
-      title: t("settingsView.download.cardTitle"),
-      defaultPath: form.defaultDownloadDir || undefined,
-    });
-    if (res.success && res.filePath) {
-      form.defaultDownloadDir = res.filePath;
+    const selected = await window.$ipcBridge.invoke(
+      "dialog:selectDirectory",
+      form.defaultDownloadDir || undefined,
+    );
+    if (selected) {
+      form.defaultDownloadDir = selected;
       await saveForm();
     }
   } else {
@@ -176,10 +189,10 @@ function openRepo() {
   if (typeof window !== "undefined" && window.$ipcBridge) {
     window.$ipcBridge.invoke(
       "shell:openExternal",
-      "https://github.com/pure-hearts/electron-starter",
+      "https://github.com/pure-hearts/electron-vue-template",
     );
   } else if (typeof window !== "undefined") {
-    window.open("https://github.com/pure-hearts/electron-starter", "_blank");
+    window.open("https://github.com/pure-hearts/electron-vue-template", "_blank");
   }
 }
 

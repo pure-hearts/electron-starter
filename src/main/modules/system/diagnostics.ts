@@ -78,7 +78,7 @@ export async function exportDiagnosticLogs(): Promise<{
     // 4. 弹出系统原生保存文件对话框
     const win = getMainWindow();
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    const defaultFilename = `electron-starter-diagnostics-${timestamp}.zip`;
+    const defaultFilename = `electron-vue-template-diagnostics-${timestamp}.zip`;
 
     const saveOptions = {
       title: "导出系统诊断与排障日志",

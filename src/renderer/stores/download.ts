@@ -58,6 +58,11 @@ export const useDownloadStore = defineStore("download", () => {
     ).length;
   });
 
+  // 已完成的任务数
+  const completedCount = computed<number>(() => {
+    return activeList.value.filter((t) => t.state === "completed").length;
+  });
+
   // 全局实时总下载速度
   const totalSpeed = computed<number>(() => {
     return activeList.value.reduce((acc, cur) => {
@@ -277,6 +282,7 @@ export const useDownloadStore = defineStore("download", () => {
     loadingHistory,
     activeList,
     activeCount,
+    completedCount,
     totalSpeed,
     overallPercent,
     init,

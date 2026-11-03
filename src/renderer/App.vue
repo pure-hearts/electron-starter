@@ -8,11 +8,13 @@ import TitleBar from "./components/TitleBar.vue";
 import NetworkBanner from "./components/NetworkBanner.vue";
 import GlobalDownloadDrawer from "./components/GlobalDownloadDrawer.vue";
 import { useDownloadStore } from "./stores/download";
+import { useShortcutsStore } from "./stores/shortcuts";
 
 const router = useRouter();
 const { locale } = useI18n();
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
+const shortcutsStore = useShortcutsStore();
 
 const naiveTheme = computed(() => (appStore.isDark ? darkTheme : null));
 const naiveLocale = computed(() => (locale.value === "zh-CN" ? zhCN : enUS));
@@ -22,6 +24,9 @@ let unsubscribeNotification: (() => void) | undefined;
 let unsubscribeNavigate: (() => void) | undefined;
 
 onMounted(async () => {
+  // 初始化全局与应用快捷键调度监听
+  shortcutsStore.initKeyboardListener(router);
+
   // Register listener first, then consume cold-start links so no link is lost.
   unsubscribeDeepLink = window.$ipcBridge.on("protocol:open", (url) =>
     appStore.receiveDeepLink(url),
@@ -74,6 +79,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  shortcutsStore.disposeKeyboardListener();
   unsubscribeDeepLink?.();
   unsubscribeNotification?.();
   unsubscribeNavigate?.();
