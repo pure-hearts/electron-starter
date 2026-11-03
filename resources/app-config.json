@@ -1,5 +1,5 @@
 {
   "appUpdateUrl": "",
-  "hotUpdateUrl": "https://github.com/pure-hearts/electron-vue-template/releases/latest/download/manifest.json",
+  "hotUpdateUrl": "https://github.com/pure-hearts/electron-starter/releases/latest/download/manifest.json",
   "deepLinkScheme": "electron-vue-template"
 }

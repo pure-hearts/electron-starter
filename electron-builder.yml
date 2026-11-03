@@ -27,7 +27,7 @@ extraResources:
 publish:
   provider: github
   owner: pure-hearts
-  repo: electron-vue-template
+  repo: electron-starter
 # Windows 生成 NSIS 安装向导（x64）；生产发布还必须验证代码签名。
 win:
   icon: resources/icons/icon.ico
@@ -42,6 +42,7 @@ nsis:
 mac:
   icon: resources/icons/icon.icns
   target: [dmg, zip]
+  notarize: false
 # Linux 提供免安装 AppImage 和发行版 deb 格式。
 linux:
   icon: resources/icons/icon.png

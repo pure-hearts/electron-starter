@@ -50,13 +50,23 @@ if (isWinBuild || (!isMacBuild && !isLinuxBuild && process.platform === "win32")
 
 // 2. macOS 个人证书注入
 if (isMacBuild || (!isWinBuild && !isLinuxBuild && process.platform === "darwin")) {
-  if (fs.existsSync(macP12Path) && !env.CSC_LINK && !env.MAC_CSC_LINK) {
-    env.MAC_CSC_LINK = macP12Path;
-    env.MAC_CSC_KEY_PASSWORD = env.MAC_CSC_KEY_PASSWORD || env.CSC_KEY_PASSWORD || defaultPassword;
+  if (fs.existsSync(macP12Path) && !env.CSC_LINK) {
+    env.CSC_LINK = macP12Path;
+    env.CSC_KEY_PASSWORD = env.CSC_KEY_PASSWORD || env.MAC_CSC_KEY_PASSWORD || defaultPassword;
     console.log(
       `[build-with-cert] 🔒 检测到 macOS 个人代码签名证书: ${path.relative(rootDir, macP12Path)}，已配置个人身份签名。`,
     );
-  } else if (!env.CSC_LINK && !env.MAC_CSC_LINK) {
+
+    // 本地自签名模式下清除可能来自其他项目的未配齐 Apple 公证环境变量，避免阻断构建
+    if (!env.ENABLE_APPLE_NOTARIZE) {
+      delete env.APPLE_API_KEY;
+      delete env.APPLE_API_KEY_ID;
+      delete env.APPLE_API_ISSUER;
+      delete env.APPLE_ID;
+      delete env.APPLE_APP_SPECIFIC_PASSWORD;
+      delete env.APPLE_TEAM_ID;
+    }
+  } else if (!env.CSC_LINK) {
     console.log(
       "[build-with-cert] ℹ️ 未检测到 macOS 个人证书，以无证书模式构建（可运行 pnpm cert:generate 生成）。",
     );

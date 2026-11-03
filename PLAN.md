@@ -148,6 +148,11 @@ P7：上述尚未完成的正式签名/跨平台安装与真实更新测试需�
   - 深度排查旧底包热更新后白屏原因：新版前端代码在顶层调用新事件（`context-menu:action`），而旧宿主 Preload 白名单未声明该事件，导致同步抛错阻断 Vue 挂载；
   - 在 `src/renderer/bridge/index.ts` 抽象 `wrapSafeBridge` 防御切面，捕获未授权通道异常并安全降级为 No-op，实现全项目使用 `useIpcBridge` 彻底免疫此类版本不匹配白屏；
   - 真实验证 GitHub Releases `v0.1.4` 增量热更新拉取、下载验签、桌面提示、平滑激活、与重启后通知能力无损。
+- [x] **全量三平台安装介质与代码签名构建闭环**：
+  - **macOS**：通过 `pnpm dist:mac` 成功完成 `release/Electron Vue Template-0.1.4-arm64.dmg` 与 `zip` 打包，应用与所有内置 Framework / Helper 均由 `Developer ID Application: Electron Vue Template Dev` 成功签名，严格验证通过 `valid on disk` 且满足 Designated Requirement；配置 `notarize: false` 并防御外部公证环境变量干扰；
+  - **Windows**：通过 `pnpm dist:win` 成功完成 `release/Electron Vue Template Setup 0.1.4.exe` NSIS 安装包打包，应用主体、卸载程序与提权工具均由 `certs/windows/code-sign.pfx` 个人 Authenticode 证书成功签名；
+  - **Linux**：通过 `pnpm dist:linux` 成功完成 `release/Electron Vue Template-0.1.4-arm64.AppImage` 与 `deb` 产物构建；
+  - **工程规范**：配置 `.prettierignore` 规避按需组件声明自动格式化抖动。
 - [x] **全量质量门禁**：
-  - `pnpm check`: 327 个文件 0 错误 0 告警；
+  - `pnpm check`: 326 个文件 0 错误 0 告警；
   - `pnpm test`: 53 个测试套件，229 项单元/集成测试 100% 通过。
