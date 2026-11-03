@@ -56,9 +56,19 @@ pnpm run dist:linux    # 在 Linux 上执行
 
 **重要：这些并不等于正式签名发布已经完成。** Windows/macOS 真实安装使用、Apple 公证及真实签名整包升级需要平台设备和合法发布凭证，仍列为 [待验收事项](PLAN.md)。正式发布工作流对签名凭证实行前置门禁。
 
-## 自定义应用
+## 自定义应用（一键初始化）
 
-替换 `electron-builder.yml` 的 `appId`、`productName`、GitHub Releases 仓库信息以及 `package.json` 中的示例邮箱；同步更新 `electron-starter://` 相关协议配置和 `resources/icons/icon.png`。
+本项目内置了零第三方依赖的一键脚手架工具，可交互式批量修改所有应用标识、包名与更新源：
+
+```bash
+# 交互式初始化
+pnpm init:app
+
+# 或使用静默/自定义参数快速配置
+pnpm init:app -n "My App" --app-id "com.mycompany.myapp" --repo "myorg/my-app"
+```
+
+该工具会自动更新 `package.json`、`electron-builder.yml`、所有 `.env.*` 环境配置、`resources/app-config.json`、`resources/app-update.yml`、页面 `<title>` 并可选择重新生成专属的 Ed25519 热更新签名公私钥对。
 
 ZIP 热更新默认不启用，需要配置 `resources/app-config.json` 的可信 HTTPS 更新源及应用中内置的发布公钥。**绝对不要将资源更新签名私钥提交到仓库。**
 

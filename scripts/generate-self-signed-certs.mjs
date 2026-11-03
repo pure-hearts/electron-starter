@@ -64,6 +64,18 @@ function checkOpenSsl() {
 
 const opensslVersion = checkOpenSsl();
 console.log(`🛡️ 检测到系统环境: ${opensslVersion}`);
+
+// 兼容性探测：OpenSSL 3.x 需带 -legacy 参数以兼容 macOS / Windows 系统的 PKCS#12 密钥包解析
+const isLegacySupported = (() => {
+  try {
+    execSync("openssl pkcs12 -help 2>&1 | grep -e -legacy", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+})();
+const legacyArg = isLegacySupported ? "-legacy " : "";
+
 console.log(`🔐 正在为三端生成个人自签名代码签名证书（密码: ${defaultPassword}）...\n`);
 
 const validityDays = 1095; // 3 年有效期
@@ -109,7 +121,7 @@ authorityKeyIdentifier = keyid,issuer
 
   // 打包为 PKCS#12 (PFX)
   execSync(
-    `openssl pkcs12 -export -out "${pfxPath}" -inkey "${keyPath}" -in "${cerPath}" -passout pass:${defaultPassword}`,
+    `openssl pkcs12 -export ${legacyArg}-out "${pfxPath}" -inkey "${keyPath}" -in "${cerPath}" -passout pass:${defaultPassword}`,
     { stdio: "ignore" },
   );
 
@@ -183,7 +195,7 @@ authorityKeyIdentifier = keyid,issuer
 
   // 打包为 PKCS#12 (P12)
   execSync(
-    `openssl pkcs12 -export -out "${p12Path}" -inkey "${keyPath}" -in "${cerPath}" -passout pass:${defaultPassword}`,
+    `openssl pkcs12 -export ${legacyArg}-out "${p12Path}" -inkey "${keyPath}" -in "${cerPath}" -passout pass:${defaultPassword}`,
     { stdio: "ignore" },
   );
 
