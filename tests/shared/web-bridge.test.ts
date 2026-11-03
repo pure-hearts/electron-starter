@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { DirectiveBinding } from "vue";
-import { createWebShimBridge } from "../../src/renderer/bridge/web-shim";
+import type { DesktopBridge } from "../../src/shared/ipc";
+import { getBridge, initBridge } from "../../src/renderer/bridge";
 import { isElectron, isWeb } from "../../src/renderer/bridge/platform";
 import { vDisabledElectron, vIfElectron, vIfWeb } from "../../src/renderer/directives/electron";
 
@@ -32,7 +33,7 @@ function createMockElement() {
   } as unknown as HTMLElement;
 }
 
-describe("Web Bridge Shim 降级适配与跨端指令测试", () => {
+describe("Desktop Bridge 与跨端指令测试", () => {
   it("在 node/纯环境测试中能够正确判定 isWeb 与 isElectron 互斥", () => {
     expect(typeof isWeb).toBe("boolean");
     expect(typeof isElectron).toBe("boolean");
@@ -61,38 +62,98 @@ describe("Web Bridge Shim 降级适配与跨端指令测试", () => {
     }
   });
 
-  it("支持 store 命名空间本地存储与数据恢复", async () => {
-    const bridge = createWebShimBridge();
-    expect(bridge.__isWebShim).toBe(true);
-
-    // 存储主题设置
-    await bridge.invoke("store:set", "theme", "dark");
-    const theme = await bridge.invoke("store:get", "theme");
-    expect(theme).toBe("dark");
-
-    // 删除存储设置
-    await bridge.invoke("store:delete", "theme");
-    const emptyTheme = await bridge.invoke("store:get", "theme");
-    expect(emptyTheme).toBeNull();
+  it("未注入原生 Bridge 时调用 invoke 触发明确防御性拒绝", async () => {
+    const originalWindow = (globalThis as unknown as { window?: unknown }).window;
+    try {
+      delete (globalThis as unknown as { window?: unknown }).window;
+      const bridge = initBridge();
+      await expect(bridge.invoke("app:version")).rejects.toThrow(
+        /当前环境未检测到 Electron 原生桥接对象/,
+      );
+    } finally {
+      if (originalWindow !== undefined) {
+        (globalThis as unknown as { window?: unknown }).window = originalWindow;
+      }
+    }
   });
 
-  it("app:version 返回合法的 Web 标记版本", async () => {
-    const bridge = createWebShimBridge();
-    const ver = await bridge.invoke("app:version");
-    expect(ver).toContain("Web");
+  it("未注入原生 Bridge 时订阅事件返回安全 no-op 函数而不崩溃", () => {
+    const originalWindow = (globalThis as unknown as { window?: unknown }).window;
+    try {
+      delete (globalThis as unknown as { window?: unknown }).window;
+      const bridge = initBridge();
+      const unsub = bridge.on("update:state", () => {});
+      expect(typeof unsub).toBe("function");
+      expect(() => unsub()).not.toThrow();
+    } finally {
+      if (originalWindow !== undefined) {
+        (globalThis as unknown as { window?: unknown }).window = originalWindow;
+      }
+    }
   });
 
-  it("事件总线能够正常订阅并接收模拟事件", async () => {
-    const bridge = createWebShimBridge();
-    let receivedPayload: unknown = null;
+  it("当注入原生 Bridge 时能正常代理 invoke 与 on", async () => {
+    const originalWindow = (globalThis as unknown as { window?: unknown }).window;
+    const mockInvoke = vi.fn().mockResolvedValue("0.1.4");
+    const mockUnsub = vi.fn();
+    const mockOn = vi.fn().mockReturnValue(mockUnsub);
 
-    const unsub = bridge.on("update:state", (payload: unknown) => {
-      receivedPayload = payload;
-    });
+    const mockBridge: DesktopBridge = {
+      invoke: mockInvoke,
+      on: mockOn,
+    };
 
-    await bridge.invoke("updater:check");
-    expect(receivedPayload).toEqual({ kind: "full", status: "up-to-date" });
+    try {
+      (globalThis as unknown as { window?: { $ipcBridge?: DesktopBridge } }).window = {
+        $ipcBridge: mockBridge,
+      };
+      const bridge = initBridge();
 
-    unsub();
+      const version = await bridge.invoke("app:version");
+      expect(version).toBe("0.1.4");
+      expect(mockInvoke).toHaveBeenCalledWith("app:version");
+
+      const callback = vi.fn();
+      const unsub = bridge.on("update:state", callback);
+      expect(mockOn).toHaveBeenCalledWith("update:state", callback);
+      unsub();
+      expect(mockUnsub).toHaveBeenCalled();
+    } finally {
+      if (originalWindow !== undefined) {
+        (globalThis as unknown as { window?: unknown }).window = originalWindow;
+      } else {
+        delete (globalThis as unknown as { window?: unknown }).window;
+      }
+    }
+  });
+
+  it("getBridge 能够感知 window.$ipcBridge 的后置挂载并动态升级", async () => {
+    const originalWindow = (globalThis as unknown as { window?: unknown }).window;
+    try {
+      (globalThis as unknown as { window?: { $ipcBridge?: DesktopBridge } }).window = {};
+      const fallbackBridge = initBridge();
+      await expect(fallbackBridge.invoke("app:version")).rejects.toThrow(
+        /当前环境未检测到 Electron 原生桥接对象/,
+      );
+
+      // 后置注入 window.$ipcBridge
+      const mockInvoke = vi.fn().mockResolvedValue("0.1.4");
+      (globalThis as unknown as { window: { $ipcBridge: DesktopBridge } }).window.$ipcBridge = {
+        invoke: mockInvoke,
+        on: vi.fn(),
+      };
+
+      // getBridge 应当自动升级为可用 bridge
+      const active = getBridge();
+      const version = await active.invoke("app:version");
+      expect(version).toBe("0.1.4");
+      expect(mockInvoke).toHaveBeenCalledWith("app:version");
+    } finally {
+      if (originalWindow !== undefined) {
+        (globalThis as unknown as { window?: unknown }).window = originalWindow;
+      } else {
+        delete (globalThis as unknown as { window?: unknown }).window;
+      }
+    }
   });
 });

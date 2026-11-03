@@ -1,15 +1,14 @@
 /**
  * @file index.ts
- * @description 统一跨端 Bridge 调度入口：
- * 自动识别 Electron 桌面端原生 IPC 桥接对象与纯 Web 浏览器环境，
- * 保证开发与生产环境下双端 API 调用统一、类型安全。
+ * @description 统一 Desktop IPC Bridge 调度入口：
+ * 接入 Electron 桌面端原生 Preload IPC 桥接对象，
+ * 提供严格类型安全、防崩溃安全包装与统一调用门面。
  */
 
 import type { DesktopBridge } from "@shared/ipc";
 import { isElectron, isWeb, usePlatform } from "./platform";
-import { createWebShimBridge } from "./web-shim";
 
-let activeBridge: DesktopBridge;
+let activeBridge: DesktopBridge | null = null;
 
 /**
  * 为原生 Bridge 包装防御性切面：
@@ -34,32 +33,51 @@ function wrapSafeBridge(raw: DesktopBridge): DesktopBridge {
 }
 
 /**
+ * 创建非 Electron 宿主环境下的哨兵 Bridge：
+ * 当脱离桌面客户端直接运行（如纯前端调试或未正确加载 Preload）时，提供明确的报错与警告提示，
+ * 代替维护庞大脆弱的双轨伪实现。
+ */
+function createUnavailableBridge(): DesktopBridge & { __isUnavailable: true } {
+  return {
+    __isUnavailable: true,
+    invoke: (channel, ...args) => {
+      const err = new Error(
+        `[DesktopBridge] IPC 通道 "${String(channel)}" 调用失败: 当前环境未检测到 Electron 原生桥接对象 (window.$ipcBridge)`,
+      );
+      console.warn(err.message, { channel, args });
+      return Promise.reject(err);
+    },
+    on: (channel) => {
+      console.warn(
+        `[DesktopBridge] 无法订阅事件 "${String(channel)}": 当前环境未检测到 Electron 原生桥接对象`,
+      );
+      return () => {};
+    },
+  };
+}
+
+/**
  * 初始化全局 Bridge 并保证 window.$ipcBridge 安全可用
  */
 export function initBridge(): DesktopBridge {
-  // 桌面端编译期优化：若编译期已知为桌面客户端环境且已挂载原生 Bridge，直接返回
-  if (typeof __IS_WEB__ !== "undefined" && !__IS_WEB__) {
-    if (typeof window !== "undefined" && window.$ipcBridge && !window.$ipcBridge.__isWebShim) {
-      activeBridge = wrapSafeBridge(window.$ipcBridge);
-      return activeBridge;
-    }
+  if (typeof window !== "undefined" && window.$ipcBridge) {
+    activeBridge = wrapSafeBridge(window.$ipcBridge);
+    return activeBridge;
   }
 
-  if (typeof window !== "undefined") {
-    if (window.$ipcBridge && !window.$ipcBridge.__isWebShim) {
-      activeBridge = wrapSafeBridge(window.$ipcBridge);
-    } else {
-      activeBridge = createWebShimBridge();
-      window.$ipcBridge = activeBridge;
-    }
-  } else {
-    activeBridge = createWebShimBridge();
-  }
+  activeBridge = createUnavailableBridge();
   return activeBridge;
 }
 
 /** 获取当前环境可用的 Bridge 单例对象 */
 export function getBridge(): DesktopBridge {
+  if (
+    typeof window !== "undefined" &&
+    window.$ipcBridge &&
+    (!activeBridge || (activeBridge as { __isUnavailable?: boolean }).__isUnavailable)
+  ) {
+    return initBridge();
+  }
   if (!activeBridge) {
     return initBridge();
   }

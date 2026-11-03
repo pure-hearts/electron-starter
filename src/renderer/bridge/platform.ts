@@ -14,8 +14,7 @@ export const isElectron =
     ? !__IS_WEB__
     : Boolean(
         typeof window !== "undefined" &&
-        (window.process?.versions?.electron !== undefined ||
-          (window.$ipcBridge && !window.$ipcBridge.__isWebShim)),
+        (window.process?.versions?.electron !== undefined || Boolean(window.$ipcBridge)),
       );
 
 // 2. 纯 Web 浏览器环境标识

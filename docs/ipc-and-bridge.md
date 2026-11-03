@@ -85,12 +85,13 @@ flowchart TD
 
 ---
 
-## 5. Web 模式双端兼容 (WebShim)
+## 5. 非 Electron 环境防御机制
 
-为了支持纯浏览器调试与轻量化 Web 模式部署，项目在 `src/renderer/shims/web-bridge.ts` 中实现了一套纯前端内存 Mock 桥接层：
+为了保证桌面客户端架构的纯净与单一性，项目已移除早期庞大且易引发歧义的 Web 内存模拟垫片（WebShim）：
 
-- 当检测到运行在纯浏览器环境（`!window.$ipcBridge`）时，自动注入内存版本 Mock 实现；
-- 所有常用配置读写、下载状态模拟、全量更新均支持在浏览器内顺畅运行。
+- 渲染进程通过统一门面 `useIpcBridge()` 调用底层能力；
+- 当检测到脱离 Electron 容器运行或缺少 Preload 注入（`!window.$ipcBridge`）时，系统自动切换至防御性哨兵，所有 IPC 调用将安全抛出明确的环境异常，防止隐式脏调用；
+- 事件订阅提供无操作（No-op）清理函数，避免因环境缺失触发前端白屏崩溃。
 
 ---
 
@@ -100,4 +101,4 @@ flowchart TD
 - **通道白名单与验证**：`src/shared/validation.ts`
 - **Preload 桥接实现**：`src/preload/index.ts`
 - **主进程请求分发与安全网关**：`src/main/ipc/index.ts` 与 `src/main/ipc/origin.ts`
-- **Web 模式垫片**：`src/renderer/shims/web-bridge.ts`
+- **渲染端 Bridge 调度入口**：`src/renderer/bridge/index.ts`

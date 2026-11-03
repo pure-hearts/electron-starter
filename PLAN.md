@@ -89,6 +89,11 @@
   - **开发环境独立收拢**：新建 `src/main/dev/` 文件夹（`pid-lock.ts`、`dev-server.ts`、`index.ts`），将孤儿进程锁治理与 `--dev-server-url` 还原参数统一封装，主入口 `src/main/index.ts` 精简至单一核心职责；
   - **Preload 架构规范化**：将事件白名单统一定义至 `src/shared/validation.ts` (`allowedEvents`)，消除局部硬编码，Preload 订阅增加类型防御与精确 dispose，新增单测覆盖保障；
   - 全量 48 个测试套件 199 项测试全部通过，`vp check` 0 错误，主进程与渲染进程产物构建成功。
+- [x] **移除 Electron API Web 降级垫片 (WebShim)（2026-11-03 落地）**：
+  - 彻底移除约 800 行的 `src/renderer/bridge/web-shim.ts` 与 `__isWebShim` 探测逻辑；
+  - 渲染端 Bridge 全面收敛为 Preload 原生注入驱动，在非 Electron 环境下配置明确友好的防御性哨兵；
+  - 清理 `src/renderer/desktop.d.ts` 类型声明、Playground 页面中的提示文案与样式，重构 `tests/shared/web-bridge.test.ts`；
+  - 消除双轨维护负担，保持单一桌面客户端架构的纯净度。
 - [ ] 对应生产平台执行最终业务回归并核对 Release 产物。
 
 ## 阶段结论

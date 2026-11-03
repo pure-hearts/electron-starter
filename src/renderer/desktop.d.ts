@@ -1,12 +1,8 @@
 import type { DesktopBridge } from "../shared/ipc";
 
-export interface ExtendedDesktopBridge extends DesktopBridge {
-  __isWebShim?: boolean;
-}
-
 declare global {
   interface Window {
-    $ipcBridge: ExtendedDesktopBridge;
+    $ipcBridge?: DesktopBridge;
     process?: {
       versions?: {
         electron?: string;
