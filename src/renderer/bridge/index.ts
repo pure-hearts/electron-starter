@@ -12,20 +12,42 @@ import { createWebShimBridge } from "./web-shim";
 let activeBridge: DesktopBridge;
 
 /**
+ * 为原生 Bridge 包装防御性切面：
+ * 避免旧版本原生底包 Preload 未声明新事件白名单时同步抛错引发全屏白屏崩溃。
+ */
+function wrapSafeBridge(raw: DesktopBridge): DesktopBridge {
+  return {
+    ...raw,
+    invoke: (channel, ...args) => raw.invoke(channel, ...args),
+    on: (channel, callback) => {
+      try {
+        return raw.on(channel, callback);
+      } catch (err) {
+        console.warn(
+          `[useIpcBridge] 当前宿主底包不支持事件监听 "${String(channel)}"，已安全降级为 No-op:`,
+          err,
+        );
+        return () => {};
+      }
+    },
+  };
+}
+
+/**
  * 初始化全局 Bridge 并保证 window.$ipcBridge 安全可用
  */
 export function initBridge(): DesktopBridge {
   // 桌面端编译期优化：若编译期已知为桌面客户端环境且已挂载原生 Bridge，直接返回
   if (typeof __IS_WEB__ !== "undefined" && !__IS_WEB__) {
     if (typeof window !== "undefined" && window.$ipcBridge && !window.$ipcBridge.__isWebShim) {
-      activeBridge = window.$ipcBridge;
+      activeBridge = wrapSafeBridge(window.$ipcBridge);
       return activeBridge;
     }
   }
 
   if (typeof window !== "undefined") {
     if (window.$ipcBridge && !window.$ipcBridge.__isWebShim) {
-      activeBridge = window.$ipcBridge;
+      activeBridge = wrapSafeBridge(window.$ipcBridge);
     } else {
       activeBridge = createWebShimBridge();
       window.$ipcBridge = activeBridge;
