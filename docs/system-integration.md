@@ -62,7 +62,30 @@ app.setAsDefaultProtocolClient(scheme);
 
 ---
 
-## 6. 相关 IPC 契约接口
+## 6. 原生右键上下文菜单 (Context Menu)
+
+桌面应用区别于 Web 的核心原生交互体验之一是右键菜单：
+
+1. **自动接管文本编辑区**：光标在 `input`、`textarea` 或富文本编辑区时，自动注入原生「撤销、重做、剪切、复制、粘贴、全选」；
+2. **自动探测文本选区**：用户选中任意文字右键，自动提供「复制、全选」；
+3. **开发调试选项**：在开发环境下自动注入「重新加载页面」和「检查元素 (Inspect Element)」；
+4. **自定义业务菜单声明式绑定**：通过 Vue 指令 `v-contextmenu="items"` 轻松为特定组件绑定业务操作。
+
+---
+
+## 7. 渲染崩溃与致命异常兜底恢复 (Crash Fallback)
+
+针对桌面应用可能出现的 OOM 或进程意外终止，构建了双重防御：
+
+1. **主进程硬件/进程级崩溃监听 (`src/main/modules/system/crash.ts`)**：
+   - 监听 `webContents` 的 `render-process-gone` 事件；
+   - 支持代次与阈值恢复限制；在恢复失败或用户取消时，自动切换加载离线独立兜底页 `public/crash-fallback.html`，展示崩溃原因、代码与重启引导，彻底杜绝白屏卡死；
+2. **Vue 渲染层组件级错误边界 (`src/renderer/components/ErrorFallback.vue`)**：
+   - 捕获未处理的组件渲染死循环或致命 JS 错误，局部呈现科技风友好恢复卡片并支持堆栈排查与一键重试。
+
+---
+
+## 8. 相关 IPC 契约接口
 
 前端通过 `window.$ipcBridge` 与原生集成模块交互：
 

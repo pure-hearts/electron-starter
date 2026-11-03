@@ -8,6 +8,7 @@ import { useRouter } from "vue-router";
 import { useAppStore, type ThemeMode } from "./app";
 import { useDownloadStore } from "./download";
 import { isMacPlatform } from "../utils/shortcut";
+import { useIpcBridge } from "../bridge";
 
 export interface ShortcutDefinition {
   id: string;
@@ -76,23 +77,22 @@ const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
 const STORAGE_KEY = "app_custom_shortcuts_v1";
 
 export const useShortcutsStore = defineStore("shortcuts", () => {
+  const bridge = useIpcBridge();
   const shortcuts = ref<ShortcutDefinition[]>(loadStoredShortcuts());
   const isListening = ref(false);
   let globalKeydownListener: ((e: KeyboardEvent) => void) | null = null;
 
   async function syncMainShortcuts() {
-    if (typeof window !== "undefined" && window.$ipcBridge) {
-      try {
-        const globalAcc = await window.$ipcBridge.invoke("shortcut:get");
-        if (globalAcc) {
-          const toggleItem = shortcuts.value.find((s) => s.id === "window.toggle");
-          if (toggleItem && toggleItem.accelerator !== globalAcc) {
-            toggleItem.accelerator = globalAcc;
-          }
+    try {
+      const globalAcc = await bridge.invoke("shortcut:get");
+      if (globalAcc) {
+        const toggleItem = shortcuts.value.find((s) => s.id === "window.toggle");
+        if (toggleItem && toggleItem.accelerator !== globalAcc) {
+          toggleItem.accelerator = globalAcc;
         }
-      } catch {
-        // Web 预览或初始化容错
       }
+    } catch {
+      // Web 预览或初始化容错
     }
   }
 
@@ -134,18 +134,16 @@ export const useShortcutsStore = defineStore("shortcuts", () => {
 
     // 如果是全局系统快捷键，需要经过主进程注册冲突检测
     if (item.scope === "global") {
-      if (typeof window !== "undefined" && window.$ipcBridge) {
-        try {
-          const res = await window.$ipcBridge.invoke("shortcut:register", newAccelerator);
-          if (!res.success) {
-            return {
-              success: false,
-              error: res.error || `快捷键 ${newAccelerator} 已被系统或其他程序占用`,
-            };
-          }
-        } catch (e) {
-          return { success: false, error: String(e) };
+      try {
+        const res = await bridge.invoke("shortcut:register", newAccelerator);
+        if (!res.success) {
+          return {
+            success: false,
+            error: res.error || `快捷键 ${newAccelerator} 已被系统或其他程序占用`,
+          };
         }
+      } catch (e) {
+        return { success: false, error: String(e) };
       }
     }
 

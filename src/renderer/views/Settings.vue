@@ -6,11 +6,13 @@ import { useSettingsStore } from "../stores/settings";
 import { useAppStore } from "../stores/app";
 import { feedback } from "../utils/feedback";
 import GlobalShortcutManager from "../components/GlobalShortcutManager.vue";
+import { useIpcBridge, isElectron } from "../bridge";
 import type { SystemDiagnostics } from "../../shared/ipc";
 
 const { t, locale } = useI18n();
 const settingsStore = useSettingsStore();
 const appStore = useAppStore();
+const { invoke } = useIpcBridge();
 
 // 侧边栏当前激活 Tab
 type SettingsTabKey =
@@ -120,11 +122,8 @@ async function onThemeChange(val: "system" | "light" | "dark") {
 }
 
 async function handleSelectDownloadDir() {
-  if (typeof window !== "undefined" && window.$ipcBridge) {
-    const selected = await window.$ipcBridge.invoke(
-      "dialog:selectDirectory",
-      form.defaultDownloadDir || undefined,
-    );
+  if (isElectron) {
+    const selected = await invoke("dialog:selectDirectory", form.defaultDownloadDir || undefined);
     if (selected) {
       form.defaultDownloadDir = selected;
       await saveForm();
@@ -147,8 +146,8 @@ async function handleSaveAll() {
 async function loadDiagnostics() {
   loadingDiagnostics.value = true;
   try {
-    if (typeof window !== "undefined" && window.$ipcBridge) {
-      diagnostics.value = await window.$ipcBridge.invoke("diagnostics:system:get");
+    if (isElectron) {
+      diagnostics.value = await invoke("diagnostics:system:get");
     }
   } catch (e) {
     console.warn("Could not fetch diagnostics", e);
@@ -160,8 +159,8 @@ async function loadDiagnostics() {
 async function handleExportLogs() {
   exportingLogs.value = true;
   try {
-    if (typeof window !== "undefined" && window.$ipcBridge) {
-      const res = await window.$ipcBridge.invoke("diagnostics:exportLogs");
+    if (isElectron) {
+      const res = await invoke("diagnostics:exportLogs");
       if (res.success) {
         feedback.message.success(`排障诊断包已成功导出至: ${res.filePath}`);
       } else if (res.error !== "用户取消了导出") {
@@ -186,19 +185,16 @@ function formatUptime(seconds?: number): string {
 }
 
 function openRepo() {
-  if (typeof window !== "undefined" && window.$ipcBridge) {
-    window.$ipcBridge.invoke(
-      "shell:openExternal",
-      "https://github.com/pure-hearts/electron-vue-template",
-    );
+  if (isElectron) {
+    void invoke("shell:openExternal", "https://github.com/pure-hearts/electron-vue-template");
   } else if (typeof window !== "undefined") {
     window.open("https://github.com/pure-hearts/electron-vue-template", "_blank");
   }
 }
 
 function handleCheckUpdate() {
-  if (typeof window !== "undefined" && window.$ipcBridge) {
-    window.$ipcBridge.invoke("updater:check");
+  if (isElectron) {
+    void invoke("updater:check");
   } else {
     feedback.message.info("Web 预览模式：当前已是最新网页版本");
   }

@@ -8,6 +8,7 @@
 
 import type { App, DirectiveBinding, ObjectDirective } from "vue";
 import { isElectron, isWeb } from "../bridge/platform";
+import { vContextmenu } from "./contextmenu";
 
 declare module "vue" {
   export interface GlobalDirectives {
@@ -75,4 +76,5 @@ export function registerElectronDirectives(app: App): void {
   app.directive("if-electron", vIfElectron);
   app.directive("if-web", vIfWeb);
   app.directive("disabled-electron", vDisabledElectron);
+  app.directive("contextmenu", vContextmenu);
 }

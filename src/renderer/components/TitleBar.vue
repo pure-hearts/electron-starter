@@ -5,12 +5,14 @@ import { useI18n } from "vue-i18n";
 import { useAppStore, type ThemeMode } from "../stores/app";
 import { useDownloadStore } from "../stores/download";
 import { isElectron, isWeb, platform } from "../bridge/platform";
+import { useIpcBridge } from "../bridge";
 
 const route = useRoute();
 const router = useRouter();
 const { t, locale } = useI18n();
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
+const { invoke } = useIpcBridge();
 
 // 平台特性识别（仅在 Electron 桌面环境下生效对应平台系统控制）
 const isMac = computed(() => platform.isMac);
@@ -75,21 +77,21 @@ function toggleLocale() {
 // 桌面窗口控制动作（仅 Electron 桌面端生效）
 async function handleMinimize() {
   if (!isElectron) return;
-  await window.$ipcBridge.invoke("window:action", "minimize");
+  await invoke("window:action", "minimize");
 }
 
 async function handleToggleMaximize() {
   if (!isElectron) return;
   if (appStore.isMaximized) {
-    await window.$ipcBridge.invoke("window:action", "restore");
+    await invoke("window:action", "restore");
   } else {
-    await window.$ipcBridge.invoke("window:action", "maximize");
+    await invoke("window:action", "maximize");
   }
 }
 
 async function handleClose() {
   if (!isElectron) return;
-  await window.$ipcBridge.invoke("window:action", "close");
+  await invoke("window:action", "close");
 }
 
 function handleDblClick(e: MouseEvent) {

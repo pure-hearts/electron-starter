@@ -6,9 +6,12 @@ import router from "./router";
 import { i18n } from "./i18n";
 import { initBridge } from "./bridge";
 import { registerElectronDirectives } from "./directives/electron";
+import { initGlobalContextMenu } from "./utils/context-menu";
 
 // 初始化跨端 Bridge，Web 模式下自动装载垫片，保证 window.$ipcBridge 安全就绪
 const bridge = initBridge();
+// 初始化右键上下文菜单全局接管
+initGlobalContextMenu();
 
 const app = createApp(App);
 registerElectronDirectives(app);
@@ -28,7 +31,7 @@ void router
   .then(() => {
     window.setTimeout(() => {
       if (document.querySelector("#app")?.childElementCount) {
-        void window.$ipcBridge.invoke("hot:confirm").catch(() => undefined);
+        void bridge.invoke("hot:confirm").catch(() => undefined);
       }
     }, 2500);
   })

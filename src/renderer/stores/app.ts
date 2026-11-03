@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed, watch } from "vue";
 import type { GlobalThemeOverrides } from "naive-ui";
+import { useIpcBridge } from "../bridge";
 
 export type ThemeMode = "light" | "dark" | "system";
 
@@ -16,6 +17,7 @@ function adjustHexBrightness(hex: string, amount: number): string {
 }
 
 export const useAppStore = defineStore("app", () => {
+  const bridge = useIpcBridge();
   const locale = ref(localStorage.getItem("locale") || "zh-CN");
   const theme = ref<ThemeMode>((localStorage.getItem("theme") as ThemeMode) || "system");
   const isDark = ref(false);
@@ -95,24 +97,24 @@ export const useAppStore = defineStore("app", () => {
 
   async function setLocale(value: string): Promise<void> {
     if (value !== "zh-CN" && value !== "en-US") return;
-    await window.$ipcBridge.invoke("store:set", "locale", value);
+    await bridge.invoke("store:set", "locale", value);
     locale.value = value;
     localStorage.setItem("locale", value);
   }
 
   async function setTheme(value: ThemeMode): Promise<void> {
     if (value !== "light" && value !== "dark" && value !== "system") return;
-    await window.$ipcBridge.invoke("store:set", "theme", value);
+    await bridge.invoke("store:set", "theme", value);
     theme.value = value;
     localStorage.setItem("theme", value);
     applyTheme(value);
   }
 
   function setupBridgeSubscriptions(): void {
-    if (typeof window === "undefined" || !window.$ipcBridge?.on) return;
+    if (typeof window === "undefined") return;
 
     if (!unsubscribeTheme) {
-      unsubscribeTheme = window.$ipcBridge.on("theme:system:changed", (payload) => {
+      unsubscribeTheme = bridge.on("theme:system:changed", (payload) => {
         accentColor.value = payload.accentColor;
         if (theme.value === "system") {
           isDark.value = payload.shouldUseDarkColors;
@@ -122,7 +124,7 @@ export const useAppStore = defineStore("app", () => {
     }
 
     if (!unsubscribeMaximize) {
-      unsubscribeMaximize = window.$ipcBridge.on("window:maximize-change", (val) => {
+      unsubscribeMaximize = bridge.on("window:maximize-change", (val) => {
         isMaximized.value = val;
       });
     }
@@ -132,7 +134,7 @@ export const useAppStore = defineStore("app", () => {
     setupBridgeSubscriptions();
 
     try {
-      const savedLocale = await window.$ipcBridge.invoke("store:get", "locale");
+      const savedLocale = await bridge.invoke("store:get", "locale");
       if (savedLocale === "zh-CN" || savedLocale === "en-US") {
         locale.value = savedLocale;
         localStorage.setItem("locale", savedLocale);
@@ -142,7 +144,7 @@ export const useAppStore = defineStore("app", () => {
     }
 
     try {
-      const savedTheme = await window.$ipcBridge.invoke("store:get", "theme");
+      const savedTheme = await bridge.invoke("store:get", "theme");
       if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "system") {
         theme.value = savedTheme;
         localStorage.setItem("theme", savedTheme);
@@ -152,7 +154,7 @@ export const useAppStore = defineStore("app", () => {
     }
 
     try {
-      const systemTheme = await window.$ipcBridge.invoke("theme:system:get");
+      const systemTheme = await bridge.invoke("theme:system:get");
       if (systemTheme) {
         accentColor.value = systemTheme.accentColor;
         if (theme.value === "system") {
@@ -165,7 +167,7 @@ export const useAppStore = defineStore("app", () => {
     }
 
     try {
-      isMaximized.value = await window.$ipcBridge.invoke("window:isMaximized");
+      isMaximized.value = await bridge.invoke("window:isMaximized");
     } catch (error) {
       console.warn("Could not load maximize state", error);
     }

@@ -76,6 +76,7 @@ export const allowedChannels = new Set<InvokeChannel>([
   "diagnostics:system:get",
   "diagnostics:exportLogs",
   "app:networkStatus",
+  "context-menu:show",
   "fs:ensureDir",
   "fs:mkdirs",
   "fs:ensureFile",
@@ -127,6 +128,7 @@ export const allowedEvents = new Set<EventChannel>([
   "network:change",
   "settings:changed",
   "app:navigate",
+  "context-menu:action",
 ]);
 export function safeExternalUrl(input: string): URL {
   if (typeof input !== "string" || input.length > 4096) throw new Error("Invalid URL");

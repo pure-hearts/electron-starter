@@ -89,6 +89,8 @@ export interface DesktopInvoke {
   };
   // 网络连通状态
   "app:networkStatus": { args: []; result: { isOnline: boolean } };
+  // 右键上下文菜单唤起
+  "context-menu:show": { args: [options?: ContextMenuOptions]; result: void };
 
   // === 文件系统 API: 存在性与智能保底 (Ensure & Existence) ===
   /** 确保目录存在；存在返回 true，不存在则递归创建后返回 true */
@@ -330,8 +332,29 @@ export interface DesktopEvents {
   };
   "settings:changed": UserSettings;
   "app:navigate": string;
+  "context-menu:action": { id: string };
 }
 export type EventChannel = keyof DesktopEvents;
+
+/** 上下文菜单项契约 */
+export interface ContextMenuItem {
+  id?: string;
+  label?: string;
+  type?: "normal" | "separator" | "checkbox" | "radio";
+  checked?: boolean;
+  enabled?: boolean;
+  role?: string;
+}
+
+/** 上下文菜单唤起参数契约 */
+export interface ContextMenuOptions {
+  x?: number;
+  y?: number;
+  items?: ContextMenuItem[];
+  isEditable?: boolean;
+  hasSelection?: boolean;
+  selectionText?: string;
+}
 // Preload 中的 bridge 必须满足此接口，因此页面调用时拥有类型提示。
 export interface DesktopBridge {
   invoke<C extends InvokeChannel>(channel: C, ...args: InvokeArgs<C>): Promise<InvokeResult<C>>;

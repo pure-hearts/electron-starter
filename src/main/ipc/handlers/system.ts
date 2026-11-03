@@ -4,8 +4,10 @@ import type { SettingKey } from "../../../shared/ipc";
 import { windowAction, openChild } from "../../window";
 import { getSetting, setSetting, deleteSetting } from "../../modules/store";
 import { getAutoStart, setAutoStart } from "../../modules/system/startup";
+import { popupContextMenu } from "../../modules/system/context-menu";
 import { requestQuit, requestRestart } from "../../modules/core/lifecycle";
 import type { HandlerGroup } from "./types";
+import type { ContextMenuOptions } from "../../../shared/ipc";
 
 export const systemHandlers = {
   "app:version": () => app.getVersion(),
@@ -15,6 +17,12 @@ export const systemHandlers = {
   "window:action": (e, [action]) => windowAction(e.sender, action as string),
   "window:open": (_e, [route]) => openChild(route as string),
   "window:isMaximized": (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false,
+  "context-menu:show": (e, [options]) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    if (win && !win.isDestroyed()) {
+      popupContextMenu(win, options as ContextMenuOptions | undefined);
+    }
+  },
   "store:get": (_e, [key]) => getSetting(key as SettingKey),
   "store:set": (_e, [key, value]) => setSetting(key as SettingKey, value as string | boolean),
   "store:delete": (_e, [key]) => deleteSetting(key as SettingKey),

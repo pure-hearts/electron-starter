@@ -7,14 +7,17 @@ import { useAppStore } from "./stores/app";
 import TitleBar from "./components/TitleBar.vue";
 import NetworkBanner from "./components/NetworkBanner.vue";
 import GlobalDownloadDrawer from "./components/GlobalDownloadDrawer.vue";
+import ErrorFallback from "./components/ErrorFallback.vue";
 import { useDownloadStore } from "./stores/download";
 import { useShortcutsStore } from "./stores/shortcuts";
+import { useIpcBridge } from "./bridge";
 
 const router = useRouter();
 const { locale } = useI18n();
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
 const shortcutsStore = useShortcutsStore();
+const { invoke, on } = useIpcBridge();
 
 const naiveTheme = computed(() => (appStore.isDark ? darkTheme : null));
 const naiveLocale = computed(() => (locale.value === "zh-CN" ? zhCN : enUS));
@@ -28,12 +31,10 @@ onMounted(async () => {
   shortcutsStore.initKeyboardListener(router);
 
   // Register listener first, then consume cold-start links so no link is lost.
-  unsubscribeDeepLink = window.$ipcBridge.on("protocol:open", (url) =>
-    appStore.receiveDeepLink(url),
-  );
+  unsubscribeDeepLink = on("protocol:open", (url) => appStore.receiveDeepLink(url));
 
   // 监听原生菜单栏或系统托盘触发的页面导航事件
-  unsubscribeNavigate = window.$ipcBridge.on("app:navigate", (targetRoute) => {
+  unsubscribeNavigate = on("app:navigate", (targetRoute) => {
     if (typeof targetRoute === "string" && targetRoute) {
       if (router.currentRoute.value.path !== targetRoute) {
         void router.push(targetRoute);
@@ -42,7 +43,7 @@ onMounted(async () => {
   });
 
   // 统一响应通知点击事件：根据 action 参数在前端进行业务路由或文件定位调度
-  unsubscribeNotification = window.$ipcBridge.on("notification:activated", (payload) => {
+  unsubscribeNotification = on("notification:activated", (payload) => {
     if (!payload.action || typeof payload.action !== "string") return;
     const knownRoutes = router
       .getRoutes()
@@ -56,14 +57,12 @@ onMounted(async () => {
     }
     // 若不是前端已知路由，作为本地文件路径通过 IPC 请求定位
     if (payload.action.startsWith("/") || /^[a-zA-Z]:\\/.test(payload.action)) {
-      void window.$ipcBridge
-        .invoke("shell:showItemInFolder", payload.action)
-        .catch(() => undefined);
+      void invoke("shell:showItemInFolder", payload.action).catch(() => undefined);
     }
   });
 
   try {
-    const pending = await window.$ipcBridge.invoke("protocol:pending");
+    const pending = await invoke("protocol:pending");
     for (const url of pending) appStore.receiveDeepLink(url);
   } catch (error) {
     console.warn("Could not load pending Deep Links", error);
@@ -97,7 +96,9 @@ onUnmounted(() => {
       <NetworkBanner />
       <GlobalDownloadDrawer />
       <main class="app-main">
-        <router-view />
+        <ErrorFallback>
+          <router-view />
+        </ErrorFallback>
       </main>
     </div>
   </n-config-provider>

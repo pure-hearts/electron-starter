@@ -33,24 +33,22 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { feedback } from "../utils/feedback";
+import { useIpcBridge } from "../bridge";
 
 const isOnline = ref(true);
 let unsubscribe: (() => void) | null = null;
+const { invoke, on } = useIpcBridge();
 
 async function checkStatus() {
-  if (typeof window !== "undefined" && window.$ipcBridge) {
-    try {
-      const res = await window.$ipcBridge.invoke("app:networkStatus");
-      const prev = isOnline.value;
-      isOnline.value = res.isOnline;
-      if (!prev && res.isOnline) {
-        feedback.message.success("网络连接已恢复正常");
-      }
-    } catch {
-      isOnline.value = typeof navigator !== "undefined" ? navigator.onLine : true;
+  try {
+    const res = await invoke("app:networkStatus");
+    const prev = isOnline.value;
+    isOnline.value = res.isOnline;
+    if (!prev && res.isOnline) {
+      feedback.message.success("网络连接已恢复正常");
     }
-  } else if (typeof navigator !== "undefined") {
-    isOnline.value = navigator.onLine;
+  } catch {
+    isOnline.value = typeof navigator !== "undefined" ? navigator.onLine : true;
   }
 }
 
@@ -68,15 +66,13 @@ onMounted(() => {
   if (typeof window !== "undefined") {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-    if (window.$ipcBridge) {
-      unsubscribe = window.$ipcBridge.on("network:change", ({ isOnline: online }) => {
-        const prev = isOnline.value;
-        isOnline.value = online;
-        if (!prev && online) {
-          feedback.message.success("网络连接已恢复正常");
-        }
-      });
-    }
+    unsubscribe = on("network:change", ({ isOnline: online }) => {
+      const prev = isOnline.value;
+      isOnline.value = online;
+      if (!prev && online) {
+        feedback.message.success("网络连接已恢复正常");
+      }
+    });
   }
 });
 

@@ -126,6 +126,11 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
           return 1 as InvokeResult<C>;
         }
 
+        case "context-menu:show": {
+          // Web 模式下由原生浏览器默认右键菜单管理
+          return undefined as InvokeResult<C>;
+        }
+
         // ----------------- 3. 本地持久化存储 (localStorage) -----------------
         case "store:get": {
           const key = args[0] as SettingKey;

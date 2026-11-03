@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type { SelectOption } from "naive-ui";
 import { useAppStore, type ThemeMode } from "../stores/app";
-import { usePlatform } from "../bridge";
+import { usePlatform, useIpcBridge } from "../bridge";
 import { useAxios } from "../api/request";
 import { feedback } from "../utils/feedback";
 import { useDownloadStore, formatBytes, formatSpeed, formatEta } from "../stores/download";
@@ -13,7 +13,7 @@ import type { DownloadState, UpdateState, HotUpdateResult, HotUpdateInfo } from 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const desktop = window.$ipcBridge;
+const desktop = useIpcBridge();
 const appStore = useAppStore();
 const downloadStore = useDownloadStore();
 const { isElectron } = usePlatform();
@@ -188,9 +188,9 @@ function copyAccentColorHex() {
 }
 
 async function handleSelectDirectoryForShell() {
-  if (typeof window !== "undefined" && window.$ipcBridge) {
+  if (isElectron) {
     try {
-      const selected = await window.$ipcBridge.invoke(
+      const selected = await desktop.invoke(
         "dialog:selectDirectory",
         folderTestPath.value || undefined,
       );
@@ -826,7 +826,10 @@ onUnmounted(() => {
           <n-card class="feature-card full-width" size="small">
             <template #header>
               <div class="card-header-bar">
-                <span class="card-title">🔔 原生桌面通知与协议</span>
+                <span class="card-title"
+                  >🔔 原生桌面通知与协议
+                  <n-tag size="small" type="success" :bordered="false">热更生效验证版</n-tag></span
+                >
                 <span class="card-badge">NotificationCenter</span>
               </div>
             </template>

@@ -6,6 +6,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import type { UserSettings } from "@shared/ipc";
 import { useAppStore } from "./app";
+import { useIpcBridge } from "../bridge";
 
 const defaultSettings: UserSettings = {
   theme: "light",
@@ -23,6 +24,7 @@ const defaultSettings: UserSettings = {
 };
 
 export const useSettingsStore = defineStore("settings", () => {
+  const bridge = useIpcBridge();
   const settings = ref<UserSettings>({ ...defaultSettings });
   const loaded = ref(false);
   const saving = ref(false);
@@ -34,11 +36,9 @@ export const useSettingsStore = defineStore("settings", () => {
    */
   async function loadSettings(): Promise<void> {
     try {
-      if (typeof window !== "undefined" && window.$ipcBridge) {
-        const remote = await window.$ipcBridge.invoke("settings:all:get");
-        if (remote) {
-          settings.value = { ...defaultSettings, ...remote };
-        }
+      const remote = await bridge.invoke("settings:all:get");
+      if (remote) {
+        settings.value = { ...defaultSettings, ...remote };
       }
     } catch (e) {
       console.warn("Failed to load settings from main process", e);
@@ -66,11 +66,9 @@ export const useSettingsStore = defineStore("settings", () => {
         void appStore.setLocale(partial.locale);
       }
 
-      if (typeof window !== "undefined" && window.$ipcBridge) {
-        const saved = await window.$ipcBridge.invoke("settings:all:set", partial);
-        if (saved) {
-          settings.value = { ...defaultSettings, ...saved };
-        }
+      const saved = await bridge.invoke("settings:all:set", partial);
+      if (saved) {
+        settings.value = { ...defaultSettings, ...saved };
       }
     } finally {
       saving.value = false;
@@ -81,10 +79,7 @@ export const useSettingsStore = defineStore("settings", () => {
    * 监听主进程广播的设置变更（例如其他窗口修改或快捷键变更）
    */
   function listenSettingsChanges(): () => void {
-    if (typeof window === "undefined" || !window.$ipcBridge) {
-      return () => {};
-    }
-    return window.$ipcBridge.on("settings:changed", (updated) => {
+    return bridge.on("settings:changed", (updated) => {
       if (updated) {
         settings.value = { ...settings.value, ...updated };
       }
