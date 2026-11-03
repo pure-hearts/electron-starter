@@ -104,25 +104,22 @@ function handleDblClick(e: MouseEvent) {
 
 <template>
   <header
-    class="window-titlebar"
-    :class="{
-      'platform-mac': isMac && isElectron,
-      'platform-win': isWindows && isElectron,
-      'platform-linux': isLinux && isElectron,
-      'is-web': isWeb,
-      'is-maximized': appStore.isMaximized,
-    }"
+    class="flex items-center h-44px bg-app-bg-surface border-b border-app-border text-app-text-secondary text-13px select-none sticky top-0 z-50 transition-colors duration-200 px-2"
+    :class="[isWeb ? 'no-drag' : 'drag', isWindows && isElectron ? 'pr-0' : '']"
     @dblclick="handleDblClick"
   >
     <!-- ================= 1. 左侧区域 ================= -->
     <!-- macOS 桌面客户端: 留白 76px 给原生交通灯 -->
-    <div v-if="isMac && isElectron" class="mac-native-traffic-spacer no-drag" />
+    <div v-if="isMac && isElectron" class="w-76px h-full flex-shrink-0 no-drag" />
 
     <!-- 现代 Electron + Vue 品牌 Logo 与标题 (在所有平台均清晰显示) -->
-    <div class="titlebar-brand no-drag" @click="navigateTo('/')">
-      <div class="brand-icon-wrapper">
+    <div
+      class="flex items-center gap-2 px-2.5 h-full cursor-pointer flex-shrink-0 no-drag"
+      @click="navigateTo('/')"
+    >
+      <div class="flex items-center">
         <!-- 现代 Electron + Vue 融合创意 SVG -->
-        <svg viewBox="0 0 28 28" width="18" height="18" fill="none" class="brand-svg">
+        <svg viewBox="0 0 28 28" width="18" height="18" fill="none">
           <!-- 倾斜量子流光环 (Electron 基因) -->
           <ellipse
             cx="14"
@@ -142,17 +139,24 @@ function handleDblClick(e: MouseEvent) {
           <circle cx="23" cy="11" r="1.6" fill="#ffffff" />
         </svg>
       </div>
-      <span class="brand-text">electron-vue-template</span>
-      <span class="brand-version-badge">Vue+</span>
+      <span class="font-600 text-13px text-app-text-primary tracking-tight"
+        >electron-vue-template</span
+      >
+      <span
+        class="text-10px font-700 px-1.5 py-0.25 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30"
+        >Vue+</span
+      >
     </div>
 
     <!-- ================= 2. 顶栏中间胶囊主导航 (Pill Tabs) ================= -->
-    <nav class="titlebar-nav no-drag">
+    <nav
+      class="flex items-center gap-1 ml-1.5 bg-app-bg-subtle p-0.75 rounded-lg border border-app-border-subtle no-drag"
+    >
       <button
         v-for="item in navItems"
         :key="item.id"
-        class="nav-pill-btn"
-        :class="{ 'is-active': isNavActive(item) }"
+        class="border-none bg-transparent text-app-text-secondary text-12px font-500 px-3 py-1 rounded-md cursor-pointer transition-all duration-150 hover:(text-app-text-primary bg-app-bg-hover)"
+        :class="{ 'bg-app-bg-surface text-app-primary font-600 shadow-sm': isNavActive(item) }"
         @click="navigateTo(item.path, item.query)"
       >
         {{ item.label }}
@@ -160,14 +164,13 @@ function handleDblClick(e: MouseEvent) {
     </nav>
 
     <!-- 中间窗口平滑拖拽区 -->
-    <div class="titlebar-drag-area" />
+    <div class="flex-1 h-full drag" />
 
     <!-- ================= 3. 右侧功能操作区 ================= -->
-    <div class="titlebar-actions no-drag">
+    <div class="flex items-center gap-1.5 h-full no-drag">
       <!-- 下载传输中心按钮 (带 Badge) -->
       <button
-        class="action-icon-btn"
-        :class="{ 'has-active': downloadStore.activeCount > 0 }"
+        class="relative inline-flex items-center justify-center w-30px h-30px rounded-md border-none bg-transparent text-app-text-secondary cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-text-primary)"
         :title="t('header.downloadCenter')"
         :aria-label="t('header.downloadCenter')"
         @click="downloadStore.toggleDrawer()"
@@ -186,14 +189,17 @@ function handleDblClick(e: MouseEvent) {
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        <span v-if="downloadStore.activeCount > 0" class="action-badge">
+        <span
+          v-if="downloadStore.activeCount > 0"
+          class="absolute -top-0.5 -right-0.5 bg-app-primary text-white text-9px font-700 h-3.5 min-w-3.5 leading-3.5 text-center rounded-full px-0.75 ring-1.5 ring-app-bg-surface"
+        >
           {{ downloadStore.activeCount }}
         </span>
       </button>
 
       <!-- 外观主题切换 (跟随系统 / 浅色 / 深色) -->
       <button
-        class="action-icon-btn"
+        class="relative inline-flex items-center justify-center w-30px h-30px rounded-md border-none bg-transparent text-app-text-secondary cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-text-primary)"
         :title="`${t('settingsView.general.themeLabel')}: ${t('theme.' + appStore.theme)} (${t('header.themeToggle')})`"
         :aria-label="t('header.themeToggle')"
         @click="toggleTheme"
@@ -245,7 +251,7 @@ function handleDblClick(e: MouseEvent) {
 
       <!-- 语言切换按钮 (中/EN) -->
       <button
-        class="action-pill-btn"
+        class="inline-flex items-center justify-center px-2 py-0.75 text-11px font-600 rounded-md border border-app-border bg-app-bg-subtle text-app-text-secondary cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-text-primary border-app-border-focus)"
         :title="t('header.localeToggle')"
         :aria-label="t('header.localeToggle')"
         @click="toggleLocale"
@@ -256,9 +262,9 @@ function handleDblClick(e: MouseEvent) {
       <!-- ================= 4. 平台特色窗口控制按钮 (仅桌面 Electron 渲染) ================= -->
       <template v-if="isElectron">
         <!-- A. Windows 平台: 贴边 Fluent 风格矩形无边框三键 -->
-        <div v-if="isWindows" class="win-controls">
+        <div v-if="isWindows" class="flex items-center h-full ml-1.5">
           <button
-            class="win-ctrl-btn minimize"
+            class="inline-flex items-center justify-center w-46px h-full border-none bg-transparent text-app-text-secondary cursor-pointer transition-colors duration-100 hover:(bg-app-bg-muted text-app-text-primary)"
             :title="t('header.minimize')"
             :aria-label="t('header.minimize')"
             @click="handleMinimize"
@@ -277,7 +283,7 @@ function handleDblClick(e: MouseEvent) {
           </button>
 
           <button
-            class="win-ctrl-btn maximize"
+            class="inline-flex items-center justify-center w-46px h-full border-none bg-transparent text-app-text-secondary cursor-pointer transition-colors duration-100 hover:(bg-app-bg-muted text-app-text-primary)"
             :title="appStore.isMaximized ? t('header.restore') : t('header.maximize')"
             :aria-label="appStore.isMaximized ? t('header.restore') : t('header.maximize')"
             @click="handleToggleMaximize"
@@ -308,7 +314,7 @@ function handleDblClick(e: MouseEvent) {
           </button>
 
           <button
-            class="win-ctrl-btn close"
+            class="inline-flex items-center justify-center w-46px h-full border-none bg-transparent text-app-text-secondary cursor-pointer transition-colors duration-100 hover:(bg-red-600! text-white!) active:(bg-red-700! text-white!)"
             :title="t('header.close')"
             :aria-label="t('header.close')"
             @click="handleClose"
@@ -337,9 +343,9 @@ function handleDblClick(e: MouseEvent) {
         </div>
 
         <!-- B. Linux 平台: 现代 GNOME / Adwaita 独立圆形徽章三键 -->
-        <div v-else-if="isLinux" class="linux-controls">
+        <div v-else-if="isLinux" class="flex items-center gap-2 pl-2.5 pr-2 h-full">
           <button
-            class="linux-badge-btn minimize"
+            class="w-6 h-6 rounded-full border border-app-border bg-app-bg-subtle text-app-text-secondary inline-flex items-center justify-center cursor-pointer p-0 transition-all duration-150 hover:(bg-app-bg-hover text-app-text-primary border-app-border-focus scale-105) active:scale-94"
             :title="t('header.minimize')"
             :aria-label="t('header.minimize')"
             @click="handleMinimize"
@@ -350,7 +356,7 @@ function handleDblClick(e: MouseEvent) {
           </button>
 
           <button
-            class="linux-badge-btn maximize"
+            class="w-6 h-6 rounded-full border border-app-border bg-app-bg-subtle text-app-text-secondary inline-flex items-center justify-center cursor-pointer p-0 transition-all duration-150 hover:(bg-app-bg-hover text-app-text-primary border-app-border-focus scale-105) active:scale-94"
             :title="appStore.isMaximized ? t('header.restore') : t('header.maximize')"
             :aria-label="appStore.isMaximized ? t('header.restore') : t('header.maximize')"
             @click="handleToggleMaximize"
@@ -361,7 +367,7 @@ function handleDblClick(e: MouseEvent) {
           </button>
 
           <button
-            class="linux-badge-btn close"
+            class="w-6 h-6 rounded-full border border-app-border bg-app-bg-subtle text-app-text-secondary inline-flex items-center justify-center cursor-pointer p-0 transition-all duration-150 hover:(bg-red-500! text-white! border-red-500! scale-105) active:scale-94"
             :title="t('header.close')"
             :aria-label="t('header.close')"
             @click="handleClose"
@@ -376,267 +382,3 @@ function handleDblClick(e: MouseEvent) {
     </div>
   </header>
 </template>
-
-<style scoped>
-.window-titlebar {
-  display: flex;
-  align-items: center;
-  height: 44px;
-  background: var(--app-bg-surface);
-  border-bottom: 1px solid var(--app-border);
-  color: var(--app-text-secondary);
-  font-size: 13px;
-  user-select: none;
-  -webkit-app-region: drag;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-  padding: 0 8px;
-}
-
-/* Windows 桌面模式右侧控件贴满右边界 */
-.window-titlebar.platform-win {
-  padding-right: 0;
-}
-
-/* Web 模式下取消窗口拖拽属性，光标保持正常指针 */
-.window-titlebar.is-web {
-  -webkit-app-region: no-drag;
-}
-
-.no-drag {
-  -webkit-app-region: no-drag;
-}
-
-/* 1. macOS 桌面端左侧原生红绿灯留白 */
-.mac-native-traffic-spacer {
-  width: 76px;
-  height: 100%;
-  flex-shrink: 0;
-  -webkit-app-region: no-drag;
-}
-
-/* 品牌 Logo */
-.titlebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  height: 100%;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.brand-icon-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.brand-text {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--app-text-primary);
-  letter-spacing: -0.01em;
-}
-
-.brand-version-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 9999px;
-  background: rgba(66, 211, 146, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(66, 211, 146, 0.3);
-}
-
-/* 胶囊导航 */
-.titlebar-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 6px;
-  background: var(--app-bg-subtle);
-  padding: 3px;
-  border-radius: 8px;
-  border: 1px solid var(--app-border-subtle);
-}
-
-.nav-pill-btn {
-  border: none;
-  background: transparent;
-  color: var(--app-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.nav-pill-btn:hover {
-  color: var(--app-text-primary);
-  background: var(--app-bg-hover);
-}
-
-.nav-pill-btn.is-active {
-  background: var(--app-bg-surface);
-  color: var(--app-primary);
-  font-weight: 600;
-  box-shadow: var(--app-shadow-sm);
-}
-
-.titlebar-drag-area {
-  flex: 1;
-  height: 100%;
-  -webkit-app-region: drag;
-}
-
-.titlebar-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-}
-
-.action-icon-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--app-text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.action-icon-btn:hover {
-  background: var(--app-bg-hover);
-  color: var(--app-text-primary);
-}
-
-.action-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px solid var(--app-border);
-  background: var(--app-bg-subtle);
-  color: var(--app-text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.action-pill-btn:hover {
-  background: var(--app-bg-hover);
-  color: var(--app-text-primary);
-  border-color: var(--app-border-focus);
-}
-
-.action-badge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background: var(--app-primary);
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  height: 14px;
-  min-width: 14px;
-  line-height: 14px;
-  text-align: center;
-  border-radius: 9999px;
-  padding: 0 3px;
-  box-shadow: 0 0 0 1.5px var(--app-bg-surface);
-}
-
-/* ================= 桌面端平台窗口控件样式 ================= */
-
-/* Windows: 经典 Fluent 贴边矩形控件 */
-.win-controls {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  margin-left: 6px;
-}
-
-.win-ctrl-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: var(--app-text-secondary);
-  cursor: pointer;
-  transition:
-    background-color 0.1s ease,
-    color 0.1s ease;
-}
-
-.win-ctrl-btn:hover {
-  background-color: var(--app-bg-muted);
-  color: var(--app-text-primary);
-}
-
-.win-ctrl-btn.close:hover {
-  background-color: #e81123 !important;
-  color: #ffffff !important;
-}
-
-.win-ctrl-btn.close:active {
-  background-color: #c42b1c !important;
-  color: #ffffff !important;
-}
-
-/* Linux: 现代 GNOME / Adwaita 独立圆形徽章三键 */
-.linux-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px 0 10px;
-  height: 100%;
-}
-
-.linux-badge-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1px solid var(--app-border);
-  background: var(--app-bg-subtle);
-  color: var(--app-text-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.15s ease;
-}
-
-.linux-badge-btn:hover {
-  background: var(--app-bg-hover);
-  color: var(--app-text-primary);
-  border-color: var(--app-border-focus);
-  transform: scale(1.05);
-}
-
-.linux-badge-btn.close:hover {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
-}
-
-.linux-badge-btn:active {
-  transform: scale(0.94);
-}
-</style>

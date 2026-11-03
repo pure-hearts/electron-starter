@@ -21,6 +21,13 @@
   --app-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --app-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --app-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+
+  /* 亮色模式商务滚动条色彩 */
+  --scrollbar-thumb: rgba(15, 23, 42, 0.18);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.35);
+  --scrollbar-thumb-active: rgba(15, 23, 42, 0.52);
+  --scrollbar-track: transparent;
+
   color: var(--app-text-primary);
   background: var(--app-bg-page);
   font-synthesis: none;
@@ -47,10 +54,18 @@ html.dark {
   --app-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --app-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
   --app-shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.6);
+
+  /* 暗色模式商务滚动条色彩 */
+  --scrollbar-thumb: rgba(248, 250, 252, 0.22);
+  --scrollbar-thumb-hover: rgba(248, 250, 252, 0.42);
+  --scrollbar-thumb-active: rgba(248, 250, 252, 0.6);
+  --scrollbar-track: transparent;
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 body {
@@ -61,60 +76,30 @@ body {
   user-select: none;
 }
 
-.app {
-  min-height: 100vh;
-  background: var(--app-bg-page);
-  display: flex;
-  flex-direction: column;
+/* 全局多主题现代商务滚动条规范 (精致细窄胶囊型) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.app-main {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px;
-  flex: 1;
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
 }
 
-/* 玻璃拟态与微光卡片 */
-.glass-panel {
-  background: var(--app-bg-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 12px;
-  box-shadow: var(--app-shadow-sm);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-panel:hover {
-  border-color: var(--app-border-focus);
-  box-shadow: var(--app-shadow-md);
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
 }
 
-/* Bento Grid 栅格工具 */
-.bento-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 16px;
-  margin-top: 20px;
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
 }
 
-.col-span-12 {
-  grid-column: span 12 / span 12;
-}
-.col-span-8 {
-  grid-column: span 8 / span 8;
-}
-.col-span-6 {
-  grid-column: span 6 / span 6;
-}
-.col-span-4 {
-  grid-column: span 4 / span 4;
-}
-
-@media (max-width: 900px) {
-  .col-span-8,
-  .col-span-6,
-  .col-span-4 {
-    grid-column: span 12 / span 12;
-  }
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

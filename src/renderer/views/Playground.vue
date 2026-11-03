@@ -433,30 +433,40 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="playground-dashboard">
+  <section class="flex flex-col gap-4.5 pb-10">
     <!-- 顶部状态横幅 Hero Bar -->
-    <header class="dashboard-hero">
-      <div class="hero-main">
-        <div class="hero-title-group">
-          <h1 class="hero-title">系统功能控制台</h1>
+    <header
+      class="flex justify-between items-center flex-wrap gap-4 px-6 py-4.5 bg-app-bg-surface border border-app-border rounded-xl shadow-sm"
+    >
+      <div class="flex flex-col">
+        <div class="flex items-center flex-wrap gap-2.5">
+          <h1 class="m-0 text-22px font-700 text-app-text-primary">系统功能控制台</h1>
           <n-tag type="primary" size="small" round>Playground Pro</n-tag>
           <n-tag :type="isElectron ? 'success' : 'warning'" size="small" round>
             {{ isElectron ? "🖥️ Electron 桌面客户端" : "🌐 Web 纯浏览器模式" }}
           </n-tag>
-          <span v-if-web class="web-mode-hint">Web Shim 降级垫片已激活</span>
+          <span
+            v-if-web
+            class="text-11px px-2 py-0.5 rounded-full bg-app-bg-muted text-app-text-secondary"
+            >Web Shim 降级垫片已激活</span
+          >
         </div>
-        <p class="hero-sub">
+        <p class="m-0 mt-1 text-13px text-app-text-secondary">
           22 项原生系统能力综合测试面板 · Naive UI + VueUse 架构 · 严格运行在沙箱与类型安全 IPC 下
         </p>
       </div>
 
-      <div class="hero-metrics">
-        <div class="metric-chip">
-          <span class="metric-label">应用版本</span>
-          <strong class="metric-value">{{ version || "检测中..." }}</strong>
+      <div class="flex gap-4.5 items-center">
+        <div
+          class="flex flex-col items-start px-3.5 py-1.5 bg-app-bg-subtle border border-app-border-subtle rounded-lg"
+        >
+          <span class="text-11px text-app-text-muted">应用版本</span>
+          <strong class="text-14px text-app-text-primary">{{ version || "检测中..." }}</strong>
         </div>
-        <div class="metric-chip">
-          <span class="metric-label"
+        <div
+          class="flex flex-col items-start px-3.5 py-1.5 bg-app-bg-subtle border border-app-border-subtle rounded-lg"
+        >
+          <span class="text-11px text-app-text-muted"
             >并发负载 ({{ activeDownloadsCount }}/{{ downloadConcurrency }})</span
           >
           <n-progress
@@ -468,9 +478,11 @@ onUnmounted(() => {
             :status="concurrencyRatio >= 100 ? 'warning' : 'success'"
           />
         </div>
-        <div class="metric-chip">
-          <span class="metric-label">Deep Link</span>
-          <strong class="metric-value" style="color: var(--app-success)">
+        <div
+          class="flex flex-col items-start px-3.5 py-1.5 bg-app-bg-subtle border border-app-border-subtle rounded-lg"
+        >
+          <span class="text-11px text-app-text-muted">Deep Link</span>
+          <strong class="text-14px text-app-text-primary" style="color: var(--app-success)">
             {{ appStore.lastDeepLink ? "已连接" : "就绪监听" }}
           </strong>
         </div>
@@ -478,22 +490,24 @@ onUnmounted(() => {
     </header>
 
     <!-- 核心功能标签页 Tabs -->
-    <n-tabs v-model:value="activeTab" type="card" animated class="dashboard-tabs">
+    <n-tabs v-model:value="activeTab" type="card" animated class="w-full">
       <!-- Tab 1: 窗口与系统 -->
       <n-tab-pane name="window" tab="🖥️ 窗口与系统控制">
-        <div class="tab-grid">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
           <!-- 窗口动作控制卡片 -->
-          <n-card class="feature-card" size="small">
+          <n-card class="rounded-10px border border-app-border" size="small">
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">🪟 窗口行为矩阵</span>
-                <span class="card-badge">多窗口与生命周期</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary">🪟 窗口行为矩阵</span>
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >多窗口与生命周期</span
+                >
               </div>
             </template>
-            <p class="card-desc">
+            <p class="m-0 mb-3.5 text-13px text-app-text-secondary">
               通过受限白名单调用底层 BrowserWindow 控制动作，严禁任意字符串执行。
             </p>
-            <div class="button-matrix">
+            <div class="flex flex-wrap gap-2.5">
               <n-button
                 type="primary"
                 secondary
@@ -542,15 +556,17 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 系统偏好与托盘设置 -->
-          <n-card class="feature-card" size="small">
+          <n-card class="rounded-10px border border-app-border" size="small">
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">⚙️ 系统集成偏好</span>
-                <span class="card-badge">开机自启 & 托盘</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary">⚙️ 系统集成偏好</span>
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >开机自启 & 托盘</span
+                >
               </div>
             </template>
-            <div class="switch-row">
-              <div class="switch-meta">
+            <div class="flex justify-between items-center">
+              <div class="flex justify-between items-center">
                 <strong>关闭窗口时隐藏至系统托盘</strong>
                 <small>开启后点击窗口关闭按钮不退出进程，由系统托盘常驻守护</small>
               </div>
@@ -562,8 +578,8 @@ onUnmounted(() => {
               />
             </div>
             <n-divider style="margin: 14px 0" />
-            <div class="switch-row">
-              <div class="switch-meta">
+            <div class="flex justify-between items-center">
+              <div class="flex justify-between items-center">
                 <strong>开机自动启动应用</strong>
                 <small>跨平台支持 Windows 注册表、macOS LoginItem 与 Linux XDG autostart</small>
               </div>
@@ -577,30 +593,43 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 系统原生 Shell 与外观体验 (现代化 Bento 深度重构) -->
-          <n-card class="feature-card full-width shell-bento-card" size="small">
+          <n-card
+            class="rounded-10px border border-app-border col-span-1 md:col-span-2 overflow-hidden border border-app-border transition-all duration-250"
+            size="small"
+          >
             <template #header>
-              <div class="card-header-bar">
-                <div class="card-title-group">
-                  <span class="card-title">🐚 {{ t("playgroundView.shell.cardTitle") }}</span>
-                  <span class="platform-indicator-pill">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-15px font-600 text-app-text-primary"
+                    >🐚 {{ t("playgroundView.shell.cardTitle") }}</span
+                  >
+                  <span
+                    class="text-11px font-500 px-2 py-0.5 rounded-full bg-app-bg-subtle border border-app-border-subtle text-app-text-muted"
+                  >
                     {{ isElectron ? "Desktop Native" : "Web Environment" }}
                   </span>
                 </div>
-                <div class="badge-group">
-                  <span class="card-badge">{{ t("playgroundView.shell.cardBadgeShell") }}</span>
-                  <span class="card-badge">{{ t("playgroundView.shell.cardBadgeTheme") }}</span>
+                <div class="flex gap-1.5">
+                  <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded">{{
+                    t("playgroundView.shell.cardBadgeShell")
+                  }}</span>
+                  <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded">{{
+                    t("playgroundView.shell.cardBadgeTheme")
+                  }}</span>
                 </div>
               </div>
             </template>
-            <p class="card-desc">
+            <p class="m-0 mb-3.5 text-13px text-app-text-secondary">
               {{ t("playgroundView.shell.cardDesc") }}
             </p>
 
-            <div class="shell-bento-grid">
+            <div class="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4 mt-3.5">
               <!-- 左侧: 系统外观感知与主题联动 -->
-              <div class="bento-subcard appearance-subcard">
-                <div class="subcard-header">
-                  <div class="subcard-title-box">
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-xl p-4 flex flex-col gap-3.5 justify-between"
+              >
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-2 text-app-text-primary">
                     <svg
                       viewBox="0 0 24 24"
                       width="16"
@@ -631,15 +660,19 @@ onUnmounted(() => {
                 </div>
 
                 <!-- 强调色展示区 -->
-                <div class="accent-showcase-box">
+                <div
+                  class="flex items-center gap-3.5 px-3.5 py-3 bg-app-bg-surface border border-app-border rounded-10px"
+                >
                   <div
-                    class="accent-color-chip"
+                    class="w-9 h-9 rounded-10px shadow-md flex-shrink-0 border-2 border-white"
                     :style="{ backgroundColor: appStore.accentColor || 'var(--app-primary)' }"
                   />
-                  <div class="accent-meta-info">
-                    <span class="accent-label">{{ t("playgroundView.shell.accentLabel") }}</span>
-                    <div class="accent-code-row">
-                      <code class="accent-hex-text">{{
+                  <div class="flex flex-col gap-0.75 overflow-hidden">
+                    <span class="text-11px text-app-text-muted">{{
+                      t("playgroundView.shell.accentLabel")
+                    }}</span>
+                    <div class="flex items-center gap-1.5">
+                      <code class="text-13px font-600 font-mono text-app-text-primary">{{
                         appStore.accentColor || t("playgroundView.shell.accentUndetected")
                       }}</code>
                       <n-button
@@ -655,12 +688,12 @@ onUnmounted(() => {
                 </div>
 
                 <!-- 窗口状态与即时主题控制器 -->
-                <div class="theme-quick-switch-row">
-                  <div class="switch-meta">
-                    <span class="meta-small-label">{{
+                <div class="flex flex-col gap-2">
+                  <div class="flex justify-between items-center">
+                    <span class="text-12px font-500 text-app-text-primary">{{
                       t("playgroundView.shell.appearanceControlLabel")
                     }}</span>
-                    <span class="meta-small-desc">
+                    <span class="text-11px text-app-text-muted">
                       {{ t("playgroundView.shell.windowMaxLabel") }}:
                       {{
                         appStore.isMaximized
@@ -682,15 +715,19 @@ onUnmounted(() => {
               </div>
 
               <!-- 右侧: 原生 Shell 安全能力三剑客 -->
-              <div class="bento-subcard shell-ops-subcard">
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-xl p-4 flex flex-col gap-3.5 gap-3"
+              >
                 <!-- 1. 受信任外部链接 -->
-                <div class="shell-op-group">
-                  <div class="op-header">
-                    <span class="op-title">{{ t("playgroundView.shell.externalTitle") }}</span>
-                    <div class="preset-pill-group">
+                <div class="flex flex-col gap-2">
+                  <div class="flex justify-between items-center flex-wrap gap-1.5">
+                    <span class="text-13px font-600 text-app-text-primary">{{
+                      t("playgroundView.shell.externalTitle")
+                    }}</span>
+                    <div class="flex items-center gap-1.5">
                       <button
                         type="button"
-                        class="preset-chip"
+                        class="bg-app-bg-surface border border-app-border text-app-text-secondary rounded-md px-2 py-0.5 text-11px cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-primary border-app-primary)"
                         @click="
                           externalTestUrl = 'https://github.com/pure-hearts/electron-vue-template'
                         "
@@ -699,21 +736,21 @@ onUnmounted(() => {
                       </button>
                       <button
                         type="button"
-                        class="preset-chip"
+                        class="bg-app-bg-surface border border-app-border text-app-text-secondary rounded-md px-2 py-0.5 text-11px cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-primary border-app-primary)"
                         @click="externalTestUrl = 'https://www.electronjs.org/docs/latest'"
                       >
                         {{ t("playgroundView.shell.externalPresetElectron") }}
                       </button>
                       <button
                         type="button"
-                        class="preset-chip"
+                        class="bg-app-bg-surface border border-app-border text-app-text-secondary rounded-md px-2 py-0.5 text-11px cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-primary border-app-primary)"
                         @click="externalTestUrl = 'https://vuejs.org'"
                       >
                         {{ t("playgroundView.shell.externalPresetVue") }}
                       </button>
                     </div>
                   </div>
-                  <div class="form-row">
+                  <div class="flex gap-2.5 items-center flex-wrap">
                     <n-input
                       v-model:value="externalTestUrl"
                       :placeholder="t('playgroundView.shell.externalPlaceholder')"
@@ -737,23 +774,29 @@ onUnmounted(() => {
                 <n-divider style="margin: 10px 0" />
 
                 <!-- 2. 本地文件与目录定位 -->
-                <div class="shell-op-group">
-                  <div class="op-header">
-                    <span class="op-title">{{ t("playgroundView.shell.pathTitle") }}</span>
-                    <div class="preset-pill-group">
+                <div class="flex flex-col gap-2">
+                  <div class="flex justify-between items-center flex-wrap gap-1.5">
+                    <span class="text-13px font-600 text-app-text-primary">{{
+                      t("playgroundView.shell.pathTitle")
+                    }}</span>
+                    <div class="flex items-center gap-1.5">
                       <button
                         type="button"
-                        class="preset-chip"
+                        class="bg-app-bg-surface border border-app-border text-app-text-secondary rounded-md px-2 py-0.5 text-11px cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-primary border-app-primary)"
                         @click="folderTestPath = 'package.json'"
                       >
                         {{ t("playgroundView.shell.presetPackageJson") }}
                       </button>
-                      <button type="button" class="preset-chip" @click="folderTestPath = '/tmp'">
+                      <button
+                        type="button"
+                        class="bg-app-bg-surface border border-app-border text-app-text-secondary rounded-md px-2 py-0.5 text-11px cursor-pointer transition-all duration-150 hover:(bg-app-bg-hover text-app-primary border-app-primary)"
+                        @click="folderTestPath = '/tmp'"
+                      >
                         {{ t("playgroundView.shell.presetTmpDir") }}
                       </button>
                     </div>
                   </div>
-                  <div class="form-row">
+                  <div class="flex gap-2.5 items-center flex-wrap">
                     <n-input
                       v-model:value="folderTestPath"
                       :placeholder="t('playgroundView.shell.pathPlaceholder')"
@@ -788,12 +831,16 @@ onUnmounted(() => {
                 <n-divider style="margin: 10px 0" />
 
                 <!-- 3. 安全移入系统废纸篓 (shell:trashItem) -->
-                <div class="shell-op-group">
-                  <div class="op-header">
-                    <span class="op-title">{{ t("playgroundView.shell.trashTitle") }}</span>
-                    <span class="op-security-tip">{{ t("playgroundView.shell.trashDesc") }}</span>
+                <div class="flex flex-col gap-2">
+                  <div class="flex justify-between items-center flex-wrap gap-1.5">
+                    <span class="text-13px font-600 text-app-text-primary">{{
+                      t("playgroundView.shell.trashTitle")
+                    }}</span>
+                    <span class="text-11px text-app-text-muted">{{
+                      t("playgroundView.shell.trashDesc")
+                    }}</span>
                   </div>
-                  <div class="form-row">
+                  <div class="flex gap-2.5 items-center flex-wrap">
                     <n-input
                       v-model:value="trashTestPath"
                       :placeholder="t('playgroundView.shell.trashPlaceholder')"
@@ -823,17 +870,22 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 桌面通知测试 -->
-          <n-card class="feature-card full-width" size="small">
+          <n-card
+            class="rounded-10px border border-app-border col-span-1 md:col-span-2"
+            size="small"
+          >
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title"
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary"
                   >🔔 原生桌面通知与协议
                   <n-tag size="small" type="success" :bordered="false">热更生效验证版</n-tag></span
                 >
-                <span class="card-badge">NotificationCenter</span>
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >NotificationCenter</span
+                >
               </div>
             </template>
-            <div class="form-row">
+            <div class="flex gap-2.5 items-center flex-wrap">
               <n-input
                 v-model:value="customNoticeTitle"
                 placeholder="通知标题"
@@ -862,7 +914,10 @@ onUnmounted(() => {
                 查询 Deep Link 协议
               </n-button>
             </div>
-            <div v-if="appStore.lastDeepLink" class="deep-link-banner">
+            <div
+              v-if="appStore.lastDeepLink"
+              class="mt-3 px-3 py-2 bg-app-bg-subtle rounded-md text-12px"
+            >
               <span>🔗 捕获到唤醒参数：</span>
               <code>{{ appStore.lastDeepLink }}</code>
             </div>
@@ -872,23 +927,32 @@ onUnmounted(() => {
 
       <!-- Tab 2: 数据传输与存储 -->
       <n-tab-pane name="transfer" tab="📦 数据持久化与传输">
-        <div class="tab-grid">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
           <!-- VueUse useAxios 响应式网络请求卡片 -->
-          <n-card class="feature-card full-width" size="small">
+          <n-card
+            class="rounded-10px border border-app-border col-span-1 md:col-span-2"
+            size="small"
+          >
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">🌐 响应式 HTTP 请求 (VueUse useAxios)</span>
-                <div class="badge-group">
-                  <span class="card-badge">双端同构</span>
-                  <span class="card-badge">AbortSignal 取消与脱敏拦截</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary"
+                  >🌐 响应式 HTTP 请求 (VueUse useAxios)</span
+                >
+                <div class="flex gap-1.5">
+                  <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                    >双端同构</span
+                  >
+                  <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                    >AbortSignal 取消与脱敏拦截</span
+                  >
                 </div>
               </div>
             </template>
-            <p class="card-desc">
+            <p class="m-0 mb-3.5 text-13px text-app-text-secondary">
               基于预绑定拦截器的 <code>useAxios</code>，自动维护响应式
               <code>isLoading</code>、<code>data</code>、<code>error</code> 与一键中断控制。
             </p>
-            <div class="form-row" style="margin-bottom: 12px">
+            <div class="flex gap-2.5 items-center flex-wrap" style="margin-bottom: 12px">
               <n-input
                 v-model:value="apiTestURL"
                 placeholder="请输入 HTTPS JSON 接口地址"
@@ -908,7 +972,9 @@ onUnmounted(() => {
               </n-button>
             </div>
             <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center">
-              <span class="muted-text" style="font-size: 12px">快速填入预设接口:</span>
+              <span class="text-12px text-app-text-secondary" style="font-size: 12px"
+                >快速填入预设接口:</span
+              >
               <n-button
                 v-for="preset in apiPresets"
                 :key="preset.url"
@@ -920,7 +986,7 @@ onUnmounted(() => {
                 {{ preset.label }}
               </n-button>
             </div>
-            <div class="axios-status-bar">
+            <div class="flex items-center gap-3 px-3 py-2 bg-app-bg-subtle rounded-md">
               <n-tag
                 size="small"
                 :type="
@@ -948,8 +1014,10 @@ onUnmounted(() => {
                           : "空闲就绪"
                 }}
               </n-tag>
-              <span v-if="axiosError" class="error-msg">异常摘要: {{ String(axiosError) }}</span>
-              <span v-else-if="axiosData" class="muted-text font-mono">
+              <span v-if="axiosError" class="text-12px text-app-danger"
+                >异常摘要: {{ String(axiosError) }}</span
+              >
+              <span v-else-if="axiosData" class="text-12px text-app-text-secondary font-mono">
                 响应成功:
                 {{
                   axiosData.origin
@@ -965,11 +1033,16 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 并发控制器与新建下载 -->
-          <n-card class="feature-card full-width" size="small">
+          <n-card
+            class="rounded-10px border border-app-border col-span-1 md:col-span-2"
+            size="small"
+          >
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">⚡ 传输队列调度中心</span>
-                <span class="card-badge">FIFO 队列 & 1-50 并发限制</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary">⚡ 传输队列调度中心</span>
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >FIFO 队列 & 1-50 并发限制</span
+                >
               </div>
             </template>
 
@@ -995,12 +1068,16 @@ onUnmounted(() => {
                   总传输速率: {{ formatSpeed(downloadStore.totalSpeed) }}
                 </n-tag>
               </div>
-              <span class="card-badge">已启用 SQLite 持久化 & 250ms IPC 节流</span>
+              <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                >已启用 SQLite 持久化 & 250ms IPC 节流</span
+              >
             </div>
 
             <!-- 并发设置联动 -->
-            <div class="concurrency-control-bar">
-              <span class="label">最大并行下载并发数：</span>
+            <div
+              class="flex items-center flex-wrap px-3.5 py-2.5 bg-app-bg-subtle rounded-lg mb-3.5 text-13px"
+            >
+              <span class="text-11px text-app-text-muted">最大并行下载并发数：</span>
               <n-slider
                 v-model:value="downloadConcurrency"
                 :min="1"
@@ -1027,7 +1104,7 @@ onUnmounted(() => {
             </div>
 
             <!-- 下载新建 -->
-            <div class="download-create-box">
+            <div class="flex gap-2.5 mb-3.5">
               <n-input-group style="flex: 1">
                 <n-input-group-label>HTTPS</n-input-group-label>
                 <n-input
@@ -1046,16 +1123,22 @@ onUnmounted(() => {
             </div>
 
             <!-- 下载任务列表展示 -->
-            <div class="downloads-wrapper">
+            <div class="flex flex-col">
               <n-empty
                 v-if="downloads.length === 0"
                 description="暂无活跃下载任务，请在上方输入地址创建"
                 style="padding: 16px 0"
               />
-              <div v-else class="download-list">
-                <div v-for="item in downloads" :key="item.id" class="download-item-card">
-                  <div class="item-header">
-                    <span class="url-text" :title="item.url">{{ item.url }}</span>
+              <div v-else class="flex flex-col gap-2.5">
+                <div
+                  v-for="item in downloads"
+                  :key="item.id"
+                  class="px-3.5 py-3 border border-app-border-subtle bg-app-bg-surface rounded-lg flex flex-col gap-2"
+                >
+                  <div class="flex justify-between items-center">
+                    <span class="text-13px font-500 max-w-70% truncate" :title="item.url">{{
+                      item.url
+                    }}</span>
                     <n-tag
                       size="small"
                       :type="
@@ -1073,7 +1156,7 @@ onUnmounted(() => {
                   </div>
 
                   <!-- 生产级动画进度条 -->
-                  <div class="item-progress">
+                  <div class="w-full">
                     <n-progress
                       type="line"
                       :percentage="item.percent ?? 0"
@@ -1112,9 +1195,13 @@ onUnmounted(() => {
                     </span>
                   </div>
 
-                  <div class="item-footer">
-                    <span v-if="item.error" class="error-msg">⚠️ {{ item.error }}</span>
-                    <span v-else class="id-text">TaskID: {{ item.id.slice(0, 8) }}...</span>
+                  <div class="flex justify-between items-center">
+                    <span v-if="item.error" class="text-12px text-app-danger"
+                      >⚠️ {{ item.error }}</span
+                    >
+                    <span v-else class="text-11px text-app-text-muted"
+                      >TaskID: {{ item.id.slice(0, 8) }}...</span
+                    >
 
                     <n-button-group size="small">
                       <n-button
@@ -1162,15 +1249,21 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 本地配置与持久化 -->
-          <n-card class="feature-card" size="small">
+          <n-card class="rounded-10px border border-app-border" size="small">
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">🗄️ 本地配置存储 (electron-store)</span>
-                <span class="card-badge">安全持久化</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary"
+                  >🗄️ 本地配置存储 (electron-store)</span
+                >
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >安全持久化</span
+                >
               </div>
             </template>
-            <p class="card-desc">对应用偏好进行 Schema 校验写入，保证系统启动自动恢复。</p>
-            <div class="form-row">
+            <p class="m-0 mb-3.5 text-13px text-app-text-secondary">
+              对应用偏好进行 Schema 校验写入，保证系统启动自动恢复。
+            </p>
+            <div class="flex gap-2.5 items-center flex-wrap">
               <n-select
                 v-model:value="themeValue"
                 :options="themeSelectOptions"
@@ -1195,14 +1288,16 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 打印服务 -->
-          <n-card class="feature-card" size="small">
+          <n-card class="rounded-10px border border-app-border" size="small">
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">🖨️ 系统打印服务</span>
-                <span class="card-badge">原生打印机探测</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary">🖨️ 系统打印服务</span>
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >原生打印机探测</span
+                >
               </div>
             </template>
-            <div class="button-matrix" style="margin-bottom: 12px">
+            <div class="flex flex-wrap gap-2.5" style="margin-bottom: 12px">
               <n-button
                 type="primary"
                 secondary
@@ -1218,8 +1313,8 @@ onUnmounted(() => {
                 打印当前视图
               </n-button>
             </div>
-            <div class="printer-tags">
-              <span v-if="printList.length === 0" class="muted-text"
+            <div class="flex flex-wrap gap-1.5">
+              <span v-if="printList.length === 0" class="text-12px text-app-text-secondary"
                 >暂未发现打印设备，点击上方按钮扫描</span
               >
               <n-tag
@@ -1238,13 +1333,20 @@ onUnmounted(() => {
 
       <!-- Tab 3: 更新与系统诊断 -->
       <n-tab-pane name="update" tab="🔄 应用升级与诊断">
-        <div class="tab-grid">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
           <!-- 整包自动更新流程 -->
-          <n-card class="feature-card full-width" size="small">
+          <n-card
+            class="rounded-10px border border-app-border col-span-1 md:col-span-2"
+            size="small"
+          >
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">🚀 全量自动更新 (electron-updater)</span>
-                <span class="card-badge">跨平台差分下载</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary"
+                  >🚀 全量自动更新 (electron-updater)</span
+                >
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >跨平台差分下载</span
+                >
               </div>
             </template>
 
@@ -1261,8 +1363,8 @@ onUnmounted(() => {
             </n-steps>
 
             <!-- 更新下载专用大进度条 -->
-            <div v-if="isFullUpdateDownloading" class="update-progress-box">
-              <div class="progress-info">
+            <div v-if="isFullUpdateDownloading" class="bg-app-bg-subtle rounded-lg px-4 py-3 mb-4">
+              <div class="flex justify-between mb-1.5 text-13px">
                 <span>正在下载新版本安装包...</span>
                 <strong>{{ fullUpdatePercent }}%</strong>
               </div>
@@ -1275,7 +1377,7 @@ onUnmounted(() => {
               />
             </div>
 
-            <div class="button-matrix">
+            <div class="flex flex-wrap gap-2.5">
               <n-button
                 type="primary"
                 v-disabled-electron="'整包安装更新仅在桌面客户端支持'"
@@ -1308,38 +1410,49 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 增量热更新卡片 -->
-          <n-card class="feature-card full-width" size="small">
+          <n-card
+            class="rounded-10px border border-app-border col-span-1 md:col-span-2"
+            size="small"
+          >
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">⚡ 增量热更新 (ZIP Hot Update)</span>
-                <div class="badge-group">
-                  <span class="card-badge">Ed25519 签名校验</span>
-                  <span class="card-badge">崩溃自愈回滚</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary"
+                  >⚡ 增量热更新 (ZIP Hot Update)</span
+                >
+                <div class="flex gap-1.5">
+                  <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                    >Ed25519 签名校验</span
+                  >
+                  <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                    >崩溃自愈回滚</span
+                  >
                 </div>
               </div>
             </template>
-            <p class="card-desc">
+            <p class="m-0 mb-3.5 text-13px text-app-text-secondary">
               仅下载并热替换渲染层静态资源，跳过主进程与安装向导，支持多源分发与异常自动回退。
             </p>
 
             <!-- 热更状态信息面板 -->
-            <div class="hot-status-panel">
-              <div class="status-metric">
-                <span class="metric-label">生效版本标签</span>
-                <n-tag size="small" type="primary" class="metric-tag">
+            <div
+              class="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 bg-app-bg-subtle px-4 py-3 rounded-lg mb-4"
+            >
+              <div class="flex flex-col items-start gap-1.5">
+                <span class="text-11px text-app-text-muted">生效版本标签</span>
+                <n-tag size="small" type="primary" class="mt-1">
                   {{ hotInfo?.currentVersionTag || "内置版本" }}
                 </n-tag>
               </div>
 
-              <div class="status-metric">
-                <span class="metric-label">Git 提交 Hash</span>
-                <n-tag size="small" type="info" class="metric-tag font-mono">
+              <div class="flex flex-col items-start gap-1.5">
+                <span class="text-11px text-app-text-muted">Git 提交 Hash</span>
+                <n-tag size="small" type="info" class="mt-1 font-mono">
                   {{ hotInfo?.currentCommit || "base" }}
                 </n-tag>
               </div>
 
-              <div class="status-metric">
-                <span class="metric-label">生命周期阶段</span>
+              <div class="flex flex-col items-start gap-1.5">
+                <span class="text-11px text-app-text-muted">生命周期阶段</span>
                 <n-tag
                   size="small"
                   :type="
@@ -1376,7 +1489,7 @@ onUnmounted(() => {
               点击下方按钮立即重启应用即可切换至新静态资源版本。
             </n-alert>
 
-            <div class="button-matrix">
+            <div class="flex flex-wrap gap-2.5">
               <n-button
                 type="warning"
                 secondary
@@ -1402,15 +1515,24 @@ onUnmounted(() => {
           </n-card>
 
           <!-- 诊断与日志导出 -->
-          <n-card class="feature-card full-width" size="small">
+          <n-card
+            class="rounded-10px border border-app-border col-span-1 md:col-span-2"
+            size="small"
+          >
             <template #header>
-              <div class="card-header-bar">
-                <span class="card-title">📝 生产日志与审计 (electron-log)</span>
-                <span class="card-badge">凭据自动脱敏</span>
+              <div class="flex justify-between items-center">
+                <span class="text-15px font-600 text-app-text-primary"
+                  >📝 生产日志与审计 (electron-log)</span
+                >
+                <span class="text-11px text-app-text-muted bg-app-bg-muted px-2 py-0.5 rounded"
+                  >凭据自动脱敏</span
+                >
               </div>
             </template>
-            <p class="card-desc">主进程写入带有敏感字段脱敏保护的诊断日志，支持一键安全导出。</p>
-            <div class="form-row">
+            <p class="m-0 mb-3.5 text-13px text-app-text-secondary">
+              主进程写入带有敏感字段脱敏保护的诊断日志，支持一键安全导出。
+            </p>
+            <div class="flex gap-2.5 items-center flex-wrap">
               <n-select
                 v-model:value="testLogLevel"
                 :options="logLevelOptions"
@@ -1444,15 +1566,15 @@ onUnmounted(() => {
     </n-tabs>
 
     <!-- 底部结构化控制台输出终端 -->
-    <n-card class="console-card" size="small">
+    <n-card class="rounded-xl border border-app-border" size="small">
       <template #header>
-        <div class="console-header">
-          <div class="console-title">
-            <span class="dot"></span>
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2 text-14px">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
             <strong>实时交互与调试终端 (Interactive Terminal Console)</strong>
             <n-tag size="small" type="info" round>{{ consoleLogs.length }} 条记录</n-tag>
           </div>
-          <div class="console-actions">
+          <div class="flex gap-1.5">
             <n-button size="small" quaternary @click="copyConsole">复制全部</n-button>
             <n-button size="small" quaternary type="error" @click="clearConsole"
               >清空控制台</n-button
@@ -1461,16 +1583,26 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <div ref="consoleContainer" class="console-body">
-        <div v-if="consoleLogs.length === 0" class="console-empty">
-          <span class="code-symbol">&gt;_</span>
+      <div
+        ref="consoleContainer"
+        class="max-h-280px overflow-y-auto font-mono text-12px bg-slate-900 text-slate-50 px-4 py-3 rounded-lg flex flex-col gap-1.5"
+      >
+        <div v-if="consoleLogs.length === 0" class="flex items-center gap-2 text-slate-500 py-4">
+          <span class="text-sky-400 font-700">&gt;_</span>
           <span>控制台已就绪，触发上方功能按钮即可查看实时结构化返回结果...</span>
         </div>
-        <div v-for="log in consoleLogs" :key="log.id" class="console-row" :class="log.type">
-          <span class="log-time">{{ log.time }}</span>
+        <div
+          v-for="log in consoleLogs"
+          :key="log.id"
+          class="flex items-baseline gap-2.5 leading-relaxed"
+          :class="log.type"
+        >
+          <span class="text-slate-500 text-11px">{{ log.time }}</span>
           <span class="log-badge" :class="log.type">{{ log.label }}</span>
-          <span v-if="log.duration !== undefined" class="log-duration">{{ log.duration }}ms</span>
-          <div class="log-payload">
+          <span v-if="log.duration !== undefined" class="text-10px text-yellow-500"
+            >{{ log.duration }}ms</span
+          >
+          <div class="flex-1 truncate">
             <code>{{ typeof log.data === "string" ? log.data : JSON.stringify(log.data) }}</code>
           </div>
         </div>
@@ -1478,582 +1610,3 @@ onUnmounted(() => {
     </n-card>
   </section>
 </template>
-
-<style scoped>
-.playground-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding-bottom: 40px;
-}
-
-/* 顶部 Hero 仪表 */
-.dashboard-hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 18px 24px;
-  background: var(--app-bg-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.hero-title-group {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.hero-title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--app-text-primary);
-}
-
-.web-mode-hint {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--app-bg-muted);
-  color: var(--app-text-secondary);
-}
-
-.hero-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--app-text-secondary);
-}
-
-.hero-metrics {
-  display: flex;
-  gap: 18px;
-  align-items: center;
-}
-
-.metric-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 6px 14px;
-  background: var(--app-bg-subtle);
-  border: 1px solid var(--app-border-subtle);
-  border-radius: 8px;
-}
-
-.metric-label {
-  font-size: 11px;
-  color: var(--app-text-muted);
-}
-
-.metric-value {
-  font-size: 14px;
-  color: var(--app-text-primary);
-}
-
-/* 标签页与网格布局 */
-.tab-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.full-width {
-  grid-column: span 2;
-}
-
-/* 功能卡片通用样式 */
-.feature-card {
-  border-radius: 10px;
-  border: 1px solid var(--app-border);
-}
-
-.card-header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--app-text-primary);
-}
-
-.card-badge {
-  font-size: 11px;
-  color: var(--app-text-muted);
-  background: var(--app-bg-muted);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.badge-group {
-  display: flex;
-  gap: 6px;
-}
-
-.axios-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  background: var(--app-bg-subtle);
-  border-radius: 6px;
-}
-
-.muted-text {
-  font-size: 12px;
-  color: var(--app-text-secondary);
-}
-
-.hot-status-panel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  background: var(--app-bg-subtle);
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.status-metric {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.card-desc {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: var(--app-text-secondary);
-}
-
-.button-matrix {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.switch-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.switch-meta strong {
-  display: block;
-  font-size: 14px;
-  color: var(--app-text-primary);
-}
-
-.switch-meta small {
-  font-size: 12px;
-  color: var(--app-text-secondary);
-}
-
-.form-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.deep-link-banner {
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: var(--app-bg-subtle);
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-.deep-link-banner code {
-  color: var(--app-primary);
-  word-break: break-all;
-}
-
-/* 下载传输样式 */
-.concurrency-control-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  background: var(--app-bg-subtle);
-  border-radius: 8px;
-  margin-bottom: 14px;
-  font-size: 13px;
-}
-
-.download-create-box {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.download-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.download-item-card {
-  padding: 12px 14px;
-  border: 1px solid var(--app-border-subtle);
-  background: var(--app-bg-surface);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.url-text {
-  font-size: 13px;
-  font-weight: 500;
-  max-width: 70%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.id-text {
-  font-size: 11px;
-  color: var(--app-text-muted);
-}
-
-.error-msg {
-  font-size: 12px;
-  color: var(--app-danger);
-}
-
-.update-progress-box {
-  background: var(--app-bg-subtle);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-}
-
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 13px;
-}
-
-/* 控制台终端卡片样式 */
-.console-card {
-  border-radius: 12px;
-  border: 1px solid var(--app-border);
-}
-
-.console-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.console-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.console-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #10b981;
-}
-
-.console-body {
-  max-height: 280px;
-  overflow-y: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 12px 16px;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.console-empty {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #64748b;
-  padding: 16px 0;
-}
-
-.code-symbol {
-  color: #38bdf8;
-  font-weight: 700;
-}
-
-.console-row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  line-height: 1.6;
-}
-
-.log-time {
-  color: #64748b;
-  font-size: 11px;
-}
-
-.log-badge {
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.log-badge.success {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-}
-
-.log-badge.error {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-}
-
-.log-badge.info {
-  background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
-}
-
-.log-duration {
-  font-size: 10px;
-  color: #eab308;
-}
-
-.log-payload {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.log-payload code {
-  color: #cbd5e1;
-}
-
-/* 系统原生 Shell 与外观体验 Bento 升级 */
-.shell-bento-card {
-  overflow: hidden;
-  border: 1px solid var(--app-border);
-  transition: all 0.25s ease;
-}
-
-.card-title-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.platform-indicator-pill {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--app-bg-subtle);
-  border: 1px solid var(--app-border-subtle);
-  color: var(--app-text-muted);
-}
-
-.shell-bento-grid {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 16px;
-  margin-top: 14px;
-}
-
-.bento-subcard {
-  background: var(--app-bg-subtle);
-  border: 1px solid var(--app-border-subtle);
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.appearance-subcard {
-  justify-content: space-between;
-}
-
-.subcard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.subcard-title-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--app-text-primary);
-}
-
-.subcard-title-box h4 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.accent-showcase-box {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  background: var(--app-bg-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 10px;
-}
-
-.accent-color-chip {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  flex-shrink: 0;
-  border: 2px solid #ffffff;
-}
-
-.accent-meta-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  overflow: hidden;
-}
-
-.accent-label {
-  font-size: 11px;
-  color: var(--app-text-muted);
-}
-
-.accent-code-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.accent-hex-text {
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-mono, monospace);
-  color: var(--app-text-primary);
-}
-
-.theme-quick-switch-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.switch-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.meta-small-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--app-text-primary);
-}
-
-.meta-small-desc {
-  font-size: 11px;
-  color: var(--app-text-muted);
-}
-
-.shell-ops-subcard {
-  gap: 12px;
-}
-
-.shell-op-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.op-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.op-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--app-text-primary);
-}
-
-.op-security-tip {
-  font-size: 11px;
-  color: var(--app-text-muted);
-}
-
-.preset-pill-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.preset-chip {
-  background: var(--app-bg-surface);
-  border: 1px solid var(--app-border);
-  color: var(--app-text-secondary);
-  border-radius: 6px;
-  padding: 2px 8px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.preset-chip:hover {
-  background: var(--app-bg-hover);
-  color: var(--app-primary);
-  border-color: var(--app-primary);
-}
-
-@media (max-width: 900px) {
-  .shell-bento-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

@@ -1,141 +1,101 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { type SelectOption } from "naive-ui";
+import { useAppStore, type ThemeMode } from "../stores/app";
 import { useSettingsStore } from "../stores/settings";
-import { useAppStore } from "../stores/app";
+import { useIpcBridge } from "../bridge";
+import { isElectron } from "../bridge/platform";
 import { feedback } from "../utils/feedback";
 import GlobalShortcutManager from "../components/GlobalShortcutManager.vue";
-import { useIpcBridge, isElectron } from "../bridge";
-import type { SystemDiagnostics } from "../../shared/ipc";
+import type { UserSettings, SystemDiagnostics } from "@shared/ipc";
 
 const { t, locale } = useI18n();
-const settingsStore = useSettingsStore();
 const appStore = useAppStore();
+const settingsStore = useSettingsStore();
 const { invoke } = useIpcBridge();
 
-// 侧边栏当前激活 Tab
-type SettingsTabKey =
-  | "general"
-  | "system"
-  | "download"
-  | "notification"
-  | "shortcut"
-  | "diagnostics";
-const activeTab = ref<SettingsTabKey>("general");
+// 当前选中的 Tab 项 (左侧分类栏导航)
+const activeTab = ref<
+  "general" | "system" | "download" | "notification" | "shortcut" | "diagnostics"
+>("general");
 
-// 侧边栏导航配置（使用 computed 实现语言响应式切换）
+// 本地响应式表单，代理全局设置
+const form = reactive<UserSettings>({
+  theme: "system",
+  locale: "zh-CN",
+  closeToTray: true,
+  autoStart: false,
+  hardwareAcceleration: true,
+  defaultDownloadDir: "",
+  downloadConcurrency: 10,
+  autoResumeDownloads: true,
+  notificationsEnabled: true,
+  notificationSound: true,
+  silentNotifications: false,
+  notifyOnDownload: true,
+  notifyOnUpdate: true,
+  globalShortcutToggle: "CommandOrControl+Shift+X",
+});
+
+// 系统诊断指标状态
+const diagnostics = ref<SystemDiagnostics | null>(null);
+const loadingDiagnostics = ref(false);
+const exportingLogs = ref(false);
+
+// 语言选项下拉
+const localeOptions = [
+  { label: "简体中文 (zh-CN)", value: "zh-CN" },
+  { label: "English (en-US)", value: "en-US" },
+];
+
+// 左侧分类项清单
 const sidebarItems = computed(() => [
   {
-    key: "general" as SettingsTabKey,
+    key: "general",
     label: t("settingsView.sidebar.general"),
     desc: t("settingsView.sidebar.generalDesc"),
     icon: "palette",
   },
   {
-    key: "system" as SettingsTabKey,
+    key: "system",
     label: t("settingsView.sidebar.system"),
     desc: t("settingsView.sidebar.systemDesc"),
     icon: "desktop",
   },
   {
-    key: "download" as SettingsTabKey,
+    key: "download",
     label: t("settingsView.sidebar.download"),
     desc: t("settingsView.sidebar.downloadDesc"),
     icon: "download",
   },
   {
-    key: "notification" as SettingsTabKey,
+    key: "notification",
     label: t("settingsView.sidebar.notification"),
     desc: t("settingsView.sidebar.notificationDesc"),
     icon: "bell",
   },
   {
-    key: "shortcut" as SettingsTabKey,
+    key: "shortcut",
     label: t("settingsView.sidebar.shortcut"),
     desc: t("settingsView.sidebar.shortcutDesc"),
     icon: "keyboard",
   },
   {
-    key: "diagnostics" as SettingsTabKey,
+    key: "diagnostics",
     label: t("settingsView.sidebar.diagnostics"),
     desc: t("settingsView.sidebar.diagnosticsDesc"),
     icon: "info",
   },
 ]);
 
-export interface SettingsFormData {
-  locale: "zh-CN" | "en-US";
-  theme: "light" | "dark" | "system";
-  closeToTray: boolean;
-  autoStart: boolean;
-  defaultDownloadDir: string;
-  downloadConcurrency: number;
-  autoResumeDownloads: boolean;
-  notificationsEnabled: boolean;
-  silentNotifications: boolean;
-  hardwareAcceleration: boolean;
-}
-
-// 响应式表单
-const form = reactive<SettingsFormData>({
-  locale: "zh-CN",
-  theme: "system",
-  closeToTray: false,
-  autoStart: false,
-  defaultDownloadDir: "",
-  downloadConcurrency: 10,
-  autoResumeDownloads: true,
-  notificationsEnabled: true,
-  silentNotifications: false,
-  hardwareAcceleration: true,
-});
-
-const localeOptions: SelectOption[] = [
-  { label: "简体中文 (zh-CN)", value: "zh-CN" },
-  { label: "English (en-US)", value: "en-US" },
-];
-
-const diagnostics = ref<SystemDiagnostics | null>(null);
-const loadingDiagnostics = ref(false);
-const exportingLogs = ref(false);
-
 onMounted(async () => {
   await settingsStore.loadSettings();
   Object.assign(form, settingsStore.settings);
-  await loadDiagnostics();
+  void loadDiagnostics();
 });
 
 async function saveForm() {
-  await settingsStore.updateSettings(form);
-}
-
-async function onLocaleChange(val: string) {
-  locale.value = val;
-  await appStore.setLocale(val);
-  await saveForm();
-}
-
-async function onThemeChange(val: "system" | "light" | "dark") {
-  await appStore.setTheme(val);
-  await saveForm();
-}
-
-async function handleSelectDownloadDir() {
-  if (isElectron) {
-    const selected = await invoke("dialog:selectDirectory", form.defaultDownloadDir || undefined);
-    if (selected) {
-      form.defaultDownloadDir = selected;
-      await saveForm();
-    }
-  } else {
-    feedback.message.warning("仅在桌面客户端环境下支持选取本地目录");
-  }
-}
-
-async function resetDownloadDir() {
-  form.defaultDownloadDir = "";
-  await saveForm();
+  await settingsStore.updateSettings({ ...form });
 }
 
 async function handleSaveAll() {
@@ -143,39 +103,77 @@ async function handleSaveAll() {
   feedback.message.success(t("settingsView.saveSuccess"));
 }
 
+function onLocaleChange(val: string) {
+  form.locale = val;
+  locale.value = val;
+  void saveForm();
+}
+
+function onThemeChange(val: ThemeMode) {
+  form.theme = val;
+  void saveForm();
+}
+
+async function handleSelectDownloadDir() {
+  if (!isElectron) {
+    feedback.message.info("Web 浏览器预览模式下由浏览器托管下载目录");
+    return;
+  }
+  try {
+    const res = await invoke("dialog:open", {
+      properties: ["openDirectory", "createDirectory"],
+      title: "选择默认下载保存文件夹",
+    });
+    if (!res.canceled && res.filePaths.length > 0) {
+      form.defaultDownloadDir = res.filePaths[0];
+      await saveForm();
+      feedback.message.success("默认存储目录已更新");
+    }
+  } catch (err) {
+    feedback.message.error(String(err));
+  }
+}
+
+function resetDownloadDir() {
+  form.defaultDownloadDir = "";
+  void saveForm();
+  feedback.message.success("已恢复为系统默认下载目录");
+}
+
 async function loadDiagnostics() {
   loadingDiagnostics.value = true;
   try {
-    if (isElectron) {
-      diagnostics.value = await invoke("diagnostics:system:get");
-    }
-  } catch (e) {
-    console.warn("Could not fetch diagnostics", e);
+    const res = await invoke("system:diagnostics");
+    diagnostics.value = res;
+  } catch (err) {
+    console.warn("Could not load diagnostics", err);
   } finally {
     loadingDiagnostics.value = false;
   }
 }
 
 async function handleExportLogs() {
+  if (!isElectron) {
+    feedback.message.info("Web 预览模式暂无本地归档文件");
+    return;
+  }
   exportingLogs.value = true;
   try {
-    if (isElectron) {
-      const res = await invoke("diagnostics:exportLogs");
-      if (res.success) {
-        feedback.message.success(`排障诊断包已成功导出至: ${res.filePath}`);
-      } else if (res.error !== "用户取消了导出") {
-        feedback.message.error(res.error || "导出失败");
-      }
+    const res = await invoke("log:archive:export");
+    if (res.success && res.archivePath) {
+      feedback.message.success(`诊断日志已导出至: ${res.archivePath}`);
+      await invoke("shell:showItemInFolder", res.archivePath);
+    } else {
+      feedback.message.error(res.error || "导出日志失败");
     }
-  } catch {
-    feedback.message.error("导出过程发生异常");
+  } catch (err) {
+    feedback.message.error(String(err));
   } finally {
     exportingLogs.value = false;
   }
 }
 
-function formatUptime(seconds?: number): string {
-  if (!seconds || isNaN(seconds)) return "0s";
+function formatUptime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
@@ -202,16 +200,20 @@ function handleCheckUpdate() {
 </script>
 
 <template>
-  <div class="settings-workspace">
+  <div class="flex flex-col gap-5">
     <!-- 页面顶栏简介 -->
-    <div class="settings-header-banner">
-      <div class="header-intro">
-        <h2 class="workspace-title">{{ t("settingsView.bannerTitle") }}</h2>
-        <p class="workspace-subtitle">
+    <div
+      class="flex justify-between items-center bg-app-bg-surface border border-app-border rounded-14px px-6 py-5 shadow-sm"
+    >
+      <div>
+        <h2 class="text-20px font-700 m-0 mb-1 text-app-text-primary tracking-tight">
+          {{ t("settingsView.bannerTitle") }}
+        </h2>
+        <p class="text-13px text-app-text-secondary m-0">
           {{ t("settingsView.bannerSubtitle") }}
         </p>
       </div>
-      <div class="header-actions">
+      <div>
         <n-button
           type="primary"
           secondary
@@ -225,18 +227,26 @@ function handleCheckUpdate() {
     </div>
 
     <!-- 现代两栏式主体架构 (Sidebar + Content Cards) -->
-    <div class="settings-layout">
+    <div class="flex flex-col md:flex-row gap-5 items-stretch md:items-start">
       <!-- 1. 左侧固定侧边分类导航栏 -->
-      <aside class="settings-sidebar">
-        <nav class="sidebar-nav-list">
+      <aside
+        class="w-full md:w-230px flex-shrink-0 bg-app-bg-surface border border-app-border rounded-14px p-2.5 shadow-sm md:sticky md:top-60px"
+      >
+        <nav class="flex flex-col gap-1">
           <button
             v-for="item in sidebarItems"
             :key="item.key"
-            class="sidebar-nav-btn"
-            :class="{ 'is-active': activeTab === item.key }"
+            class="flex items-center gap-3 w-full p-2.5 border-none bg-transparent rounded-10px cursor-pointer text-left transition-all duration-150 text-app-text-secondary hover:(bg-app-bg-hover text-app-text-primary)"
+            :class="{
+              'bg-app-bg-subtle text-app-primary shadow-sm border border-app-border-subtle':
+                activeTab === item.key,
+            }"
             @click="activeTab = item.key"
           >
-            <div class="sidebar-icon-box">
+            <div
+              class="w-8 h-8 rounded-lg bg-app-bg-hover flex items-center justify-center flex-shrink-0"
+              :class="{ 'bg-blue-600/12 text-app-primary': activeTab === item.key }"
+            >
               <svg
                 v-if="item.icon === 'palette'"
                 viewBox="0 0 24 24"
@@ -326,30 +336,38 @@ function handleCheckUpdate() {
                 <line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
             </div>
-            <div class="sidebar-text-box">
-              <span class="nav-title">{{ item.label }}</span>
-              <span class="nav-desc">{{ item.desc }}</span>
+            <div class="flex flex-col gap-0.5 overflow-hidden">
+              <span class="text-13px font-600 text-app-text-primary">{{ item.label }}</span>
+              <span class="text-11px text-app-text-muted truncate">{{ item.desc }}</span>
             </div>
           </button>
         </nav>
       </aside>
 
       <!-- 2. 右侧卡片化内容区 (Grouped Bento Cards) -->
-      <main class="settings-content">
+      <main class="flex-1 min-w-0">
         <!-- 1. 常规与外观 -->
-        <section v-if="activeTab === 'general'" class="settings-section">
-          <div class="section-card">
-            <div class="card-header">
-              <h3 class="card-title">{{ t("settingsView.general.cardTitle") }}</h3>
-              <p class="card-desc">{{ t("settingsView.general.cardDesc") }}</p>
+        <section v-if="activeTab === 'general'" class="flex flex-col">
+          <div class="bg-app-bg-surface border border-app-border rounded-14px p-6 shadow-sm">
+            <div class="mb-5 pb-3 border-b border-app-border-subtle">
+              <h3 class="text-16px font-600 m-0 mb-1 text-app-text-primary">
+                {{ t("settingsView.general.cardTitle") }}
+              </h3>
+              <p class="text-13px text-app-text-secondary m-0">
+                {{ t("settingsView.general.cardDesc") }}
+              </p>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.general.localeLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.general.localeHint") }}</span>
+            <div class="flex justify-between items-center py-3.5 border-b border-app-border-subtle">
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.general.localeLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.general.localeHint")
+                }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-select
                   v-model:value="form.locale"
                   :options="localeOptions"
@@ -359,12 +377,18 @@ function handleCheckUpdate() {
               </div>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.general.themeLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.general.themeHint") }}</span>
+            <div
+              class="flex justify-between items-center py-3.5 border-b border-app-border-subtle last:border-b-none last:pb-0"
+            >
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.general.themeLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.general.themeHint")
+                }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-radio-group
                   v-model:value="form.theme"
                   size="medium"
@@ -380,43 +404,57 @@ function handleCheckUpdate() {
         </section>
 
         <!-- 2. 桌面与启动 -->
-        <section v-else-if="activeTab === 'system'" class="settings-section">
-          <div class="section-card">
-            <div class="card-header">
-              <h3 class="card-title">{{ t("settingsView.system.cardTitle") }}</h3>
-              <p class="card-desc">{{ t("settingsView.system.cardDesc") }}</p>
+        <section v-else-if="activeTab === 'system'" class="flex flex-col">
+          <div class="bg-app-bg-surface border border-app-border rounded-14px p-6 shadow-sm">
+            <div class="mb-5 pb-3 border-b border-app-border-subtle">
+              <h3 class="text-16px font-600 m-0 mb-1 text-app-text-primary">
+                {{ t("settingsView.system.cardTitle") }}
+              </h3>
+              <p class="text-13px text-app-text-secondary m-0">
+                {{ t("settingsView.system.cardDesc") }}
+              </p>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.system.closeToTrayLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.system.closeToTrayHint") }}</span>
+            <div class="flex justify-between items-center py-3.5 border-b border-app-border-subtle">
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.system.closeToTrayLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.system.closeToTrayHint")
+                }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-switch v-model:value="form.closeToTray" @update:value="saveForm" />
               </div>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.system.autoStartLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.system.autoStartHint") }}</span>
+            <div class="flex justify-between items-center py-3.5 border-b border-app-border-subtle">
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.system.autoStartLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.system.autoStartHint")
+                }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-switch v-model:value="form.autoStart" @update:value="saveForm" />
               </div>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{
+            <div
+              class="flex justify-between items-center py-3.5 border-b border-app-border-subtle last:border-b-none last:pb-0"
+            >
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
                   t("settingsView.system.hardwareAccelerationLabel")
                 }}</span>
-                <span class="meta-hint">{{
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
                   t("settingsView.system.hardwareAccelerationHint")
                 }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-switch v-model:value="form.hardwareAcceleration" @update:value="saveForm" />
               </div>
             </div>
@@ -424,19 +462,29 @@ function handleCheckUpdate() {
         </section>
 
         <!-- 3. 存储与传输 -->
-        <section v-else-if="activeTab === 'download'" class="settings-section">
-          <div class="section-card">
-            <div class="card-header">
-              <h3 class="card-title">{{ t("settingsView.download.cardTitle") }}</h3>
-              <p class="card-desc">{{ t("settingsView.download.cardDesc") }}</p>
+        <section v-else-if="activeTab === 'download'" class="flex flex-col">
+          <div class="bg-app-bg-surface border border-app-border rounded-14px p-6 shadow-sm">
+            <div class="mb-5 pb-3 border-b border-app-border-subtle">
+              <h3 class="text-16px font-600 m-0 mb-1 text-app-text-primary">
+                {{ t("settingsView.download.cardTitle") }}
+              </h3>
+              <p class="text-13px text-app-text-secondary m-0">
+                {{ t("settingsView.download.cardDesc") }}
+              </p>
             </div>
 
-            <div class="setting-row column-layout">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.download.dirLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.download.dirHint") }}</span>
+            <div
+              class="flex flex-col items-stretch gap-2.5 py-3.5 border-b border-app-border-subtle"
+            >
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.download.dirLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.download.dirHint")
+                }}</span>
               </div>
-              <div class="path-input-group">
+              <div class="flex items-center gap-2">
                 <n-input
                   v-model:value="form.defaultDownloadDir"
                   :placeholder="t('settingsView.download.placeholder')"
@@ -452,11 +500,17 @@ function handleCheckUpdate() {
               </div>
             </div>
 
-            <div class="setting-row column-layout">
-              <div class="setting-meta flex-between">
+            <div
+              class="flex flex-col items-stretch gap-2.5 py-3.5 border-b border-app-border-subtle"
+            >
+              <div class="flex justify-between items-center">
                 <div>
-                  <span class="meta-label">{{ t("settingsView.download.concurrencyLabel") }}</span>
-                  <span class="meta-hint">{{ t("settingsView.download.concurrencyHint") }}</span>
+                  <span class="text-14px font-500 text-app-text-primary">{{
+                    t("settingsView.download.concurrencyLabel")
+                  }}</span>
+                  <span class="text-12px text-app-text-muted leading-relaxed block">{{
+                    t("settingsView.download.concurrencyHint")
+                  }}</span>
                 </div>
                 <n-tag type="info" size="small" round>
                   {{
@@ -464,7 +518,7 @@ function handleCheckUpdate() {
                   }}
                 </n-tag>
               </div>
-              <div class="slider-wrapper">
+              <div class="px-3 py-2">
                 <n-slider
                   v-model:value="form.downloadConcurrency"
                   :min="1"
@@ -481,12 +535,18 @@ function handleCheckUpdate() {
               </div>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.download.autoResumeLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.download.autoResumeHint") }}</span>
+            <div
+              class="flex justify-between items-center py-3.5 border-b border-app-border-subtle last:border-b-none last:pb-0"
+            >
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.download.autoResumeLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.download.autoResumeHint")
+                }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-switch v-model:value="form.autoResumeDownloads" @update:value="saveForm" />
               </div>
             </div>
@@ -494,29 +554,43 @@ function handleCheckUpdate() {
         </section>
 
         <!-- 4. 桌面通知 -->
-        <section v-else-if="activeTab === 'notification'" class="settings-section">
-          <div class="section-card">
-            <div class="card-header">
-              <h3 class="card-title">{{ t("settingsView.notification.cardTitle") }}</h3>
-              <p class="card-desc">{{ t("settingsView.notification.cardDesc") }}</p>
+        <section v-else-if="activeTab === 'notification'" class="flex flex-col">
+          <div class="bg-app-bg-surface border border-app-border rounded-14px p-6 shadow-sm">
+            <div class="mb-5 pb-3 border-b border-app-border-subtle">
+              <h3 class="text-16px font-600 m-0 mb-1 text-app-text-primary">
+                {{ t("settingsView.notification.cardTitle") }}
+              </h3>
+              <p class="text-13px text-app-text-secondary m-0">
+                {{ t("settingsView.notification.cardDesc") }}
+              </p>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.notification.enableLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.notification.enableHint") }}</span>
+            <div class="flex justify-between items-center py-3.5 border-b border-app-border-subtle">
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.notification.enableLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.notification.enableHint")
+                }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-switch v-model:value="form.notificationsEnabled" @update:value="saveForm" />
               </div>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-meta">
-                <span class="meta-label">{{ t("settingsView.notification.silentLabel") }}</span>
-                <span class="meta-hint">{{ t("settingsView.notification.silentHint") }}</span>
+            <div
+              class="flex justify-between items-center py-3.5 border-b border-app-border-subtle last:border-b-none last:pb-0"
+            >
+              <div class="flex flex-col gap-0.75">
+                <span class="text-14px font-500 text-app-text-primary">{{
+                  t("settingsView.notification.silentLabel")
+                }}</span>
+                <span class="text-12px text-app-text-muted leading-relaxed">{{
+                  t("settingsView.notification.silentHint")
+                }}</span>
               </div>
-              <div class="setting-ctrl">
+              <div>
                 <n-switch
                   v-model:value="form.silentNotifications"
                   :disabled="!form.notificationsEnabled"
@@ -528,18 +602,24 @@ function handleCheckUpdate() {
         </section>
 
         <!-- 5. 全局快捷键 -->
-        <section v-else-if="activeTab === 'shortcut'" class="settings-section">
+        <section v-else-if="activeTab === 'shortcut'" class="flex flex-col">
           <GlobalShortcutManager />
         </section>
 
         <!-- 6. 诊断与关于 -->
-        <section v-else-if="activeTab === 'diagnostics'" class="settings-section">
+        <section v-else-if="activeTab === 'diagnostics'" class="flex flex-col">
           <!-- 硬件与内核信息卡片 -->
-          <div class="section-card">
-            <div class="card-header flex-between">
+          <div class="bg-app-bg-surface border border-app-border rounded-14px p-6 shadow-sm">
+            <div
+              class="mb-5 pb-3 border-b border-app-border-subtle flex justify-between items-center"
+            >
               <div>
-                <h3 class="card-title">{{ t("settingsView.diagnostics.cardTitle") }}</h3>
-                <p class="card-desc">{{ t("settingsView.diagnostics.cardDesc") }}</p>
+                <h3 class="text-16px font-600 m-0 mb-1 text-app-text-primary">
+                  {{ t("settingsView.diagnostics.cardTitle") }}
+                </h3>
+                <p class="text-13px text-app-text-secondary m-0">
+                  {{ t("settingsView.diagnostics.cardDesc") }}
+                </p>
               </div>
               <n-button
                 size="small"
@@ -551,56 +631,97 @@ function handleCheckUpdate() {
               </n-button>
             </div>
 
-            <div v-if="diagnostics" class="diagnostics-grid">
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.os") }}</span>
-                <span class="cell-val"
+            <div
+              v-if="diagnostics"
+              class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 mb-4"
+            >
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.os")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular"
                   >{{ diagnostics.osPlatform || "Unknown" }} ({{
                     diagnostics.osArch || "Unknown"
                   }})</span
                 >
               </div>
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.osVersion") }}</span>
-                <span class="cell-val">{{ diagnostics.osRelease || "N/A" }}</span>
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.osVersion")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular">{{
+                  diagnostics.osRelease || "N/A"
+                }}</span>
               </div>
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.appVersion") }}</span>
-                <span class="cell-val">v{{ diagnostics.appVersion || "0.1.4" }}</span>
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.appVersion")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular"
+                  >v{{ diagnostics.appVersion || "0.1.4" }}</span
+                >
               </div>
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.electronVer") }}</span>
-                <span class="cell-val">{{
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.electronVer")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular">{{
                   diagnostics.electronVersion ? `v${diagnostics.electronVersion}` : "N/A (Browser)"
                 }}</span>
               </div>
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.nodeVer") }}</span>
-                <span class="cell-val">{{
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.nodeVer")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular">{{
                   diagnostics.nodeVersion ? `v${diagnostics.nodeVersion}` : "N/A"
                 }}</span>
               </div>
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.chromeVer") }}</span>
-                <span class="cell-val">{{
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.chromeVer")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular">{{
                   diagnostics.chromeVersion ? `v${diagnostics.chromeVersion}` : "N/A"
                 }}</span>
               </div>
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.memoryRss") }}</span>
-                <span class="cell-val">{{
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.memoryRss")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular">{{
                   diagnostics.totalMemoryMb
                     ? `${Math.round(diagnostics.totalMemoryMb - diagnostics.freeMemoryMb)} / ${diagnostics.totalMemoryMb} MB`
                     : "N/A"
                 }}</span>
               </div>
-              <div class="diag-cell">
-                <span class="cell-label">{{ t("settingsView.diagnostics.uptime") }}</span>
-                <span class="cell-val">{{ formatUptime(diagnostics.uptimeSeconds) }}</span>
+              <div
+                class="bg-app-bg-subtle border border-app-border-subtle rounded-lg p-3 flex flex-col gap-1"
+              >
+                <span class="text-11px text-app-text-muted">{{
+                  t("settingsView.diagnostics.uptime")
+                }}</span>
+                <span class="text-13px font-600 text-app-text-regular">{{
+                  formatUptime(diagnostics.uptimeSeconds)
+                }}</span>
               </div>
             </div>
 
-            <div class="diag-actions-row">
+            <div class="pt-2">
               <n-button secondary type="info" :loading="exportingLogs" @click="handleExportLogs">
                 {{ t("settingsView.diagnostics.exportLogsBtn") }}
               </n-button>
@@ -608,9 +729,11 @@ function handleCheckUpdate() {
           </div>
 
           <!-- 关于与版本升级卡片 -->
-          <div class="section-card" style="margin-top: 16px">
-            <div class="about-hero-box">
-              <div class="about-logo-wrapper">
+          <div class="bg-app-bg-surface border border-app-border rounded-14px p-6 shadow-sm mt-4">
+            <div class="flex items-center gap-5">
+              <div
+                class="w-16 h-16 rounded-2xl bg-app-bg-subtle border border-app-border flex items-center justify-center flex-shrink-0"
+              >
                 <svg viewBox="0 0 28 28" width="48" height="48" fill="none">
                   <ellipse
                     cx="14"
@@ -627,12 +750,14 @@ function handleCheckUpdate() {
                   <circle cx="23" cy="11" r="1.6" fill="#ffffff" />
                 </svg>
               </div>
-              <div class="about-meta">
-                <h4 class="about-name">{{ t("settingsView.diagnostics.aboutTitle") }}</h4>
-                <p class="about-version">
+              <div class="flex flex-col gap-1">
+                <h4 class="text-16px font-700 m-0 text-app-text-primary">
+                  {{ t("settingsView.diagnostics.aboutTitle") }}
+                </h4>
+                <p class="text-12px text-app-text-muted m-0 mb-1.5">
                   {{ t("settingsView.diagnostics.aboutDesc") }}
                 </p>
-                <div class="about-buttons">
+                <div class="flex items-center gap-2">
                   <n-button size="small" type="primary" secondary @click="handleCheckUpdate">
                     {{ t("settingsView.diagnostics.checkUpdateBtn") }}
                   </n-button>
@@ -648,305 +773,3 @@ function handleCheckUpdate() {
     </div>
   </div>
 </template>
-
-<style scoped>
-.settings-workspace {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* 顶部简介横幅 */
-.settings-header-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--app-bg-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 14px;
-  padding: 20px 24px;
-  box-shadow: var(--app-shadow-sm);
-}
-
-.workspace-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-  color: var(--app-text-primary);
-  letter-spacing: -0.01em;
-}
-
-.workspace-subtitle {
-  font-size: 13px;
-  color: var(--app-text-secondary);
-  margin: 0;
-}
-
-/* 两栏布局 */
-.settings-layout {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-}
-
-/* 1. 左侧分类侧边栏 */
-.settings-sidebar {
-  width: 230px;
-  flex-shrink: 0;
-  background: var(--app-bg-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 14px;
-  padding: 10px;
-  box-shadow: var(--app-shadow-sm);
-  position: sticky;
-  top: 60px;
-}
-
-.sidebar-nav-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sidebar-nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border: none;
-  background: transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s ease;
-  color: var(--app-text-secondary);
-}
-
-.sidebar-nav-btn:hover {
-  background: var(--app-bg-hover);
-  color: var(--app-text-primary);
-}
-
-.sidebar-nav-btn.is-active {
-  background: var(--app-bg-subtle);
-  color: var(--app-primary);
-  box-shadow: var(--app-shadow-sm);
-  border: 1px solid var(--app-border-subtle);
-}
-
-.sidebar-icon-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--app-bg-hover);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.sidebar-nav-btn.is-active .sidebar-icon-box {
-  background: rgba(37, 99, 235, 0.12);
-  color: var(--app-primary);
-}
-
-.sidebar-text-box {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow: hidden;
-}
-
-.nav-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--app-text-primary);
-}
-
-.nav-desc {
-  font-size: 11px;
-  color: var(--app-text-muted);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-
-/* 2. 右侧卡片内容区 */
-.settings-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.settings-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.section-card {
-  background: var(--app-bg-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: var(--app-shadow-sm);
-}
-
-.card-header {
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--app-border-subtle);
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  color: var(--app-text-primary);
-}
-
-.card-desc {
-  font-size: 13px;
-  color: var(--app-text-secondary);
-  margin: 0;
-}
-
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--app-border-subtle);
-}
-
-.setting-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.setting-row.column-layout {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-}
-
-.setting-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.meta-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--app-text-primary);
-}
-
-.meta-hint {
-  font-size: 12px;
-  color: var(--app-text-muted);
-  line-height: 1.4;
-}
-
-.path-input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.slider-wrapper {
-  padding: 8px 12px;
-}
-
-.flex-between {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* 诊断栅格 */
-.diagnostics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.diag-cell {
-  background: var(--app-bg-subtle);
-  border: 1px solid var(--app-border-subtle);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.cell-label {
-  font-size: 11px;
-  color: var(--app-text-muted);
-}
-
-.cell-val {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--app-text-regular);
-}
-
-.diag-actions-row {
-  padding-top: 8px;
-}
-
-/* 关于应用卡片 */
-.about-hero-box {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.about-logo-wrapper {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: var(--app-bg-subtle);
-  border: 1px solid var(--app-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.about-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.about-name {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--app-text-primary);
-}
-
-.about-version {
-  font-size: 12px;
-  color: var(--app-text-muted);
-  margin: 0 0 6px 0;
-}
-
-.about-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-@media (max-width: 820px) {
-  .settings-layout {
-    flex-direction: column;
-  }
-  .settings-sidebar {
-    width: 100%;
-    position: static;
-  }
-}
-</style>

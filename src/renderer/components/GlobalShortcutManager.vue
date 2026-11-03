@@ -1,22 +1,22 @@
 <template>
-  <div class="shortcut-center-container">
+  <div class="w-full">
     <!-- 头部工具操作栏 -->
-    <div class="table-toolbar flex-between">
+    <div class="flex items-center justify-between pb-2">
       <div class="search-box">
         <n-input
           v-model:value="searchKeyword"
           placeholder="按命令名称、键位 (如 Ctrl, ,) 搜索快捷键..."
           clearable
           size="small"
-          class="search-input"
+          class="max-w-320px"
         >
           <template #prefix>
-            <span class="search-icon">🔍</span>
+            <span class="text-13px opacity-60">🔍</span>
           </template>
         </n-input>
       </div>
 
-      <div class="toolbar-actions flex gap-2">
+      <div class="flex gap-2">
         <n-button secondary size="small" @click="handleResetAll"> 恢复全部默认 </n-button>
         <n-button text type="info" size="small" @click="showHelpModal = true">
           快捷键帮助与排障
@@ -25,36 +25,52 @@
     </div>
 
     <!-- 状态反馈提示 -->
-    <div v-if="feedbackMsg.text" class="status-alert mt-2">
+    <div v-if="feedbackMsg.text" class="mt-2">
       <n-alert :type="feedbackMsg.type" closable @close="feedbackMsg.text = ''">
         {{ feedbackMsg.text }}
       </n-alert>
     </div>
 
     <!-- VS Code 风格键盘快捷键表格 -->
-    <div class="shortcut-table-wrapper mt-3">
-      <table class="vscode-shortcut-table">
+    <div class="mt-3 overflow-x-auto border border-app-border-subtle rounded-md bg-app-bg-surface">
+      <table class="w-full border-collapse text-13px text-left">
         <thead>
           <tr>
-            <th class="col-cmd">命令</th>
-            <th class="col-binding">键绑定</th>
-            <th class="col-when">当</th>
-            <th class="col-actions">操作</th>
+            <th
+              class="w-36% bg-app-bg-subtle px-3.5 py-2 font-semibold text-app-text-muted border-b border-app-border-subtle"
+            >
+              命令
+            </th>
+            <th
+              class="w-28% bg-app-bg-subtle px-3.5 py-2 font-semibold text-app-text-muted border-b border-app-border-subtle"
+            >
+              键绑定
+            </th>
+            <th
+              class="w-20% bg-app-bg-subtle px-3.5 py-2 font-semibold text-app-text-muted border-b border-app-border-subtle"
+            >
+              当
+            </th>
+            <th
+              class="w-16% text-right bg-app-bg-subtle px-3.5 py-2 font-semibold text-app-text-muted border-b border-app-border-subtle"
+            >
+              操作
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="item in filteredShortcuts"
             :key="item.id"
-            class="shortcut-row"
-            :class="{ 'is-editing': editingId === item.id }"
+            class="border-b border-app-border-subtle transition-colors duration-150 hover:bg-app-bg-hover"
+            :class="{ 'bg-sky-500/6': editingId === item.id }"
           >
             <!-- 1. 命令列 -->
-            <td class="col-cmd">
-              <div class="cmd-cell">
+            <td class="w-36% px-3.5 py-2 align-middle">
+              <div class="flex items-center gap-2">
                 <button
                   type="button"
-                  class="edit-icon-btn"
+                  class="bg-transparent border-none cursor-pointer p-1 rounded inline-flex items-center text-app-text-muted transition-all hover:(text-emerald-500 bg-emerald-500/10)"
                   title="点击修改此快捷键"
                   @click="startEdit(item)"
                 >
@@ -70,17 +86,19 @@
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                   </svg>
                 </button>
-                <div class="cmd-info">
-                  <span class="cmd-title">{{ item.name }}</span>
-                  <span v-if="item.description" class="cmd-desc">{{ item.description }}</span>
+                <div class="flex flex-col">
+                  <span class="font-medium text-app-text-primary">{{ item.name }}</span>
+                  <span v-if="item.description" class="text-11px text-app-text-muted mt-0.5">{{
+                    item.description
+                  }}</span>
                 </div>
               </div>
             </td>
 
             <!-- 2. 键绑定列 -->
-            <td class="col-binding">
+            <td class="w-28% px-3.5 py-2 align-middle">
               <!-- 行内编辑态：输入框录制控件 -->
-              <div v-if="editingId === item.id" class="inline-recorder-box">
+              <div v-if="editingId === item.id" class="max-w-240px">
                 <ShortcutRecorder
                   :model-value="tempAccelerator"
                   placeholder="按键盘组合键进行录制..."
@@ -90,26 +108,37 @@
               </div>
 
               <!-- 静态展示态：按键标签 -->
-              <div v-else class="keybinding-display" @dblclick="startEdit(item)">
+              <div
+                v-else
+                class="inline-flex items-center gap-1 cursor-pointer"
+                @dblclick="startEdit(item)"
+              >
                 <template v-if="item.accelerator">
-                  <span v-for="(k, idx) in formatKeys(item.accelerator)" :key="idx" class="key-cap">
+                  <span
+                    v-for="(k, idx) in formatKeys(item.accelerator)"
+                    :key="idx"
+                    class="inline-flex items-center justify-center min-w-22px h-22px px-1.5 text-11px font-mono font-600 rounded bg-app-bg-subtle text-app-text-primary border border-app-border-subtle shadow-sm"
+                  >
                     {{ k.symbol }}
                   </span>
                 </template>
-                <span v-else class="key-none">未设置快捷键</span>
+                <span v-else class="text-12px text-app-text-muted italic">未设置快捷键</span>
               </div>
             </td>
 
             <!-- 3. 生效条件 (当) 列 -->
-            <td class="col-when">
-              <span class="when-badge" :class="item.scope">
+            <td class="w-20% px-3.5 py-2 align-middle">
+              <span
+                class="text-11px px-1.5 py-0.5 rounded bg-app-bg-subtle text-app-text-muted border border-app-border-subtle"
+                :class="{ 'bg-sky-500/8 text-sky-600 border-sky-500/20': item.scope === 'global' }"
+              >
                 {{ item.when }}
               </span>
             </td>
 
             <!-- 4. 操作列 (可修改，可重置，可取消) -->
-            <td class="col-actions">
-              <div v-if="editingId === item.id" class="edit-action-group">
+            <td class="w-16% text-right px-3.5 py-2 align-middle">
+              <div v-if="editingId === item.id" class="inline-flex items-center gap-1.5">
                 <n-button
                   type="primary"
                   size="tiny"
@@ -139,7 +168,7 @@
                 </n-button>
               </div>
 
-              <div v-else class="normal-action-group">
+              <div v-else class="inline-flex items-center gap-1.5">
                 <n-button quaternary size="tiny" type="primary" @click="startEdit(item)">
                   修改
                 </n-button>
@@ -157,7 +186,7 @@
           </tr>
 
           <tr v-if="filteredShortcuts.length === 0">
-            <td colspan="4" class="empty-cell">未找到匹配的快捷键设置</td>
+            <td colspan="4" class="text-center py-6 text-app-text-muted">未找到匹配的快捷键设置</td>
           </tr>
         </tbody>
       </table>
@@ -172,8 +201,8 @@
       :bordered="false"
       size="medium"
     >
-      <div class="help-modal-content space-y-4">
-        <div class="help-section">
+      <div class="space-y-4">
+        <div>
           <h4 class="text-sm font-semibold mb-2">1. 操作系统键位对应关系</h4>
           <n-table size="small" :single-line="false">
             <thead>
@@ -203,20 +232,23 @@
           </n-table>
         </div>
 
-        <div class="help-section">
-          <h4 class="text-sm font-semibold mb-1">2. 全局快捷键与应用内快捷键的区别</h4>
-          <p class="text-xs text-neutral-500 leading-relaxed">
-            <strong>全局系统热键</strong
-            >：即使本应用处于后台或窗口最小化，在任何其他软件中按下该键位依然能呼出本应用。<br />
-            <strong>应用内快捷键</strong
-            >：仅在当前应用窗口被激活并聚焦时响应，避免与其他桌面软件发生全局热键抢占。
-          </p>
+        <div>
+          <h4 class="text-sm font-semibold mb-2">2. 快捷键冲突排障提示</h4>
+          <ul class="text-xs space-y-1.5 text-app-text-muted pl-4 list-disc">
+            <li>
+              <strong>全局快捷键被占用</strong
+              >：若设置的全局快捷键无响应，通常是已被系统其他软件（如微信、输入法、截图工具）独占。建议更换为带有三键修饰键的冷门组合。
+            </li>
+            <li>
+              <strong>只在应用聚焦时生效</strong
+              >：标识为“仅聚焦窗口”的快捷键，在窗口失焦或隐藏至系统托盘时不会触发，避免干扰桌面其他操作。
+            </li>
+          </ul>
         </div>
       </div>
-
       <template #footer>
         <div class="flex justify-end">
-          <n-button type="primary" @click="showHelpModal = false">知道了</n-button>
+          <n-button size="small" type="primary" @click="showHelpModal = false"> 了解完毕 </n-button>
         </div>
       </template>
     </n-modal>
@@ -225,35 +257,35 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import ShortcutRecorder from "./ShortcutRecorder.vue";
-import { useShortcutsStore, type ShortcutDefinition } from "../stores/shortcuts";
+import { useShortcutsStore } from "../stores/shortcuts";
 import { formatAcceleratorDisplay, isMacPlatform } from "../utils/shortcut";
+import ShortcutRecorder from "./ShortcutRecorder.vue";
 import { feedback } from "../utils/feedback";
+import type { ShortcutDefinition } from "@shared/ipc";
 
 const shortcutsStore = useShortcutsStore();
+const isMac = isMacPlatform();
 
 const searchKeyword = ref("");
 const editingId = ref<string | null>(null);
-const tempAccelerator = ref("");
+const tempAccelerator = ref<string>("");
 const isSaving = ref(false);
 const showHelpModal = ref(false);
-
-const feedbackMsg = ref<{ type: "success" | "error" | "warning"; text: string }>({
-  type: "success",
+const feedbackMsg = ref<{ type: "success" | "error" | "info"; text: string }>({
+  type: "info",
   text: "",
 });
-
-const isMac = isMacPlatform();
 
 const filteredShortcuts = computed(() => {
   const kw = searchKeyword.value.trim().toLowerCase();
   if (!kw) return shortcutsStore.shortcuts;
-  return shortcutsStore.shortcuts.filter((item) => {
+
+  return shortcutsStore.shortcuts.filter((s) => {
     return (
-      item.name.toLowerCase().includes(kw) ||
-      item.accelerator.toLowerCase().includes(kw) ||
-      (item.description && item.description.toLowerCase().includes(kw)) ||
-      item.when.toLowerCase().includes(kw)
+      s.name.toLowerCase().includes(kw) ||
+      (s.description && s.description.toLowerCase().includes(kw)) ||
+      s.accelerator.toLowerCase().includes(kw) ||
+      s.when.toLowerCase().includes(kw)
     );
   });
 });
@@ -268,25 +300,32 @@ function startEdit(item: ShortcutDefinition) {
   feedbackMsg.value.text = "";
 }
 
+function cancelEdit() {
+  editingId.value = null;
+  tempAccelerator.value = "";
+  feedbackMsg.value.text = "";
+}
+
 function onTempAcceleratorChange(val: string) {
   tempAccelerator.value = val;
 }
 
-function onRecorderError(err: string) {
-  feedbackMsg.value = {
-    type: "warning",
-    text: err,
-  };
+function onRecorderError(msg: string) {
+  feedback.message.warning(msg);
 }
 
 async function saveEdit(id: string) {
-  if (!tempAccelerator.value) return;
+  if (!tempAccelerator.value) {
+    feedback.message.warning("快捷键不能为空");
+    return;
+  }
+
   isSaving.value = true;
   try {
     const res = await shortcutsStore.updateShortcut(id, tempAccelerator.value);
     if (res.success) {
-      feedback.message.success("快捷键已更新生效");
-      editingId.value = null;
+      feedback.message.success("快捷键绑定已更新");
+      cancelEdit();
     } else {
       feedbackMsg.value = {
         type: "error",
@@ -314,192 +353,9 @@ async function resetSingle(id: string) {
   }
 }
 
-function cancelEdit() {
-  editingId.value = null;
-  tempAccelerator.value = "";
-  feedbackMsg.value.text = "";
-}
-
 async function handleResetAll() {
   await shortcutsStore.resetAll();
   cancelEdit();
   feedback.message.success("所有快捷键已恢复为出厂默认设置");
 }
 </script>
-
-<style scoped>
-.shortcut-center-container {
-  width: 100%;
-}
-
-.table-toolbar {
-  padding-bottom: 8px;
-}
-
-.search-input {
-  max-width: 320px;
-}
-
-.search-icon {
-  font-size: 13px;
-  opacity: 0.6;
-}
-
-.shortcut-table-wrapper {
-  overflow-x: auto;
-  border: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.08));
-  border-radius: 6px;
-  background: var(--app-bg-card, #ffffff);
-}
-
-.vscode-shortcut-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  text-align: left;
-}
-
-.vscode-shortcut-table thead th {
-  background: var(--app-bg-subtle, #f8fafc);
-  padding: 8px 14px;
-  font-weight: 600;
-  color: var(--app-text-muted, #64748b);
-  border-bottom: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.08));
-}
-
-.vscode-shortcut-table tbody tr {
-  border-bottom: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.05));
-  transition: background-color 0.15s ease;
-}
-
-.vscode-shortcut-table tbody tr:hover {
-  background-color: var(--app-bg-hover, rgba(0, 0, 0, 0.02));
-}
-
-.vscode-shortcut-table tbody tr.is-editing {
-  background-color: var(--app-bg-active, rgba(56, 189, 248, 0.06));
-}
-
-.vscode-shortcut-table td {
-  padding: 8px 14px;
-  vertical-align: middle;
-}
-
-.col-cmd {
-  width: 36%;
-}
-
-.col-binding {
-  width: 28%;
-}
-
-.col-when {
-  width: 20%;
-}
-
-.col-actions {
-  width: 16%;
-  text-align: right;
-}
-
-.cmd-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.edit-icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--app-text-muted, #94a3b8);
-  transition: all 0.15s;
-}
-
-.edit-icon-btn:hover {
-  color: var(--app-primary, #10b981);
-  background: rgba(16, 185, 129, 0.1);
-}
-
-.cmd-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.cmd-title {
-  font-weight: 500;
-  color: var(--app-text-primary, #1e293b);
-}
-
-.cmd-desc {
-  font-size: 11px;
-  color: var(--app-text-muted, #94a3b8);
-  margin-top: 2px;
-}
-
-.keybinding-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-}
-
-.key-cap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 600;
-  border-radius: 4px;
-  background: var(--app-bg-subtle, #f1f5f9);
-  color: var(--app-text-primary, #334155);
-  border: 1px solid var(--app-border-subtle, #cbd5e1);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-}
-
-.key-none {
-  font-size: 12px;
-  color: var(--app-text-muted, #94a3b8);
-  font-style: italic;
-}
-
-.inline-recorder-box {
-  max-width: 240px;
-}
-
-.when-badge {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--app-bg-subtle, #f1f5f9);
-  color: var(--app-text-muted, #64748b);
-  border: 1px solid var(--app-border-subtle, rgba(0, 0, 0, 0.06));
-}
-
-.when-badge.global {
-  background: rgba(14, 165, 233, 0.08);
-  color: #0284c7;
-  border-color: rgba(14, 165, 233, 0.2);
-}
-
-.edit-action-group,
-.normal-action-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.empty-cell {
-  text-align: center;
-  padding: 24px 0;
-  color: var(--app-text-muted, #94a3b8);
-}
-</style>

@@ -1,6 +1,7 @@
 import { defineConfig } from "vite-plus";
 import { loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
+import UnoCSS from "unocss/vite";
 import electron from "vite-plugin-electron/simple";
 import Components from "unplugin-vue-components/vite";
 import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
@@ -66,6 +67,7 @@ export default defineConfig({
     __IS_WEB__: JSON.stringify(isWeb),
   },
   plugins: [
+    UnoCSS(),
     vue(),
     // Naive UI 模板组件按需自动引入
     Components({

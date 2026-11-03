@@ -2,56 +2,67 @@
   <div
     ref="recorderRef"
     tabindex="0"
-    class="shortcut-recorder"
-    :class="{
-      'is-recording': isRecording,
-      'is-disabled': disabled,
-      'has-error': !!errorMessage,
-    }"
+    class="relative inline-flex items-center justify-between min-w-260px max-w-380px h-38px px-3 rounded-md bg-app-bg-surface border border-app-border cursor-pointer outline-none transition-all duration-200 select-none box-border hover:border-emerald-400"
+    :class="[
+      isRecording ? 'border-emerald-400 ring-2 ring-emerald-400/30' : '',
+      disabled ? 'opacity-60 cursor-not-allowed bg-black/3' : '',
+      errorMessage ? 'border-red-400' : '',
+    ]"
     @click="startRecording"
     @focus="startRecording"
     @blur="stopRecording"
     @keydown="handleKeyDown"
     @keyup="handleKeyUp"
   >
-    <div class="recorder-content">
+    <div class="flex items-center flex-1 overflow-hidden">
       <!-- 录制激活态 -->
       <template v-if="isRecording">
-        <span v-if="tempModifiers.length === 0" class="placeholder-text">
-          <span class="recording-dot"></span>
+        <span
+          v-if="tempModifiers.length === 0"
+          class="inline-flex items-center gap-1.5 text-12px text-app-text-muted"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
           {{ placeholder || "请在键盘上按下组合键..." }}
         </span>
-        <div v-else class="key-tags">
-          <span v-for="mod in tempModifiers" :key="mod" class="key-badge active">
+        <div v-else class="flex items-center gap-1.5 flex-nowrap">
+          <span
+            v-for="mod in tempModifiers"
+            :key="mod"
+            class="inline-flex items-center gap-0.75 px-1.75 py-0.5 rounded font-mono text-12px font-600 leading-tight text-emerald-500 border border-emerald-400 bg-emerald-400/10 shadow-sm"
+          >
             {{ mod }}
           </span>
-          <span class="recording-wait">+ ...</span>
+          <span class="text-12px text-emerald-400 ml-0.5">+ ...</span>
         </div>
       </template>
 
       <!-- 静态展示态 -->
       <template v-else>
-        <div v-if="displayKeys.length > 0" class="key-tags">
+        <div v-if="displayKeys.length > 0" class="flex items-center gap-1.5 flex-nowrap">
           <span
             v-for="(key, index) in displayKeys"
             :key="index"
-            class="key-badge"
+            class="inline-flex items-center gap-0.75 px-1.75 py-0.5 rounded font-mono text-12px font-600 leading-tight text-app-text-regular bg-app-bg-subtle border border-app-border shadow-sm"
             :title="key.label"
           >
-            <span class="key-symbol">{{ key.symbol }}</span>
-            <span v-if="key.symbol !== key.label" class="key-sublabel">{{ key.label }}</span>
+            <span class="text-13px">{{ key.symbol }}</span>
+            <span v-if="key.symbol !== key.label" class="text-11px opacity-80">{{
+              key.label
+            }}</span>
           </span>
         </div>
-        <span v-else class="placeholder-text empty">未设置快捷键</span>
+        <span v-else class="inline-flex items-center gap-1.5 text-12px text-app-text-muted">
+          未设置快捷键
+        </span>
       </template>
     </div>
 
     <!-- 右侧操作小图标 -->
-    <div class="recorder-actions" @click.stop>
+    <div class="flex items-center ml-2" @click.stop>
       <button
         v-if="isRecording"
         type="button"
-        class="action-btn cancel-btn"
+        class="bg-transparent border-none cursor-pointer text-12px px-1.5 py-0.5 rounded text-app-text-secondary transition-all hover:(bg-black/8 text-app-text-primary)"
         title="按 Esc 或点击取消"
         @click="cancelRecording"
       >
@@ -60,13 +71,13 @@
       <button
         v-else-if="modelValue && !disabled && allowClear"
         type="button"
-        class="action-btn clear-btn"
+        class="bg-transparent border-none cursor-pointer text-12px px-1.5 py-0.5 rounded text-app-text-secondary transition-all hover:(bg-black/8 text-app-text-primary)"
         title="清除快捷键"
         @click="clearShortcut"
       >
         ✕
       </button>
-      <span v-else-if="!disabled" class="action-hint">点击修改</span>
+      <span v-else-if="!disabled" class="text-11px text-app-text-muted">点击修改</span>
     </div>
   </div>
 </template>
@@ -170,159 +181,3 @@ function handleKeyUp(e: KeyboardEvent) {
   tempModifiers.value = mods;
 }
 </script>
-
-<style scoped>
-.shortcut-recorder {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  min-width: 260px;
-  max-width: 380px;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 6px;
-  background-color: var(--n-color, rgba(255, 255, 255, 0.05));
-  border: 1px solid var(--n-border-color, rgba(140, 140, 140, 0.3));
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  user-select: none;
-  box-sizing: border-box;
-}
-
-.shortcut-recorder:hover:not(.is-disabled) {
-  border-color: #63e2b7;
-}
-
-.shortcut-recorder.is-recording {
-  border-color: #63e2b7;
-  box-shadow: 0 0 0 2px rgba(99, 226, 183, 0.2);
-  animation: pulse-border 1.5s infinite;
-}
-
-.shortcut-recorder.is-disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background-color: rgba(0, 0, 0, 0.03);
-}
-
-.shortcut-recorder.has-error {
-  border-color: #e88080;
-}
-
-.recorder-content {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  overflow: hidden;
-}
-
-.key-tags {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-}
-
-.key-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--n-text-color, #333);
-  background-color: var(--n-action-color, rgba(0, 0, 0, 0.06));
-  border: 1px solid var(--n-border-color, rgba(0, 0, 0, 0.15));
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
-}
-
-.key-badge.active {
-  color: #63e2b7;
-  border-color: #63e2b7;
-  background-color: rgba(99, 226, 183, 0.1);
-}
-
-.key-symbol {
-  font-size: 13px;
-}
-
-.key-sublabel {
-  font-size: 11px;
-  opacity: 0.8;
-}
-
-.placeholder-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--n-text-color-disabled, #888);
-}
-
-.recording-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: #63e2b7;
-  animation: blink 1s infinite alternate;
-}
-
-.recording-wait {
-  font-size: 12px;
-  color: #63e2b7;
-  margin-left: 2px;
-}
-
-.recorder-actions {
-  display: flex;
-  align-items: center;
-  margin-left: 8px;
-}
-
-.action-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: var(--n-text-color-secondary, #666);
-  transition: all 0.15s ease;
-}
-
-.action-btn:hover {
-  background-color: rgba(0, 0, 0, 0.08);
-  color: var(--n-text-color, #111);
-}
-
-.action-hint {
-  font-size: 11px;
-  color: var(--n-text-color-disabled, #aaa);
-}
-
-@keyframes blink {
-  from {
-    opacity: 0.3;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes pulse-border {
-  0% {
-    box-shadow: 0 0 0 1px rgba(99, 226, 183, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 0 3px rgba(99, 226, 183, 0.35);
-  }
-  100% {
-    box-shadow: 0 0 0 1px rgba(99, 226, 183, 0.2);
-  }
-}
-</style>

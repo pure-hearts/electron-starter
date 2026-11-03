@@ -91,11 +91,11 @@ onUnmounted(() => {
     :locale="naiveLocale"
     :theme-overrides="appStore.themeOverrides"
   >
-    <div class="app">
+    <div class="min-h-screen bg-app-bg-page flex flex-col">
       <TitleBar />
       <NetworkBanner />
       <GlobalDownloadDrawer />
-      <main class="app-main">
+      <main class="w-full max-w-1200px mx-auto p-6 flex-1">
         <ErrorFallback>
           <router-view />
         </ErrorFallback>

@@ -1,8 +1,13 @@
 <template>
-  <transition name="slide-fade">
+  <transition
+    enter-active-class="transition-all duration-300 ease-out"
+    enter-from-class="-translate-y-full opacity-0"
+    leave-active-class="transition-all duration-300 ease-in"
+    leave-to-class="-translate-y-full opacity-0"
+  >
     <div
       v-if="!isOnline"
-      class="network-banner flex items-center justify-between px-4 py-2 bg-amber-500 text-white text-xs font-medium shadow-md select-none z-50"
+      class="flex items-center justify-between px-4 py-2 bg-amber-500 text-white text-xs font-medium shadow-md select-none z-50"
     >
       <div class="flex items-center space-x-2">
         <svg
@@ -84,15 +89,3 @@ onUnmounted(() => {
   unsubscribe?.();
 });
 </script>
-
-<style scoped>
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.3s ease;
-}
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-</style>
