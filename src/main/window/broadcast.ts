@@ -50,3 +50,9 @@ export function focusMainWindow(): void {
   w.show();
   w.focus();
 }
+
+/** 激活主窗口并通知渲染层跳转到指定业务路由。 */
+export function navigateMainWindow(route: string): void {
+  focusMainWindow();
+  broadcast("app:navigate", route);
+}

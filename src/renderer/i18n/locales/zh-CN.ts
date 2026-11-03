@@ -24,7 +24,7 @@ export default {
     offline: "离线模式",
     desktopEnv: "Electron 桌面端",
     webEnv: "Web 预览端",
-    versionBadge: "v0.1.3 · 现代化企业级工程化脚手架",
+    versionBadge: "v0.1.4 · 现代化企业级工程化脚手架",
     heroTitlePrefix: "轻量、现代、安全的 ",
     heroTitleSuffix: " 启动模板",
     heroDesc:
@@ -148,7 +148,7 @@ export default {
       uptime: "已连续运行时间",
       exportLogsBtn: "打包导出排障日志 (.zip)",
       aboutTitle: "Electron Starter (Vue 3 + TS)",
-      aboutDesc: "版本: v0.1.3 · 现代化企业级工程化脚手架 · 遵循 AGENTS.md 规范",
+      aboutDesc: "版本: v0.1.4 · 现代化企业级工程化脚手架 · 遵循 AGENTS.md 规范",
       checkUpdateBtn: "检查更新",
       openRepoBtn: "打开 GitHub 仓库",
     },

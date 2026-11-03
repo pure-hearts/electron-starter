@@ -329,6 +329,7 @@ export interface DesktopEvents {
     isOnline: boolean;
   };
   "settings:changed": UserSettings;
+  "app:navigate": string;
 }
 export type EventChannel = keyof DesktopEvents;
 // Preload 中的 bridge 必须满足此接口，因此页面调用时拥有类型提示。

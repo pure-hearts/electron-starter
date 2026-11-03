@@ -3,7 +3,7 @@ import { Tray, Menu, nativeImage, app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { platform } from "../../platform";
-import { focusMainWindow } from "../../window";
+import { focusMainWindow, navigateMainWindow } from "../../window";
 import { requestQuit } from "../core/lifecycle";
 
 // 保持 Tray 对象的引用，否则可能被垃圾回收，导致系统托盘图标消失。
@@ -128,7 +128,7 @@ export function createTray(): Tray {
       {
         label: "偏好设置",
         click: () => {
-          focusMainWindow();
+          navigateMainWindow("/settings");
         },
       },
       { type: "separator" },

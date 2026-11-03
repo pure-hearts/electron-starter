@@ -218,7 +218,7 @@ function signingKey(): string | null {
 async function readLimited(url: string, max: number, signal: AbortSignal): Promise<Buffer> {
   const response = await fetch(url, {
     signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]),
-    redirect: "error",
+    redirect: "follow",
   });
   if (!response.ok || !response.body) {
     throw new Error(`Download failed: HTTP ${response.status}`);

@@ -19,12 +19,22 @@ const naiveLocale = computed(() => (locale.value === "zh-CN" ? zhCN : enUS));
 
 let unsubscribeDeepLink: (() => void) | undefined;
 let unsubscribeNotification: (() => void) | undefined;
+let unsubscribeNavigate: (() => void) | undefined;
 
 onMounted(async () => {
   // Register listener first, then consume cold-start links so no link is lost.
   unsubscribeDeepLink = window.$ipcBridge.on("protocol:open", (url) =>
     appStore.receiveDeepLink(url),
   );
+
+  // 监听原生菜单栏或系统托盘触发的页面导航事件
+  unsubscribeNavigate = window.$ipcBridge.on("app:navigate", (targetRoute) => {
+    if (typeof targetRoute === "string" && targetRoute) {
+      if (router.currentRoute.value.path !== targetRoute) {
+        void router.push(targetRoute);
+      }
+    }
+  });
 
   // 统一响应通知点击事件：根据 action 参数在前端进行业务路由或文件定位调度
   unsubscribeNotification = window.$ipcBridge.on("notification:activated", (payload) => {
@@ -66,6 +76,7 @@ onMounted(async () => {
 onUnmounted(() => {
   unsubscribeDeepLink?.();
   unsubscribeNotification?.();
+  unsubscribeNavigate?.();
 });
 </script>
 

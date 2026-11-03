@@ -85,7 +85,7 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
       switch (channel) {
         // ----------------- 1. 应用与生命周期 -----------------
         case "app:version": {
-          return "0.1.3 (Web)" as InvokeResult<C>;
+          return "0.1.4 (Web)" as InvokeResult<C>;
         }
 
         case "app:restart": {
@@ -306,7 +306,7 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
         case "hot:state": {
           const info: HotUpdateInfo = {
             currentRevision: 20261029180000,
-            currentVersionTag: "0.1.3_web",
+            currentVersionTag: "0.1.4_web",
             currentCommit: "web-live",
             phase: "active",
             previousDirectory: null,
@@ -464,7 +464,7 @@ export function createWebShimBridge(): DesktopBridge & { __isWebShim: true } {
 
         case "diagnostics:system:get": {
           return {
-            appVersion: "0.1.3 (Web)",
+            appVersion: "0.1.4 (Web)",
             electronVersion: "N/A (Browser)",
             chromeVersion: navigator.userAgent,
             nodeVersion: "N/A",

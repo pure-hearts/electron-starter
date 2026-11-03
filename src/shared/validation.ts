@@ -126,6 +126,7 @@ export const allowedEvents = new Set<EventChannel>([
   "theme:system:changed",
   "network:change",
   "settings:changed",
+  "app:navigate",
 ]);
 export function safeExternalUrl(input: string): URL {
   if (typeof input !== "string" || input.length > 4096) throw new Error("Invalid URL");

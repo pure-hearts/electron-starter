@@ -557,7 +557,7 @@ function handleCheckUpdate() {
               </div>
               <div class="diag-cell">
                 <span class="cell-label">{{ t("settingsView.diagnostics.appVersion") }}</span>
-                <span class="cell-val">v{{ diagnostics.appVersion || "0.1.3" }}</span>
+                <span class="cell-val">v{{ diagnostics.appVersion || "0.1.4" }}</span>
               </div>
               <div class="diag-cell">
                 <span class="cell-label">{{ t("settingsView.diagnostics.electronVer") }}</span>

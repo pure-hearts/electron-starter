@@ -83,11 +83,24 @@ function resolvePrivateKeyPem(): string {
 
 const privateKeyPem = resolvePrivateKeyPem();
 
+function resolveEnv(key: string): string {
+  if (process.env[key]) return process.env[key]!;
+  for (const envFile of [".env.production", ".env.development", ".env"]) {
+    const p = join(process.cwd(), envFile);
+    if (existsSync(p)) {
+      const match = readFileSync(p, "utf8").match(new RegExp(`^${key}=(.*)$`, "m"));
+      if (match && match[1]?.trim()) return match[1].trim();
+    }
+  }
+  return "";
+}
+
 // 4. 解析增量包下载基础 URL
+const configuredHotUrl = resolveEnv("HOT_UPDATE_URL").replace(/\/[^/]+\.json$/, "");
 const baseURL =
   process.env.HOT_UPDATE_ASSET_BASE_URL ||
-  process.env.HOT_UPDATE_URL ||
-  "https://github.com/pure-hearts/electron-starter/releases/download/hot";
+  configuredHotUrl ||
+  "https://github.com/pure-hearts/electron-starter/releases/latest/download";
 
 // 5. 递归收集 dist/renderer 静态资源文件（排除主进程和原生文件）
 const directory = "dist/renderer";

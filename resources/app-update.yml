@@ -1,0 +1,4 @@
+owner: pure-hearts
+repo: electron-starter
+provider: github
+updaterCacheDirName: electron-starter-updater

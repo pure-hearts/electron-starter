@@ -3,6 +3,7 @@ import path from "node:path";
 
 vi.mock("../../src/main/window", () => ({
   focusMainWindow: vi.fn(),
+  navigateMainWindow: vi.fn(),
 }));
 
 vi.mock("../../src/main/modules/core/lifecycle", () => ({

@@ -24,7 +24,7 @@ export default {
     offline: "Offline",
     desktopEnv: "Electron Desktop",
     webEnv: "Web Browser",
-    versionBadge: "v0.1.3 · Modern Production Starter",
+    versionBadge: "v0.1.4 · Modern Production Starter",
     heroTitlePrefix: "Lightweight, Modern, Secure ",
     heroTitleSuffix: " Starter",
     heroDesc:
@@ -150,7 +150,7 @@ export default {
       uptime: "Continuous Uptime",
       exportLogsBtn: "Export Diagnostic Archive (.zip)",
       aboutTitle: "Electron Starter (Vue 3 + TS)",
-      aboutDesc: "Version: v0.1.3 · Modern Production Starter · AGENTS.md compliant",
+      aboutDesc: "Version: v0.1.4 · Modern Production Starter · AGENTS.md compliant",
       checkUpdateBtn: "Check for Updates",
       openRepoBtn: "Open GitHub Repository",
     },

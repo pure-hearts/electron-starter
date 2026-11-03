@@ -1,7 +1,7 @@
 /** 应用原生菜单。与 Vue 组件菜单不同，这里使用 Electron Menu 构建操作系统菜单。 */
 import { Menu } from "electron";
 import { platform } from "../../platform";
-import { focusMainWindow } from "../../window";
+import { focusMainWindow, navigateMainWindow } from "../../window";
 import { requestQuit } from "../core/lifecycle";
 
 export function createMenu() {
@@ -9,15 +9,49 @@ export function createMenu() {
   const mac = platform.isMac;
   // MenuItemConstructorOptions 是每一项原生菜单的配置类型。
   const template: Electron.MenuItemConstructorOptions[] = [
-    // 展开运算符仅在 macOS 插入系统标准应用菜单。
-    ...(mac ? [{ role: "appMenu" as const }] : []),
+    // 展开运算符在 macOS 插入系统应用菜单，并规范集成偏好设置与 Cmd+, 快捷键
+    ...(mac
+      ? [
+          {
+            role: "appMenu" as const,
+            submenu: [
+              { role: "about" as const },
+              { type: "separator" as const },
+              {
+                label: "偏好设置...",
+                accelerator: "CmdOrCtrl+,",
+                click: () => navigateMainWindow("/settings"),
+              },
+              { type: "separator" as const },
+              { role: "services" as const },
+              { type: "separator" as const },
+              { role: "hide" as const },
+              { role: "hideOthers" as const },
+              { role: "unhide" as const },
+              { type: "separator" as const },
+              { role: "quit" as const },
+            ],
+          },
+        ]
+      : []),
     {
       label: "文件",
       submenu: [
         // CmdOrCtrl 按平台自动映射为 macOS 的 Command 或 Windows/Linux 的 Ctrl。
         { label: "打开主窗口", accelerator: "CmdOrCtrl+Shift+O", click: focusMainWindow },
+        ...(!mac
+          ? [
+              {
+                label: "偏好设置...",
+                accelerator: "CmdOrCtrl+,",
+                click: () => navigateMainWindow("/settings"),
+              },
+            ]
+          : []),
         { type: "separator" },
-        mac ? { role: "close" } : { label: "退出", accelerator: "CmdOrCtrl+Q", click: requestQuit },
+        mac
+          ? { role: "close" as const }
+          : { label: "退出", accelerator: "CmdOrCtrl+Q", click: requestQuit },
       ],
     },
     // role 代表 Electron 提供的标准系统菜单，包含复制、粘贴等内建行为。

@@ -1,5 +1,5 @@
 {
   "appUpdateUrl": "",
-  "hotUpdateUrl": "",
+  "hotUpdateUrl": "https://github.com/pure-hearts/electron-starter/releases/latest/download/manifest.json",
   "deepLinkScheme": "electron-starter"
 }

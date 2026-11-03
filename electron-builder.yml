@@ -21,6 +21,8 @@ files:
 extraResources:
   - from: resources
     to: resources
+  - from: resources/app-update.yml
+    to: app-update.yml
 # 正式整包更新默认从对应 GitHub Releases 仓库获取版本元数据。
 publish:
   provider: github
