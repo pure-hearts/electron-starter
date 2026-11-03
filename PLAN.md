@@ -134,3 +134,20 @@ P7：上述尚未完成的正式签名/跨平台安装与真实更新测试需�
   - `pnpm typecheck:vue`: 0 TS 错误；
   - `pnpm test`: 42 个测试套件，165 项单测 100% 通过；
   - `pnpm build`: 生产构建成功，无超大 chunk 告警。
+
+## 证书管理、热更白屏防御与桌面通知系统实测（2026-11-03）
+
+- [x] **跨平台自签名证书生成与自动打包集成**：
+  - 落地 `scripts/generate-self-signed-certs.mjs`，一键生成 Windows `.pfx` 与 macOS `.p12` 代码签名证书与根证书；
+  - 落地 `scripts/build-with-cert.mjs` 包装器，构建打包时智能检测本地 `certs/` 目录并自动注入 `WIN_CSC_LINK` / `MAC_CSC_LINK` 与密码，无证书时平滑降级并输出友好提示；
+  - 新增 `tests/scripts/self-signed-certs.test.ts` 测试套件，覆盖证书创建、加密密码、清理与降级流程。
+- [x] **macOS 原生通知排障与代码签名闭环**：
+  - 精准定位 macOS `UNErrorDomain 错误 1` 根因：苹果 `UserNotifications` 框架严格要求 App 二进制拥有合法签名与资源封条，未签名或签名破损会被系统内核静默阻断；
+  - 修复已安装客户端签名，并在本地真机环境实测验证桌面横幅通知弹出与点击激活回调正常。
+- [x] **热更新架构兼容性防御（彻底解决跨版本白屏）**：
+  - 深度排查旧底包热更新后白屏原因：新版前端代码在顶层调用新事件（`context-menu:action`），而旧宿主 Preload 白名单未声明该事件，导致同步抛错阻断 Vue 挂载；
+  - 在 `src/renderer/bridge/index.ts` 抽象 `wrapSafeBridge` 防御切面，捕获未授权通道异常并安全降级为 No-op，实现全项目使用 `useIpcBridge` 彻底免疫此类版本不匹配白屏；
+  - 真实验证 GitHub Releases `v0.1.4` 增量热更新拉取、下载验签、桌面提示、平滑激活、与重启后通知能力无损。
+- [x] **全量质量门禁**：
+  - `pnpm check`: 327 个文件 0 错误 0 告警；
+  - `pnpm test`: 53 个测试套件，229 项单元/集成测试 100% 通过。
